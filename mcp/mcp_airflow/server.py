@@ -8,6 +8,7 @@ the local docker-compose standalone instance or a remote deployment.
 from __future__ import annotations
 
 import os
+import sys
 from typing import Any
 
 import requests
@@ -16,6 +17,11 @@ from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
 load_dotenv()
+
+# MCP stdio transport reserves stdout for JSON-RPC framing; structlog's
+# default PrintLoggerFactory writes to stdout, which corrupts every tool
+# call's response. Logs must go to stderr instead.
+structlog.configure(logger_factory=structlog.PrintLoggerFactory(file=sys.stderr))
 log = structlog.get_logger()
 
 mcp = FastMCP("nvidia-ir-airflow")

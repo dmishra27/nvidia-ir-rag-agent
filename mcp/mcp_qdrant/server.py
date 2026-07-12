@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +20,11 @@ from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
 load_dotenv()
+
+# MCP stdio transport reserves stdout for JSON-RPC framing; structlog's
+# default PrintLoggerFactory writes to stdout, which corrupts every tool
+# call's response. Logs must go to stderr instead.
+structlog.configure(logger_factory=structlog.PrintLoggerFactory(file=sys.stderr))
 log = structlog.get_logger()
 
 mcp = FastMCP("nvidia-ir-qdrant")
