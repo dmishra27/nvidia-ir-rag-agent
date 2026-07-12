@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "nvidia-ir-qdrant": {
+      "type": "stdio",
+      "command": "C:\\Users\\dmish\\projects\\nvidia-ir-rag-agent\\.venv\\Scripts\\python.exe",
+      "args": [
+        "C:\\Users\\dmish\\projects\\nvidia-ir-rag-agent\\mcp\\mcp_qdrant\\server.py"
+      ],
+      "env": {}
+    },
+    "nvidia-ir-airflow": {
+      "type": "stdio",
+      "command": "C:\\Users\\dmish\\projects\\nvidia-ir-rag-agent\\.venv\\Scripts\\python.exe",
+      "args": [
+        "C:\\Users\\dmish\\projects\\nvidia-ir-rag-agent\\mcp\\mcp_airflow\\server.py"
+      ],
+      "env": {}
+    }
+  }
+}

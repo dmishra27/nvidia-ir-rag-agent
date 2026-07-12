@@ -1,0 +1,72 @@
+{
+  "num_chunks": 5389,
+  "num_queries": 10,
+  "results": [
+    {
+      "model": "all-MiniLM-L6-v2",
+      "hf_id": "sentence-transformers/all-MiniLM-L6-v2",
+      "param_count": "22M",
+      "corpus_embed_seconds": 265.38,
+      "mean_ndcg_at_10": 0.4469,
+      "mean_query_latency_ms": 42.73,
+      "p95_query_latency_ms": 109.26,
+      "per_query_ndcg": {
+        "NVLink bandwidth": 0.6131,
+        "warp divergence": 0.6309,
+        "shared memory bank conflicts": 0.5473,
+        "Nsight Systems timeline view": 0.5869,
+        "CUDA kernel launch grid and block dimensions": 0.1993,
+        "FP8 tensor core performance": 0.6509,
+        "occupancy calculator CUDA": 0.0,
+        "CUDA unified memory managed allocation": 0.1717,
+        "cudaStreamSynchronize stream synchronization": 0.5541,
+        "cudaMallocAsync memory pool allocation": 0.5152
+      },
+      "sample_top5_nvlink_bandwidth": [
+        "97724de868d508c6796761ea",
+        "a24e627c5d2a61bbce474269",
+        "0fc9e36da0ab43104dee747a",
+        "986bdf8aca71b1a75b1b58eb",
+        "ade018c96de7e57a8c3d618c"
+      ]
+    },
+    {
+      "model": "e5-base-v2",
+      "hf_id": "intfloat/e5-base-v2",
+      "param_count": "109M",
+      "corpus_embed_seconds": 3382.97,
+      "mean_ndcg_at_10": 0.5088,
+      "mean_query_latency_ms": 72.09,
+      "p95_query_latency_ms": 117.8,
+      "per_query_ndcg": {
+        "NVLink bandwidth": 0.6131,
+        "warp divergence": 0.6309,
+        "shared memory bank conflicts": 0.6423,
+        "Nsight Systems timeline view": 0.2754,
+        "CUDA kernel launch grid and block dimensions": 0.5152,
+        "FP8 tensor core performance": 0.3066,
+        "occupancy calculator CUDA": 0.1625,
+        "CUDA unified memory managed allocation": 0.5459,
+        "cudaStreamSynchronize stream synchronization": 0.7952,
+        "cudaMallocAsync memory pool allocation": 0.601
+      },
+      "sample_top5_nvlink_bandwidth": [
+        "97724de868d508c6796761ea",
+        "0fc9e36da0ab43104dee747a",
+        "55eff7f38ebcf85cf30ed8f4",
+        "645085c539a807cb5fe15500",
+        "a9c01255f005c686ffaccacc"
+      ]
+    }
+  ],
+  "deferred": [
+    {
+      "model": "bge-m3",
+      "hf_id": "BAAI/bge-m3",
+      "param_count": "570M",
+      "reason": "Blocked by hardware: OOM during model load on this 8GB CPU-only host (\"memory allocation of 67067869 bytes failed\") even at batch_size=8 over a 1,000-chunk doc-stratified sample. The failure happened while loading model weights/tokenizer, before any batching \u2014 not a speed problem that smaller batches could fix. Deferred until GPU or cloud compute is available."
+    }
+  ],
+  "winner": "e5-base-v2",
+  "winner_rationale": "e5-base-v2 achieved the highest mean NDCG@10 (0.5088) among the models that could run on this hardware (bge-m3 excluded \u2014 see 'deferred')."
+}
