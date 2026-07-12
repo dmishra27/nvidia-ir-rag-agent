@@ -1,0 +1,578 @@
+[
+  {
+    "query_type": "type1_exact_technical",
+    "query": "NVLink 4.0 bandwidth specifications",
+    "config_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "97724de868d508c6796761ea",
+        "score": 15.9543,
+        "text_100": ". \u2023 DRAM Write Bandwidth - dramc__write_throughput.avg.pct_of_peak_sustained_elapsed , dram__write_t"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "aae9e31dae08f840680449cd",
+        "score": 14.8923,
+        "text_100": "[CUDA C++ Programming Guide, Release 13.3] CUDA C++ Programming Guide, Release 13.3 574 25. Lazy Loa"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "0fc9e36da0ab43104dee747a",
+        "score": 12.4626,
+        "text_100": "CUDA C++ Best Practices Guide, Release 13.3 9.2.1. Theoretical Bandwidth Calculation Theoretical ban"
+      }
+    ],
+    "config_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "97724de868d508c6796761ea",
+        "score": 0.8232,
+        "text_100": ". \u2023 DRAM Write Bandwidth - dramc__write_throughput.avg.pct_of_peak_sustained_elapsed , dram__write_t"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "0fc9e36da0ab43104dee747a",
+        "score": 0.8213,
+        "text_100": "CUDA C++ Best Practices Guide, Release 13.3 9.2.1. Theoretical Bandwidth Calculation Theoretical ban"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "05fad39c01b3325a10595ac0",
+        "score": 0.8208,
+        "text_100": "[www.nvidia.com] Profiling from the CLI www.nvidia.com User Guide v2023.3.1 | 72 Short Long Possible"
+      }
+    ],
+    "config_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "97724de868d508c6796761ea",
+        "score": 0.0328,
+        "text_100": ". \u2023 DRAM Write Bandwidth - dramc__write_throughput.avg.pct_of_peak_sustained_elapsed , dram__write_t"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "0fc9e36da0ab43104dee747a",
+        "score": 0.032,
+        "text_100": "CUDA C++ Best Practices Guide, Release 13.3 9.2.1. Theoretical Bandwidth Calculation Theoretical ban"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "ade018c96de7e57a8c3d618c",
+        "score": 0.0299,
+        "text_100": "9 Performance Metrics 25 9.1 Timing . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . "
+      }
+    ]
+  },
+  {
+    "query_type": "type1_exact_technical",
+    "query": "CUDA cudaMalloc function parameters",
+    "config_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "381cf7a1dddd75346b7446ee",
+        "score": 12.1774,
+        "text_100": "[__host__cudaError_t cudaFreeMipmappedArray] Modules CUDA Runtime API v13.3.1 Version | 128 See also"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "cc6c8e53936d04e9b192a7d5",
+        "score": 11.99,
+        "text_100": "[__host____device__cudaError_t cudaMalloc (void] Modules CUDA Runtime API v13.3.1 Version | 138 See "
+      },
+      {
+        "rank": 3,
+        "chunk_id": "81b9c458ed8d5bbf219819b8",
+        "score": 11.1421,
+        "text_100": ". \u2023 Note that as specified by cudaStreamAddCallback no CUDA function may be called from callback. cu"
+      }
+    ],
+    "config_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "7cb10cb8b14c66c9987417cb",
+        "score": 0.8944,
+        "text_100": "[void *cudaMemAllocNodeParams::dptr] Data Structures CUDA Runtime API v13.3.1 Version | 649 void *cu"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "a0bfa55c394eb552119fbe03",
+        "score": 0.8894,
+        "text_100": ". The function is defined in the cudadevrt system library, which must be linked with a program in or"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "81b9c458ed8d5bbf219819b8",
+        "score": 0.8881,
+        "text_100": ". \u2023 Note that as specified by cudaStreamAddCallback no CUDA function may be called from callback. cu"
+      }
+    ],
+    "config_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "81b9c458ed8d5bbf219819b8",
+        "score": 0.0317,
+        "text_100": ". \u2023 Note that as specified by cudaStreamAddCallback no CUDA function may be called from callback. cu"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "b390a0086cd2ebb9237c24b4",
+        "score": 0.0286,
+        "text_100": "[cudaHostFn_t cudaHostNodeParams::fn] Data Structures CUDA Runtime API v13.3.1 Version | 641 cudaHos"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "a1db062e97d26a49ab333961",
+        "score": 0.0272,
+        "text_100": ". Note: \u2023 Note that this function may also return error codes from previous, asynchronous launches. "
+      }
+    ]
+  },
+  {
+    "query_type": "type1_exact_technical",
+    "query": "H100 HBM2e memory capacity",
+    "config_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "4894443247eb04565ae790ce",
+        "score": 14.1777,
+        "text_100": "CUDA C++ Programming Guide, Release 13.3 20.8.3. Shared Memory Similar to the NVIDIA Ampere GPU arch"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "ab8c38f5987e9d6af5172b39",
+        "score": 10.8264,
+        "text_100": ". Unlike Kepler, the driver automatically configures the shared memory capacity for each kernel to a"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "44cacb220dc77ec95d6bb5c2",
+        "score": 10.5875,
+        "text_100": "CUDA C++ Programming Guide, Release 13.3 (continued from previous page) \u2215\u2215carveout = cudaSharedmemCa"
+      }
+    ],
+    "config_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "66e68be5172026f2326e92e8",
+        "score": 0.8355,
+        "text_100": ". HBM2 memories, on the other hand, provide dedicated ECC resources, allowing overhead-free ECC prot"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "0fc9e36da0ab43104dee747a",
+        "score": 0.8184,
+        "text_100": "CUDA C++ Best Practices Guide, Release 13.3 9.2.1. Theoretical Bandwidth Calculation Theoretical ban"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "22e542f6af50aed6362c7385",
+        "score": 0.8113,
+        "text_100": ". Note: Requires compute capability >= 2.0. 328 Chapter 9. Double Precision Intrinsics"
+      }
+    ],
+    "config_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "976f1f192bb0046f1aded1f0",
+        "score": 0.0289,
+        "text_100": "Modules CUDA Runtime API v13.3.1 Version | 544 Device supports host memory registration via cudaHost"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "9c31fd555773b828af84224d",
+        "score": 0.0273,
+        "text_100": ". The shared memory capacity can be set to 0, 8, 16, 32, 64, 100, 132 or 164 KB for devices of compu"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "94322bcefc6f37836b7c9640",
+        "score": 0.0256,
+        "text_100": ". 20.9.2. Global Memory Global memory behaves the same way as for devices of compute capability 5.x "
+      }
+    ]
+  },
+  {
+    "query_type": "type2_semantic_conceptual",
+    "query": "How does GPU memory work for parallel processing",
+    "config_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "2fa6d1612e31780857d91317",
+        "score": 18.4653,
+        "text_100": "CUDA C++ Best Practices Guide, Release 13.3 communicated between device memory and host memory as de"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "490bb9d312a2fb7e58e6591f",
+        "score": 17.1214,
+        "text_100": "Chapter 3. Introduction Warning: This document has been replaced by a new CUDA Programming Guide . T"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "6083e1f4926192af0e474f1e",
+        "score": 16.7753,
+        "text_100": ". The schematic Figure 1 shows an example distribution of chip resources for a CPU versus a GPU. Dev"
+      }
+    ],
+    "config_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "6083e1f4926192af0e474f1e",
+        "score": 0.861,
+        "text_100": ". The schematic Figure 1 shows an example distribution of chip resources for a CPU versus a GPU. Dev"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "970b7cb8843ba5bf598058ac",
+        "score": 0.8548,
+        "text_100": ". \u25b6 The GPU is considered active when it is running any kernel, even if that kernel does not make us"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "e15064d6ce1016c1196ae1a2",
+        "score": 0.8502,
+        "text_100": "CUDA C++ Programming Guide, Release 13.3 into coarse sub-problems that can be solved independently i"
+      }
+    ],
+    "config_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "6083e1f4926192af0e474f1e",
+        "score": 0.0323,
+        "text_100": ". The schematic Figure 1 shows an example distribution of chip resources for a CPU versus a GPU. Dev"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "490bb9d312a2fb7e58e6591f",
+        "score": 0.0318,
+        "text_100": "Chapter 3. Introduction Warning: This document has been replaced by a new CUDA Programming Guide . T"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "970b7cb8843ba5bf598058ac",
+        "score": 0.0318,
+        "text_100": ". \u25b6 The GPU is considered active when it is running any kernel, even if that kernel does not make us"
+      }
+    ]
+  },
+  {
+    "query_type": "type2_semantic_conceptual",
+    "query": "best practices for optimising neural network training",
+    "config_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "1bc7e850882f3acb0dd8b500",
+        "score": 13.1774,
+        "text_100": "[CUDA C++ Best Practices Guide] CUDA C++ Best Practices Guide Release 13.3 NVIDIA Corporation Jun 25"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "cc7faa789d2f0578fed00f8e",
+        "score": 13.0707,
+        "text_100": "[CUDA C++ Best Practices Guide, Release 13.3] CUDA C++ Best Practices Guide, Release 13.3 54 10. Mem"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "64179456d5f50e99ce7f6954",
+        "score": 13.0707,
+        "text_100": "[CUDA C++ Best Practices Guide, Release 13.3] CUDA C++ Best Practices Guide, Release 13.3 74 12. Ins"
+      }
+    ],
+    "config_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "cc4b86761f1005773c609b79",
+        "score": 0.8425,
+        "text_100": "Chapter 19. Recommendations and Best Practices This chapter contains a summary of the recommendation"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "69c2f815978cac64bb8c388b",
+        "score": 0.8363,
+        "text_100": "Chapter 2. Preface This Best Practices Guide is a manual to help developers obtain the best performa"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "1c6c6224465f82a2f9965a09",
+        "score": 0.8284,
+        "text_100": "[CUDA C++ Best Practices Guide, Release 13.3] CUDA C++ Best Practices Guide, Release 13.3 22 7. Gett"
+      }
+    ],
+    "config_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "64179456d5f50e99ce7f6954",
+        "score": 0.031,
+        "text_100": "[CUDA C++ Best Practices Guide, Release 13.3] CUDA C++ Best Practices Guide, Release 13.3 74 12. Ins"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "cc7faa789d2f0578fed00f8e",
+        "score": 0.0304,
+        "text_100": "[CUDA C++ Best Practices Guide, Release 13.3] CUDA C++ Best Practices Guide, Release 13.3 54 10. Mem"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "6124f6366c1e67c875aa02ef",
+        "score": 0.0284,
+        "text_100": "[21 Notices] 20.1 nvcc . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."
+      }
+    ]
+  },
+  {
+    "query_type": "type2_semantic_conceptual",
+    "query": "what causes memory errors in GPU applications",
+    "config_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "5d026d79fdf2f55052434d82",
+        "score": 13.3621,
+        "text_100": "Chapter 15. Stream Ordered Memory Allocator Warning: This document has been replaced by a new CUDA P"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "1294b9a04e36b4a6b1fed64b",
+        "score": 12.6031,
+        "text_100": "CUDA C++ Programming Guide, Release 13.3 Table 30 \u2013 continued from previous page Variable Values Des"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "18f06fd220df55b621d25913",
+        "score": 11.8136,
+        "text_100": ". cudaErrorJitCompilationDisabled = 223 This indicates that the JIT compilation was disabled. The JI"
+      }
+    ],
+    "config_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "c83c81319bfdefae04d81df6",
+        "score": 0.8663,
+        "text_100": ". There are however special considerations as described below when the system is in SLI mode. First,"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "68350e3f7388624f4e8594f2",
+        "score": 0.8624,
+        "text_100": "[www.nvidia.com] CUDA Trace www.nvidia.com User Guide v2023.3.1 | 182 page faults can cause overhead"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "e0d64832cd47434e0a7e4a3f",
+        "score": 0.8581,
+        "text_100": "CUDA C++ Programming Guide, Release 13.3 24.3.2. Unified memory on Windows or devices with compute c"
+      }
+    ],
+    "config_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "e3d457e876f094d63cff72dd",
+        "score": 0.0301,
+        "text_100": ". This often leads to lower performance and higher peak memory utilization for applications. Essenti"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "c83c81319bfdefae04d81df6",
+        "score": 0.0297,
+        "text_100": ". There are however special considerations as described below when the system is in SLI mode. First,"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "e0d64832cd47434e0a7e4a3f",
+        "score": 0.0251,
+        "text_100": "CUDA C++ Programming Guide, Release 13.3 24.3.2. Unified memory on Windows or devices with compute c"
+      }
+    ]
+  },
+  {
+    "query_type": "type3_legacy_terminology",
+    "query": "shader processor count",
+    "config_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "9e3709105824054667991d5e",
+        "score": 10.4684,
+        "text_100": "[www.nvidia.com] Stutter Analysis www.nvidia.com User Guide v2023.3.1 | 163 9.2. Frame Health The Fr"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "a8c35fe2813fdaec5c5356ab",
+        "score": 9.7688,
+        "text_100": "GPU Metrics www.nvidia.com User Guide v2023.3.1 | 204 Note: The percentage will always be very low a"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "8ddd5e09211a51cec7acd9d2",
+        "score": 8.9866,
+        "text_100": ". Any read accesses from any processor to this region will create a read-only copy of at least the a"
+      }
+    ],
+    "config_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "35b73f3371037bf5ba8fefc0",
+        "score": 0.8281,
+        "text_100": ". 20.4. Compute Capability 5.x 20.4.1. Architecture An SM consists of: \u25b6 128 CUDA cores for arithmet"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "aed2815db4e8ab51d9c522ff",
+        "score": 0.8254,
+        "text_100": ". 28 2 FP64 cores for double-precision arithmetic operations for devices of compute capabilities 7.5"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "c0a6fa3aecd4d794dd957899",
+        "score": 0.8218,
+        "text_100": "Post-Collection Analysis www.nvidia.com User Guide v2023.3.1 | 297 \u2023 CPU Page Faults : Number of CPU"
+      }
+    ],
+    "config_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "a8c35fe2813fdaec5c5356ab",
+        "score": 0.0306,
+        "text_100": "GPU Metrics www.nvidia.com User Guide v2023.3.1 | 204 Note: The percentage will always be very low a"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "ba52947371305a0ee68f2c73",
+        "score": 0.026,
+        "text_100": "[www.nvidia.com] Post-Collection Analysis www.nvidia.com User Guide v2023.3.1 | 268 Replace \"SELECT "
+      },
+      {
+        "rank": 3,
+        "chunk_id": "9e3709105824054667991d5e",
+        "score": 0.0229,
+        "text_100": "[www.nvidia.com] Stutter Analysis www.nvidia.com User Guide v2023.3.1 | 163 9.2. Frame Health The Fr"
+      }
+    ]
+  },
+  {
+    "query_type": "type3_legacy_terminology",
+    "query": "global memory coalescing techniques",
+    "config_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "3c8573a7f22cd37a771b4816",
+        "score": 17.352,
+        "text_100": ". 10.2.1. Coalesced Access to Global Memory A very important performance consideration in programmin"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "91945270119932f8ee8d8fe0",
+        "score": 12.1923,
+        "text_100": ". Also, the compiler reports total local memory usage per kernel ( lmem ) when compiling with the --"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "dca95bd9fefa84908469de51",
+        "score": 11.7716,
+        "text_100": "CUDA C++ Best Practices Guide, Release 13.3 For devices of compute capability 6.0 or higher, the req"
+      }
+    ],
+    "config_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "3c8573a7f22cd37a771b4816",
+        "score": 0.8898,
+        "text_100": ". 10.2.1. Coalesced Access to Global Memory A very important performance consideration in programmin"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "4949c564d4bf9dc335b73b66",
+        "score": 0.8519,
+        "text_100": ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 34 10.2.1 Coalesced "
+      },
+      {
+        "rank": 3,
+        "chunk_id": "5a9b26920b6f9d08105f1f4d",
+        "score": 0.8445,
+        "text_100": ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . 264 10.34 Breakpoint Function . . . . . . "
+      }
+    ],
+    "config_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "3c8573a7f22cd37a771b4816",
+        "score": 0.0328,
+        "text_100": ". 10.2.1. Coalesced Access to Global Memory A very important performance consideration in programmin"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "dca95bd9fefa84908469de51",
+        "score": 0.0315,
+        "text_100": "CUDA C++ Best Practices Guide, Release 13.3 For devices of compute capability 6.0 or higher, the req"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "48ba7e1f690b446f51401f82",
+        "score": 0.0297,
+        "text_100": ". For example, if a 32-byte memory transaction is generated for each thread\u2019s 4-byte access, through"
+      }
+    ]
+  },
+  {
+    "query_type": "type3_legacy_terminology",
+    "query": "warp divergence performance impact",
+    "config_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "3c9b5ecfb38e9ee9377cf4f6",
+        "score": 15.1868,
+        "text_100": "Chapter 13. Control Flow 13.1. Branching and Divergence Note: High Priority: Avoid different executi"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "fb0ae459357d3e075cf717c6",
+        "score": 14.4848,
+        "text_100": ". Thus, when TL < PL , the thread will unintentionally wait for additional, more recent batches. In "
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3805d3ce01d885478a2e78c0",
+        "score": 13.6572,
+        "text_100": "CUDA C++ Programming Guide, Release 13.3 A warp executes one common instruction at a time, so full e"
+      }
+    ],
+    "config_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "011463350540da0a7eb7a0f6",
+        "score": 0.8487,
+        "text_100": "CUDA C++ Best Practices Guide, Release 13.3 This last case can be avoided by using single-precision "
+      },
+      {
+        "rank": 2,
+        "chunk_id": "df5d7d80f5afd618919ad5f7",
+        "score": 0.8415,
+        "text_100": "CUDA C++ Programming Guide, Release 13.3 This code is invalid because CUDA does not guarantee that t"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3c9b5ecfb38e9ee9377cf4f6",
+        "score": 0.8399,
+        "text_100": "Chapter 13. Control Flow 13.1. Branching and Divergence Note: High Priority: Avoid different executi"
+      }
+    ],
+    "config_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "3c9b5ecfb38e9ee9377cf4f6",
+        "score": 0.0323,
+        "text_100": "Chapter 13. Control Flow 13.1. Branching and Divergence Note: High Priority: Avoid different executi"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "fb0ae459357d3e075cf717c6",
+        "score": 0.0318,
+        "text_100": ". Thus, when TL < PL , the thread will unintentionally wait for additional, more recent batches. In "
+      },
+      {
+        "rank": 3,
+        "chunk_id": "011463350540da0a7eb7a0f6",
+        "score": 0.0315,
+        "text_100": "CUDA C++ Best Practices Guide, Release 13.3 This last case can be avoided by using single-precision "
+      }
+    ]
+  }
+]
