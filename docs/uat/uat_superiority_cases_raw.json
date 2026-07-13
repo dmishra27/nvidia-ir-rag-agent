@@ -1,0 +1,977 @@
+[
+  {
+    "case": "case1_bm25_lexical_superiority",
+    "query_id": "Q1",
+    "query": "CUDA cudaMalloc function parameters",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "381cf7a1dddd75346b7446ee",
+        "score": 12.1774,
+        "text": "[__host__cudaError_t cudaFreeMipmappedArray] Modules CUDA Runtime API v13.3.1 Version | 128 See also: cudaMalloc , cudaMallocPitch , cudaFree , cudaMa"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "cc6c8e53936d04e9b192a7d5",
+        "score": 11.99,
+        "text": "[__host____device__cudaError_t cudaMalloc (void] Modules CUDA Runtime API v13.3.1 Version | 138 See "
+      },
+      {
+        "rank": 3,
+        "chunk_id": "81b9c458ed8d5bbf219819b8",
+        "score": 11.1421,
+        "text": ". \u2023 Note that as specified by cudaStreamAddCallback no CUDA function may be called from callback. cu"
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "7cb10cb8b14c66c9987417cb",
+        "score": 0.8944,
+        "text": "[void *cudaMemAllocNodeParams::dptr] Data Structures CUDA Runtime API v13.3.1 Version | 649 void *cudaMemAllocNodeParams::dptr out: address of the all"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "a0bfa55c394eb552119fbe03",
+        "score": 0.8894,
+        "text": ". The function is defined in the cudadevrt system library, which must be linked with a program in or"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "81b9c458ed8d5bbf219819b8",
+        "score": 0.8881,
+        "text": ". \u2023 Note that as specified by cudaStreamAddCallback no CUDA function may be called from callback. cu"
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "81b9c458ed8d5bbf219819b8",
+        "score": 0.0317,
+        "text": ". \u2023 Note that as specified by cudaStreamAddCallback no CUDA function may be called from callback. cudaErrorNotPermitted may, but is not guaranteed to,"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "b390a0086cd2ebb9237c24b4",
+        "score": 0.0286,
+        "text": "[cudaHostFn_t cudaHostNodeParams::fn] Data Structures CUDA Runtime API v13.3.1 Version | 641 cudaHos"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "a1db062e97d26a49ab333961",
+        "score": 0.0272,
+        "text": ". Note: \u2023 Note that this function may also return error codes from previous, asynchronous launches. "
+      }
+    ]
+  },
+  {
+    "case": "case1_bm25_lexical_superiority",
+    "query_id": "Q2",
+    "query": "cudaMemcpyAsync stream parameter",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "e81d90f1327bd9f939182f32",
+        "score": 10.9327,
+        "text": ". The following code sample creates two streams and allocates an array hostPtr of float in page-locked memory. cudaStream_t stream[ 2 ]; for ( int i ="
+      },
+      {
+        "rank": 2,
+        "chunk_id": "d0a577a165b439a7b54b3a95",
+        "score": 10.5088,
+        "text": "Modules CUDA Runtime API v13.3.1 Version | 176 that are both registered and not registered with CUDA"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "01d8f177c446245392f0bc5e",
+        "score": 9.9477,
+        "text": "[sharedMemSize] Modules CUDA Runtime API v13.3.1 Version | 107 sharedMemSize - Specifies size of sha"
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "7032b5070d0a9b8d5e6f73a4",
+        "score": 0.8895,
+        "text": ". See also: cudaMemcpy , cudaMemcpy2D , cudaMemcpy2DToArray , cudaMemcpy2DFromArray , cudaMemcpy2DArrayToArray , cudaMemcpyToSymbol , cudaMemcpyFromSy"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3aff8a993ee905af903cea6a",
+        "score": 0.8858,
+        "text": ". cudaDevAttrHostMemoryPoolsSupported = 144 Device suports HOST location with the cuMemAllocAsync an"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "af5730e3ba4fd8ece6209fb2",
+        "score": 0.8848,
+        "text": ". Parameters p - 3D memory copy parameters stream - Stream identifier Returns cudaSuccess , cudaErro"
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "f9f67e7b94c193a8782f538e",
+        "score": 0.0296,
+        "text": ". See also: cudaMemcpy , cudaMemcpy2D , cudaMemcpy2DFromArray , cudaMemcpy2DArrayToArray , cudaMemcpyToSymbol , cudaMemcpyFromSymbol , cudaMemcpyAsync"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "03bdaee52ee8d2e972e53567",
+        "score": 0.0282,
+        "text": ". See also: cudaMemcpy , cudaMemcpy2D , cudaMemcpy2DToArray , cudaMemcpy2DArrayToArray , cudaMemcpyT"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "242e353090d3f493c8ef64dc",
+        "score": 0.0275,
+        "text": ". The cudaMem- cpyAsync() function is a non-blocking variant of cudaMemcpy() in which control is ret"
+      }
+    ]
+  },
+  {
+    "case": "case1_bm25_lexical_superiority",
+    "query_id": "Q3",
+    "query": "CUDA error cudaErrorInvalidValue description",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "0904f18029b044943773fe74",
+        "score": 12.349,
+        "text": "Modules CUDA Runtime API v13.3.1 Version | 47 Description Returns the description string for an error code. If the error code is not recognized, \"unre"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "0744159283d6d08a31efbd60",
+        "score": 11.0984,
+        "text": "Modules CUDA Runtime API v13.3.1 Version | 48 cudaPeekAtLastError , cudaGetErrorName , cudaGetErrorS"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "833e98ebaca9943a1ccec747",
+        "score": 10.5566,
+        "text": "[Returns] Modules CUDA Runtime API v13.3.1 Version | 361 Returns cudaSuccess , cudaErrorInvalidValue"
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "068c625157dd3675d9aa970a",
+        "score": 0.8955,
+        "text": "Modules CUDA Runtime API v13.3.1 Version | 377 Returns cudaErrorInvalidValue if the memory operands' mappings changed or the original memory operands "
+      },
+      {
+        "rank": 2,
+        "chunk_id": "72e0d85687d8c95facce1dbc",
+        "score": 0.8887,
+        "text": ". Specifying this option with cudaLibraryLoadFromFile() is invalid and will return cudaErrorInvalidV"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "a670fcfcd01320e2fe3f69fd",
+        "score": 0.8874,
+        "text": ". Note: \u2023 Note that this function may also return error codes from previous, asynchronous launches. "
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "7c67cdb0338710d0ce1e33f8",
+        "score": 0.0284,
+        "text": "[Returns] Modules CUDA Runtime API v13.3.1 Version | 320 Returns cudaSuccess , cudaErrorInvalidValue Description Note: \u2023 Note that this function may a"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "0904f18029b044943773fe74",
+        "score": 0.0256,
+        "text": "Modules CUDA Runtime API v13.3.1 Version | 47 Description Returns the description string for an erro"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "b68a721030bcdd7d06727bbb",
+        "score": 0.0244,
+        "text": ". Parameters memoryRequirements - Pointer to cudaArrayMemoryRequirements mipmap - CUDA mipmapped arr"
+      }
+    ]
+  },
+  {
+    "case": "case2_dense_semantic_superiority",
+    "query_id": "Q4",
+    "query": "shader processor count per streaming multiprocessor",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "a1f985eaed4eb1f19e46d20a",
+        "score": 16.5175,
+        "text": ". However, this approach of determining how register count affects occupancy does not take into account the register allocation granularity. For examp"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "84905b60e266d84cd0ca1879",
+        "score": 14.0466,
+        "text": "CUDA C++ Best Practices Guide, Release 13.3 11.1.1. Calculating Occupancy One of several factors tha"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "a8c35fe2813fdaec5c5356ab",
+        "score": 13.6072,
+        "text": "GPU Metrics www.nvidia.com User Guide v2023.3.1 | 204 Note: The percentage will always be very low a"
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "3ce249ad487299808540397f",
+        "score": 0.844,
+        "text": "CUDA C++ Programming Guide, Release 13.3 Note that the maximum amount of shared memory per thread block is smaller than the maximum shared memory part"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "57141d8c022463993050e7a7",
+        "score": 0.8389,
+        "text": ". \u2215\u2215Device code __global__ void MyKernel(...) { extern __shared__ float buffer[]; ... } \u2215\u2215Host code "
+      },
+      {
+        "rank": 3,
+        "chunk_id": "b1b835707157b6821a40534b",
+        "score": 0.8345,
+        "text": ". 156 8.2. Pipeline Creation Feedback..............................................................."
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "3ce249ad487299808540397f",
+        "score": 0.0284,
+        "text": "CUDA C++ Programming Guide, Release 13.3 Note that the maximum amount of shared memory per thread block is smaller than the maximum shared memory part"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "2f30edbe2de5b983a611eeca",
+        "score": 0.0271,
+        "text": "CUDA C++ Best Practices Guide, Release 13.3 Figure 15: Using the CUDA Occupancy Calculator to projec"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "a8c35fe2813fdaec5c5356ab",
+        "score": 0.0265,
+        "text": "GPU Metrics www.nvidia.com User Guide v2023.3.1 | 204 Note: The percentage will always be very low a"
+      }
+    ]
+  },
+  {
+    "case": "case2_dense_semantic_superiority",
+    "query_id": "Q5",
+    "query": "how to make GPU programs run faster",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "970b7cb8843ba5bf598058ac",
+        "score": 14.3866,
+        "text": ". \u25b6 The GPU is considered active when it is running any kernel, even if that kernel does not make use of managed data. If a kernel might use data, the"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "e0d64832cd47434e0a7e4a3f",
+        "score": 13.8827,
+        "text": "CUDA C++ Programming Guide, Release 13.3 24.3.2. Unified memory on Windows or devices with compute c"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "490bb9d312a2fb7e58e6591f",
+        "score": 13.5386,
+        "text": "Chapter 3. Introduction Warning: This document has been replaced by a new CUDA Programming Guide . T"
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "8fa1dd72a196776ecf605993",
+        "score": 0.859,
+        "text": ". The following documents are especially important resources: \u25b6 CUDA Installation Guide \u25b6 CUDA C++ Programming Guide \u25b6 CUDA Toolkit Reference Manual I"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "8f2dbd94357e8ac31b8a595c",
+        "score": 0.8567,
+        "text": "[CUDA C++ Programming Guide, Release 13.3] CUDA C++ Programming Guide, Release 13.3 25.5.3. Autotuni"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "035938c9ed87d662f19d97bb",
+        "score": 0.8534,
+        "text": ". \u25b6 Preemption. The GPU scheduler can start executing a higher-priority kernel , even if it is launc"
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "490bb9d312a2fb7e58e6591f",
+        "score": 0.0315,
+        "text": "Chapter 3. Introduction Warning: This document has been replaced by a new CUDA Programming Guide . The information in this document should be consider"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "877ff33f7c2010c9d7b8f97b",
+        "score": 0.0305,
+        "text": ". You may alter the given recipes or write your own to meet your needs. Refer to Tutorial: Create a "
+      },
+      {
+        "rank": 3,
+        "chunk_id": "2f3be97a48ce2563233a8c64",
+        "score": 0.024,
+        "text": "[www.nvidia.com] www.nvidia.com User Guide v2023.3.1 | 192 Chapter 15. OPENGL TRACE OpenGL and OpenG"
+      }
+    ]
+  },
+  {
+    "case": "case2_dense_semantic_superiority",
+    "query_id": "Q6",
+    "query": "problems with threads executing different code paths",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "3805d3ce01d885478a2e78c0",
+        "score": 18.1799,
+        "text": "CUDA C++ Programming Guide, Release 13.3 A warp executes one common instruction at a time, so full efficiency is realized when all 32 threads of a war"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3c9b5ecfb38e9ee9377cf4f6",
+        "score": 17.7732,
+        "text": "Chapter 13. Control Flow 13.1. Branching and Divergence Note: High Priority: Avoid different executi"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "d5d95f331693d71be9203a84",
+        "score": 13.422,
+        "text": "CUDA C++ Best Practices Guide, Release 13.3 Table 5 \u2013 continued from previous page Compute Capabil- "
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "3c9b5ecfb38e9ee9377cf4f6",
+        "score": 0.8453,
+        "text": "Chapter 13. Control Flow 13.1. Branching and Divergence Note: High Priority: Avoid different execution paths within the same warp. Flow control instru"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "a49007ac82fa3038e67a392f",
+        "score": 0.8343,
+        "text": ". Threads Threads on a CPU are generally heavyweight entities. The operating system must swap thread"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "47cdfe34d2c4b0e837858ef0",
+        "score": 0.8321,
+        "text": ". For example if multiple threads within a block are each launching work and synchronization is desi"
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "3c9b5ecfb38e9ee9377cf4f6",
+        "score": 0.0325,
+        "text": "Chapter 13. Control Flow 13.1. Branching and Divergence Note: High Priority: Avoid different execution paths within the same warp. Flow control instru"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3e21f636c1f80ac2500aee2a",
+        "score": 0.0305,
+        "text": ". Independent Thread Scheduling can lead to a rather different set of threads participating in the e"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "a49007ac82fa3038e67a392f",
+        "score": 0.0291,
+        "text": ". Threads Threads on a CPU are generally heavyweight entities. The operating system must swap thread"
+      }
+    ]
+  },
+  {
+    "case": "case3_rrf_hybrid_superiority",
+    "query_id": "Q7",
+    "query": "CUDA thread synchronization performance overhead",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "494b88549e8af5043ac119c8",
+        "score": 19.3752,
+        "text": "CUDA C++ Programming Guide, Release 13.3 (continued from previous page) if (cudaSuccess != cudaDeviceSynchronize()) { return 2 ; } return 0 ; } This p"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "ccd7708bb87a3ea7259deb4c",
+        "score": 15.7008,
+        "text": ". Atomic memory operations provide inter-thread synchronization guar- antees and deliver much better"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "330acac2ad5d9a1c0811c6c1",
+        "score": 13.5108,
+        "text": "Modules CUDA Runtime API v13.3.1 Version | 42 profile of the platform and may choose cudaDeviceSched"
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "6bf184553531cd05f6e9abf5",
+        "score": 0.8769,
+        "text": "CUDA C++ Best Practices Guide, Release 13.3 (continued from previous page) atomicAdd( reinterpret_cast < unsigned long long *> (clock), clock_end - cl"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "c250c2f1083afba5f9a7430f",
+        "score": 0.8734,
+        "text": "CUDA C++ Best Practices Guide, Release 13.3 (continued from previous page) for ( int i = 0 ; i < TIL"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "a8b2f5f66bf68a2456232ade",
+        "score": 0.8718,
+        "text": ". CUDA: CUDA will only report synchronous queue in the case of MPS configured with 64 sub-context. S"
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "ccd7708bb87a3ea7259deb4c",
+        "score": 0.0313,
+        "text": ". Atomic memory operations provide inter-thread synchronization guar- antees and deliver much better performance than volatile operations. CUDA C++ vo"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "494b88549e8af5043ac119c8",
+        "score": 0.0311,
+        "text": "CUDA C++ Programming Guide, Release 13.3 (continued from previous page) if (cudaSuccess != cudaDevic"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "330acac2ad5d9a1c0811c6c1",
+        "score": 0.0292,
+        "text": "Modules CUDA Runtime API v13.3.1 Version | 42 profile of the platform and may choose cudaDeviceSched"
+      }
+    ]
+  },
+  {
+    "case": "case3_rrf_hybrid_superiority",
+    "query_id": "Q8",
+    "query": "shared memory bank conflicts and how to avoid them",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "fd5aa3318c4def606709ac98",
+        "score": 33.4207,
+        "text": "CUDA C++ Programming Guide, Release 13.3 10.29.3. TMA Swizzle By default, the TMA engine loads data to shared memory in the same order as it is laid o"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "1fabb00b8793f603b648e7d1",
+        "score": 29.1927,
+        "text": ". To minimize bank conflicts, it is important to understand how memory addresses map to memory banks"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "4e0a7be7279a20f0a57b1d18",
+        "score": 27.9313,
+        "text": ". Changing the shared memory bank size will not increase shared memory usage or affect occupancy of "
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "1fabb00b8793f603b648e7d1",
+        "score": 0.8726,
+        "text": ". To minimize bank conflicts, it is important to understand how memory addresses map to memory banks and how to optimally schedule memory requests. On"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "f6f2063c3d7aac6f24143411",
+        "score": 0.8611,
+        "text": ". However, bank conflicts occur when copying the tile from global memory into shared memory. To enab"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "4e0a7be7279a20f0a57b1d18",
+        "score": 0.8523,
+        "text": ". Changing the shared memory bank size will not increase shared memory usage or affect occupancy of "
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "1fabb00b8793f603b648e7d1",
+        "score": 0.0325,
+        "text": ". To minimize bank conflicts, it is important to understand how memory addresses map to memory banks and how to optimally schedule memory requests. On"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "f6f2063c3d7aac6f24143411",
+        "score": 0.0318,
+        "text": ". However, bank conflicts occur when copying the tile from global memory into shared memory. To enab"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "4e0a7be7279a20f0a57b1d18",
+        "score": 0.0317,
+        "text": ". Changing the shared memory bank size will not increase shared memory usage or affect occupancy of "
+      }
+    ]
+  },
+  {
+    "case": "case3_rrf_hybrid_superiority",
+    "query_id": "Q9",
+    "query": "memory coalescing rules for global memory access patterns",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "3c8573a7f22cd37a771b4816",
+        "score": 24.5972,
+        "text": ". 10.2.1. Coalesced Access to Global Memory A very important performance consideration in programming for CUDA-capable GPU architectures is the coales"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "879c3af23305670d45961cc9",
+        "score": 22.2718,
+        "text": ". Size and Alignment Requirement Global memory instructions support reading or writing words of size"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "b5ca753b8b44006b10045187",
+        "score": 21.5205,
+        "text": "[CUDA C++ Best Practices Guide, Release 13.3] CUDA C++ Best Practices Guide, Release 13.3 provides f"
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "3c8573a7f22cd37a771b4816",
+        "score": 0.8784,
+        "text": ". 10.2.1. Coalesced Access to Global Memory A very important performance consideration in programming for CUDA-capable GPU architectures is the coales"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "4949c564d4bf9dc335b73b66",
+        "score": 0.8616,
+        "text": ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 34 10.2.1 Coalesced "
+      },
+      {
+        "rank": 3,
+        "chunk_id": "1c016f02b97914c0f619758a",
+        "score": 0.8574,
+        "text": ". Not all threads need to participate. For example, if the threads of a warp access adjacent 4-byte "
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "3c8573a7f22cd37a771b4816",
+        "score": 0.0328,
+        "text": ". 10.2.1. Coalesced Access to Global Memory A very important performance consideration in programming for CUDA-capable GPU architectures is the coales"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "b5ca753b8b44006b10045187",
+        "score": 0.0315,
+        "text": "[CUDA C++ Best Practices Guide, Release 13.3] CUDA C++ Best Practices Guide, Release 13.3 provides f"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "48ba7e1f690b446f51401f82",
+        "score": 0.031,
+        "text": ". For example, if a 32-byte memory transaction is generated for each thread\u2019s 4-byte access, through"
+      }
+    ]
+  },
+  {
+    "case": "case4_bm25_failure_dense_advantage",
+    "query_id": "Q10",
+    "query": "latency hiding through instruction level parallelism",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "7d9f59453468bb65c6a213f7",
+        "score": 23.9643,
+        "text": ". 8.2.2. Device Level At a lower level, the application should maximize parallel execution between the multiprocessors of a device. Multiple kernels c"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "92dfc0076c0abb2e020a377a",
+        "score": 21.3091,
+        "text": "CUDA C++ Programming Guide, Release 13.3 The most common reason a warp is not ready to execute its n"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "23082588ef4a1e16d4f49262",
+        "score": 16.5551,
+        "text": ". Alternatively, NVIDIA provides an occupancy calculator as part of Nsight Compute; refer to https:/"
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "f2730f1e6b30f8901b027a33",
+        "score": 0.8495,
+        "text": ". The number of instructions required to hide a latency of L clock cycles depends on the respective throughputs of these instructions (see the CUDA C+"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "7d9f59453468bb65c6a213f7",
+        "score": 0.8449,
+        "text": ". 8.2.2. Device Level At a lower level, the application should maximize parallel execution between t"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "31e19331c0ba6e801c17ffbd",
+        "score": 0.8372,
+        "text": ". See Math Libraries . 12.2. Memory Instructions Note: High Priority: Minimize the use of global mem"
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "7d9f59453468bb65c6a213f7",
+        "score": 0.0325,
+        "text": ". 8.2.2. Device Level At a lower level, the application should maximize parallel execution between the multiprocessors of a device. Multiple kernels c"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "92dfc0076c0abb2e020a377a",
+        "score": 0.0318,
+        "text": "CUDA C++ Programming Guide, Release 13.3 The most common reason a warp is not ready to execute its n"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "31e19331c0ba6e801c17ffbd",
+        "score": 0.0304,
+        "text": ". See Math Libraries . 12.2. Memory Instructions Note: High Priority: Minimize the use of global mem"
+      }
+    ]
+  },
+  {
+    "case": "case4_bm25_failure_dense_advantage",
+    "query_id": "Q11",
+    "query": "occupancy versus performance tradeoffs",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "35dfc6787549aaeda1677954",
+        "score": 17.5149,
+        "text": ". This func- tion reports occupancy in terms of number of max active clusters of a given size on the GPU present in the system. The following code sam"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "60395666bbc850515b069b6a",
+        "score": 12.6777,
+        "text": ". This metric is occupancy . Occupancy is the ratio of the number of active warps per multiprocessor"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "db1c0602ae6cd49714f13a1b",
+        "score": 12.3537,
+        "text": "CUDA C++ Best Practices Guide, Release 13.3 When choosing the block size, it is important to remembe"
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "0a880bdf76e6612e502eb50a",
+        "score": 0.842,
+        "text": "Chapter 11. Execution Configuration Optimizations One of the keys to good performance is to keep the multiprocessors on the device as busy as pos- sib"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "9d1f3a9e03910a455b745bd9",
+        "score": 0.8379,
+        "text": ". This is because some operations common to each element can be performed by the thread once, amorti"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "60395666bbc850515b069b6a",
+        "score": 0.833,
+        "text": ". This metric is occupancy . Occupancy is the ratio of the number of active warps per multiprocessor"
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "60395666bbc850515b069b6a",
+        "score": 0.032,
+        "text": ". This metric is occupancy . Occupancy is the ratio of the number of active warps per multiprocessor to the maximum number of possible active warps. ("
+      },
+      {
+        "rank": 2,
+        "chunk_id": "9d1f3a9e03910a455b745bd9",
+        "score": 0.0318,
+        "text": ". This is because some operations common to each element can be performed by the thread once, amorti"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "35dfc6787549aaeda1677954",
+        "score": 0.0315,
+        "text": ". This func- tion reports occupancy in terms of number of max active clusters of a given size on the"
+      }
+    ]
+  },
+  {
+    "case": "case5_dense_failure_bm25_advantage",
+    "query_id": "Q12",
+    "query": "cudaDeviceSynchronize return value",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "b17f44303767ddd72f90478c",
+        "score": 11.3447,
+        "text": ". But a pointer to these variables may be passed to the kernel as an argument, see System-Allocated Memory: in-depth examples for examples. System All"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "68ddca9d56fab485176fd1a6",
+        "score": 10.8775,
+        "text": "= v; } int main() { int * ptr = nullptr; \u2215\u2215Requires CUDA Managed Memory support cudaMallocManaged( &"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "eec8e219714ffc0d6b2d879d",
+        "score": 9.7906,
+        "text": "[CUDA C++ Programming Guide, Release 13.3] CUDA C++ Programming Guide, Release 13.3 10.22.3.2 Inclus"
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "02bb6a205ba73aa9763b937c",
+        "score": 0.9016,
+        "text": ". cudaDeviceSynchronize() returns an error if one of the preceding tasks has failed. If the cudaDeviceScheduleBlockingSync flag was set for this devic"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "871a5345d057731d362cc52f",
+        "score": 0.895,
+        "text": ". The recapture will be ended regardless of the return value from the callback. enum cudaHostTaskSyn"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "19cfdd35ecf248568ad11b7e",
+        "score": 0.8902,
+        "text": ". Users requiring synchronization of the callback should signal its completion manually. Returns cud"
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "7168ba67e35c613f13986864",
+        "score": 0.0297,
+        "text": "Modules CUDA Runtime API v13.3.1 Version | 30 Note: \u2023 Use of cudaDeviceSynchronize in device code was deprecated in CUDA 11.6 and removed for compute_"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "02bb6a205ba73aa9763b937c",
+        "score": 0.0284,
+        "text": ". cudaDeviceSynchronize() returns an error if one of the preceding tasks has failed. If the cudaDevi"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "871a5345d057731d362cc52f",
+        "score": 0.0239,
+        "text": ". The recapture will be ended regardless of the return value from the callback. enum cudaHostTaskSyn"
+      }
+    ]
+  },
+  {
+    "case": "case5_dense_failure_bm25_advantage",
+    "query_id": "Q13",
+    "query": "dim3 struct constructor syntax",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "a612172bf233e826b41e390c",
+        "score": 11.9181,
+        "text": "[dim3 cudaKernelNodeParams::blockDim] Data Structures CUDA Runtime API v13.3.1 Version | 642 dim3 cudaKernelNodeParams::blockDim Block dimensions **cu"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "8e43b6ce3eb3a4963dd89177",
+        "score": 11.3407,
+        "text": "[7.45.] Data Structures CUDA Runtime API v13.3.1 Version | 647 7.45. cudaLaunchConfig_t Struct Refer"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "937197655a4d6c1d0eec89b1",
+        "score": 10.5689,
+        "text": "CUDA Math API Reference Manual, Release 13.3 Public Functions __nv_bfloat162 () = default Constructo"
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "71f15d77ee7e7fd41fe5c38b",
+        "score": 0.8448,
+        "text": ". Render(); ... } ... } void Render () { \u2215\u2215Map vertex buffer for writing from CUDA float4 * positions; cudaGraphicsMapResources( 1 , & positionsVB_CUD"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "1153e0ef4bddae35412cf882",
+        "score": 0.8414,
+        "text": "[CUDA C++ Programming Guide, Release 13.3] CUDA C++ Programming Guide, Release 13.3 Table 7 \u2013 contin"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "a612172bf233e826b41e390c",
+        "score": 0.8384,
+        "text": "[dim3 cudaKernelNodeParams::blockDim] Data Structures CUDA Runtime API v13.3.1 Version | 642 dim3 cu"
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "a612172bf233e826b41e390c",
+        "score": 0.0323,
+        "text": "[dim3 cudaKernelNodeParams::blockDim] Data Structures CUDA Runtime API v13.3.1 Version | 642 dim3 cudaKernelNodeParams::blockDim Block dimensions **cu"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "1a57340e150f673ed49708b8",
+        "score": 0.0284,
+        "text": "CUDA Math API Reference Manual, Release 13.3 Public Functions __host__ __device__ inline __nv_fp6x2_"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "1153e0ef4bddae35412cf882",
+        "score": 0.0283,
+        "text": "[CUDA C++ Programming Guide, Release 13.3] CUDA C++ Programming Guide, Release 13.3 Table 7 \u2013 contin"
+      }
+    ]
+  },
+  {
+    "case": "case6_rrf_hybrid_advantage_mixed",
+    "query_id": "Q14",
+    "query": "pinned memory cudaMallocHost benefits and when to use",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "5e38563157daf351863b54ec",
+        "score": 16.3789,
+        "text": "CUDA C++ Best Practices Guide, Release 13.3 10.1.1. Pinned Memory Page-locked or pinned memory transfers attain the highest bandwidth between the host"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "c5e455611ebb6ce32643ce9b",
+        "score": 16.0434,
+        "text": "[Memset] API synchronization behavior CUDA Runtime API v13.3.1 Version | 4 3. If pageable memory mus"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "225d92e73b17bac1e3e77c25",
+        "score": 15.6613,
+        "text": ". \u2215\u2215Distributed shared memory size = cluster_size * nbins_per_block * sizeof(int) config.dynamicSmem"
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "5e38563157daf351863b54ec",
+        "score": 0.872,
+        "text": "CUDA C++ Best Practices Guide, Release 13.3 10.1.1. Pinned Memory Page-locked or pinned memory transfers attain the highest bandwidth between the host"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "f10fc7d79f0ccbd80bd07a4c",
+        "score": 0.8696,
+        "text": ". The driver tracks the virtual memory ranges allocated with this function and automatically acceler"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "c9c4861fcb43957253ce9cc5",
+        "score": 0.8683,
+        "text": "Modules CUDA Runtime API v13.3.1 Version | 132 __host__cudaError_t cudaHostAlloc (void **pHost, size"
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "5e38563157daf351863b54ec",
+        "score": 0.0328,
+        "text": "CUDA C++ Best Practices Guide, Release 13.3 10.1.1. Pinned Memory Page-locked or pinned memory transfers attain the highest bandwidth between the host"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "225d92e73b17bac1e3e77c25",
+        "score": 0.0315,
+        "text": ". \u2215\u2215Distributed shared memory size = cluster_size * nbins_per_block * sizeof(int) config.dynamicSmem"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "c9c4861fcb43957253ce9cc5",
+        "score": 0.0313,
+        "text": "Modules CUDA Runtime API v13.3.1 Version | 132 __host__cudaError_t cudaHostAlloc (void **pHost, size"
+      }
+    ]
+  },
+  {
+    "case": "case6_rrf_hybrid_advantage_mixed",
+    "query_id": "Q15",
+    "query": "register pressure and its effect on occupancy",
+    "method_a_bm25": [
+      {
+        "rank": 1,
+        "chunk_id": "a6910bcc059caad0d70e2b8b",
+        "score": 20.5772,
+        "text": ". . . . . . . . . . . . 49 10.2.4 Local Memory . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 51 10.2.5 Textu"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "84905b60e266d84cd0ca1879",
+        "score": 20.5684,
+        "text": "CUDA C++ Best Practices Guide, Release 13.3 11.1.1. Calculating Occupancy One of several factors tha"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "a1f985eaed4eb1f19e46d20a",
+        "score": 16.1336,
+        "text": ". However, this approach of determining how register count affects occupancy does not take into acco"
+      }
+    ],
+    "method_b_dense": [
+      {
+        "rank": 1,
+        "chunk_id": "a1f985eaed4eb1f19e46d20a",
+        "score": 0.8245,
+        "text": ". However, this approach of determining how register count affects occupancy does not take into account the register allocation granularity. For examp"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "23082588ef4a1e16d4f49262",
+        "score": 0.8225,
+        "text": ". Alternatively, NVIDIA provides an occupancy calculator as part of Nsight Compute; refer to https:/"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "84905b60e266d84cd0ca1879",
+        "score": 0.8207,
+        "text": "CUDA C++ Best Practices Guide, Release 13.3 11.1.1. Calculating Occupancy One of several factors tha"
+      }
+    ],
+    "method_c_rrf": [
+      {
+        "rank": 1,
+        "chunk_id": "a1f985eaed4eb1f19e46d20a",
+        "score": 0.0323,
+        "text": ". However, this approach of determining how register count affects occupancy does not take into account the register allocation granularity. For examp"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "a6910bcc059caad0d70e2b8b",
+        "score": 0.032,
+        "text": ". . . . . . . . . . . . 49 10.2.4 Local Memory . . . . . . . . . . . . . . . . . . . . . . . . . . ."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "84905b60e266d84cd0ca1879",
+        "score": 0.032,
+        "text": "CUDA C++ Best Practices Guide, Release 13.3 11.1.1. Calculating Occupancy One of several factors tha"
+      }
+    ]
+  }
+]
