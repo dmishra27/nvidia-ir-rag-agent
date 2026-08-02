@@ -61,6 +61,19 @@ class CoverageLog(Base):
     checked_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class RequestLog(Base):
+    __tablename__ = "request_log"
+
+    request_id = Column(String, primary_key=True)
+    query_id = Column(String)
+    endpoint = Column(Text)
+    reranker_config = Column(Text)
+    stage = Column(Text)
+    duration_ms = Column(Float)
+    status_code = Column(Integer)
+    created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 def get_engine(url: str | None = None):
     db_url = url or os.environ["POSTGRES_URL"]
     return create_engine(db_url, pool_pre_ping=True)

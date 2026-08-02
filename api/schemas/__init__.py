@@ -1,0 +1,61 @@
+"""Pydantic v2 request/response schemas for api/routers/*."""
+
+from __future__ import annotations
+
+from pydantic import BaseModel, Field
+
+from retrieval.candidates import Candidate
+
+
+class CandidateOut(BaseModel):
+    chunk_id: str
+    text: str
+    score: float
+    rank: int
+
+    @classmethod
+    def from_candidate(cls, candidate: Candidate) -> "CandidateOut":
+        return cls(
+            chunk_id=candidate.chunk_id,
+            text=candidate.text,
+            score=candidate.score,
+            rank=candidate.rank,
+        )
+
+
+class SearchRequest(BaseModel):
+    query: str
+    top_k: int = 10
+    candidate_pool_size: int = 100
+
+
+class SearchResponse(BaseModel):
+    query_id: str
+    query: str
+    reranker_mode: str | None = None
+    results: list[CandidateOut]
+
+
+class AskRequest(BaseModel):
+    query: str
+    top_k: int = 10
+    candidate_pool_size: int = 100
+
+
+class CitationOut(BaseModel):
+    claim: str
+    chunk_ids: list[str] = Field(default_factory=list)
+
+
+class AskResponse(BaseModel):
+    query_id: str
+    query: str
+    reranker_mode: str | None = None
+    answer: str | None = None
+    citations: list[CitationOut] = Field(default_factory=list)
+    error: str | None = None
+
+
+class HealthResponse(BaseModel):
+    status: str
+    service: str
