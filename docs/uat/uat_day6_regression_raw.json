@@ -1,0 +1,22 @@
+[
+  {
+    "query_id": "Q1",
+    "case": "case1_bm25_lexical_superiority",
+    "query": "CUDA cudaMalloc function parameters",
+    "rrf_pool_size": 3,
+    "rank1_chunk_id": "81b9c458ed8d5bbf219819b8",
+    "rank1_score": -1.3747854232788086,
+    "rank1_text": ". \u2023 Note that as specified by cudaStreamAddCallback no CUDA function may be called from callback. cudaErrorNotPermitted may, but is not guaranteed to,",
+    "rrf_rank1_chunk_id": "81b9c458ed8d5bbf219819b8"
+  },
+  {
+    "query_id": "Q12",
+    "case": "case5_dense_failure_bm25_advantage",
+    "query": "cudaDeviceSynchronize return value",
+    "rrf_pool_size": 3,
+    "rank1_chunk_id": "02bb6a205ba73aa9763b937c",
+    "rank1_score": 6.277383327484131,
+    "rank1_text": ". cudaDeviceSynchronize() returns an error if one of the preceding tasks has failed. If the cudaDevi",
+    "rrf_rank1_chunk_id": "7168ba67e35c613f13986864"
+  }
+]
