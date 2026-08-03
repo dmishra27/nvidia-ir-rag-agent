@@ -19,6 +19,7 @@ LLM calls in tests.
 
 from __future__ import annotations
 
+import json
 import uuid
 from typing import Any, Callable
 
@@ -169,8 +170,38 @@ def make_generate_node(model: str = MODEL) -> Callable[[QAState], QAState]:
         if tool_block is None:
             return state.model_copy(update={"error": "No structured answer produced by model."})
 
+        raw_citations = tool_block.input.get("citations", [])
+        if isinstance(raw_citations, str):
+            # Observed live on Day 9 (query Q10): Claude occasionally returns
+            # the whole `citations` value as a stringified JSON blob rather
+            # than a native array, despite the forced tool schema. Recover it
+            # if it parses to a list; iterating the raw string would silently
+            # walk individual characters instead of citation objects.
+            try:
+                parsed = json.loads(raw_citations)
+            except json.JSONDecodeError:
+                parsed = None
+            if isinstance(parsed, list):
+                log.warning(
+                    "generate_citations_stringified_recovered",
+                    query_id=state.query_id,
+                    stage="generate",
+                    num_recovered=len(parsed),
+                )
+                raw_citations = parsed
+            else:
+                log.warning(
+                    "generate_citations_stringified_unparseable",
+                    query_id=state.query_id,
+                    stage="generate",
+                    raw=raw_citations[:200],
+                )
+                raw_citations = []
+        elif not isinstance(raw_citations, list):
+            raw_citations = []
+
         citations: list[Citation] = []
-        for c in tool_block.input.get("citations", []):
+        for c in raw_citations:
             if not isinstance(c, dict) or "claim" not in c:
                 log.warning(
                     "generate_malformed_citation_skipped",

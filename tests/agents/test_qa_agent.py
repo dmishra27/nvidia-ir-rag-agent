@@ -8,6 +8,7 @@ index, Qdrant connection, cross-encoder, or live API call.
 
 from __future__ import annotations
 
+import json
 from unittest.mock import MagicMock, patch
 
 from agents.qa_agent import (
@@ -269,6 +270,37 @@ class TestGenerateNode:
 
         assert result.answer == "answer text"
         assert result.citations == [Citation(claim="a well-formed claim", chunk_ids=["r1"])]
+        assert result.error is None
+
+    def test_recovers_citations_sent_as_a_stringified_json_array(self) -> None:
+        # Live-observed on Day 9 (query Q10): the whole `citations` value
+        # sometimes arrives as a JSON *string* rather than a native array.
+        # Iterating a raw string used to walk individual characters; this
+        # must instead parse and recover the real citation objects.
+        node = make_generate_node()
+        state = QAState(query="q", reranked_results=[_c("r1", 1)])
+        stringified = json.dumps([{"claim": "a claim", "chunk_ids": ["r1"]}])
+        mock_resp = _tool_response("answer text", stringified)
+
+        with patch("agents.qa_agent.anthropic.Anthropic") as MockClient:
+            MockClient.return_value.messages.create.return_value = mock_resp
+            result = node(state)
+
+        assert result.answer == "answer text"
+        assert result.citations == [Citation(claim="a claim", chunk_ids=["r1"])]
+        assert result.error is None
+
+    def test_unparseable_stringified_citations_falls_back_to_empty_without_crashing(self) -> None:
+        node = make_generate_node()
+        state = QAState(query="q", reranked_results=[_c("r1", 1)])
+        mock_resp = _tool_response("answer text", "not valid json at all {{{")
+
+        with patch("agents.qa_agent.anthropic.Anthropic") as MockClient:
+            MockClient.return_value.messages.create.return_value = mock_resp
+            result = node(state)
+
+        assert result.answer == "answer text"
+        assert result.citations == []
         assert result.error is None
 
     def test_forces_answer_with_citations_tool_choice(self) -> None:
