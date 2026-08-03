@@ -74,6 +74,52 @@ class RequestLog(Base):
     created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class QueryLog(Base):
+    __tablename__ = "query_log"
+
+    query_id = Column(String, primary_key=True)
+    session_id = Column(String)
+    query_text = Column(Text, nullable=False)
+    reranker_config = Column(Text)
+    num_candidates = Column(Integer)
+    source = Column(Text)
+    created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class EvalResults(Base):
+    __tablename__ = "eval_results"
+
+    eval_id = Column(String, primary_key=True)
+    query_id = Column(String, ForeignKey("query_log.query_id"))
+    faithfulness = Column(Float)
+    answer_relevancy = Column(Float)
+    context_precision = Column(Float)
+    citation_accuracy = Column(Float)
+    hallucination_rate = Column(Float)
+    ndcg_at_10 = Column(Float)
+    mrr = Column(Float)
+    evaluated_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class BenchmarkResults(Base):
+    __tablename__ = "benchmark_results"
+
+    result_id = Column(String, primary_key=True)
+    run_id = Column(String)
+    config = Column(Text, nullable=False)
+    query_id = Column(String)
+    ndcg_at_10 = Column(Float)
+    mrr = Column(Float)
+    prec_at_3 = Column(Float)
+    prec_at_5 = Column(Float)
+    prec_at_10 = Column(Float)
+    faithfulness = Column(Float)
+    citation_accuracy = Column(Float)
+    latency_ms = Column(Float)
+    cost_usd = Column(Float, default=0.0)
+    created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 def get_engine(url: str | None = None):
     db_url = url or os.environ["POSTGRES_URL"]
     return create_engine(db_url, pool_pre_ping=True)

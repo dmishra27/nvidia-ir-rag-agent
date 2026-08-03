@@ -27,6 +27,7 @@ from pydantic import BaseModel, Field
 from retrieval.bm25_index import BM25Index
 from retrieval.candidates import Candidate
 from retrieval.dense_index import DenseIndex
+from retrieval.reranker_cohere import CohereReranker
 from retrieval.reranker_msmarco import MSMarcoReranker
 from retrieval.reranker_router import RerankerRouter
 from retrieval.rrf_fusion import fuse
@@ -110,11 +111,14 @@ def build_graph(bm25_index: BM25Index, dense_index: DenseIndex, router: Reranker
 
 
 def build_default_router(mode: str | None = None) -> RerankerRouter:
-    """Wire live_fast to a freshly loaded ms-marco cross-encoder; other tiers
-    (live_quality, live_frontier, benchmark) degrade or raise until Layer 3b's
-    remaining re-rankers are built."""
+    """Wire live_fast to a freshly loaded ms-marco cross-encoder and
+    live_frontier to Cohere Rerank v3 (requires COHERE_API_KEY). live_quality
+    (bge-reranker-v2-m3) and benchmark degrade or raise until that tier is
+    built — bge is hardware-blocked (OOM at model load) on this machine, per
+    Day 8's evaluation/benchmark_runner.py."""
     msmarco = MSMarcoReranker.load()
-    return RerankerRouter(live_fast=msmarco.rerank, mode=mode)
+    cohere_reranker = CohereReranker.load()
+    return RerankerRouter(live_fast=msmarco.rerank, live_frontier=cohere_reranker.rerank, mode=mode)
 
 
 def run(
