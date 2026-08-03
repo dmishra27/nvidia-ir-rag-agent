@@ -249,6 +249,28 @@ class TestGenerateNode:
             )
         ]
 
+    def test_skips_malformed_citation_entries_instead_of_crashing(self) -> None:
+        # Live-observed on Day 9: Claude occasionally returns a citations list
+        # item as a bare string rather than {claim, chunk_ids}, despite the
+        # forced tool_choice schema. This must degrade gracefully, not crash.
+        node = make_generate_node()
+        state = QAState(query="q", reranked_results=[_c("r1", 1), _c("r2", 2)])
+        mock_resp = _tool_response(
+            "answer text",
+            [
+                {"claim": "a well-formed claim", "chunk_ids": ["r1"]},
+                "a malformed bare-string citation",
+            ],
+        )
+
+        with patch("agents.qa_agent.anthropic.Anthropic") as MockClient:
+            MockClient.return_value.messages.create.return_value = mock_resp
+            result = node(state)
+
+        assert result.answer == "answer text"
+        assert result.citations == [Citation(claim="a well-formed claim", chunk_ids=["r1"])]
+        assert result.error is None
+
     def test_forces_answer_with_citations_tool_choice(self) -> None:
         node = make_generate_node()
         state = QAState(query="q", reranked_results=[_c("r1", 1)])

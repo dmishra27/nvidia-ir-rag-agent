@@ -169,10 +169,18 @@ def make_generate_node(model: str = MODEL) -> Callable[[QAState], QAState]:
         if tool_block is None:
             return state.model_copy(update={"error": "No structured answer produced by model."})
 
-        citations = [
-            Citation(claim=c["claim"], chunk_ids=list(c.get("chunk_ids", [])))
-            for c in tool_block.input.get("citations", [])
-        ]
+        citations: list[Citation] = []
+        for c in tool_block.input.get("citations", []):
+            if not isinstance(c, dict) or "claim" not in c:
+                log.warning(
+                    "generate_malformed_citation_skipped",
+                    query_id=state.query_id,
+                    stage="generate",
+                    citation=repr(c)[:200],
+                )
+                continue
+            citations.append(Citation(claim=c["claim"], chunk_ids=list(c.get("chunk_ids", []))))
+
         return state.model_copy(
             update={"answer": tool_block.input.get("answer", ""), "citations": citations}
         )

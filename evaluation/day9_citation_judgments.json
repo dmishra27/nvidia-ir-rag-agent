@@ -1,0 +1,191 @@
+[
+  {
+    "query_id": "Q1",
+    "claim": "One passage discusses that no CUDA function may be called from a callback registered with cudaStreamAddCallback, and that cudaErrorNotPermitted may (but is not guaranteed to) be returned.",
+    "chunk_id": "81b9c458ed8d5bbf219819b8",
+    "supported": true,
+    "rationale": "The chunk explicitly states that no CUDA function may be called from callback per cudaStreamAddCallback, and that cudaErrorNotPermitted may, but is not guaranteed to, be returned, matching the claim verbatim."
+  },
+  {
+    "query_id": "Q1",
+    "claim": "Another passage references the cudaHostFn_t cudaHostNodeParams::fn data structure member from the CUDA Runtime API documentation, which is unrelated to cudaMalloc.",
+    "chunk_id": "b390a0086cd2ebb9237c24b4",
+    "supported": true,
+    "rationale": "The chunk explicitly contains the header \"cudaHostFn_t cudaHostNodeParams::fn\" from the CUDA Runtime API documentation, matching the claim, and makes no mention of cudaMalloc, supporting the claim's assertion of unrelated content."
+  },
+  {
+    "query_id": "Q1",
+    "claim": "A third passage notes that a function may return error codes from previous, asynchronous launches, but does not specify which function or relate to cudaMalloc.",
+    "chunk_id": "a1db062e97d26a49ab333961",
+    "supported": true,
+    "rationale": "The chunk contains the exact note about a function returning error codes from previous asynchronous launches, without specifying which function or referencing cudaMalloc, matching the claim."
+  },
+  {
+    "query_id": "Q1",
+    "claim": "None of the passages describe the parameters of cudaMalloc, so the question cannot be answered from the given information.",
+    "chunk_id": "81b9c458ed8d5bbf219819b8",
+    "supported": false,
+    "rationale": "The chunk is about cudaStreamAddCallback and callback restrictions, not about cudaMalloc parameters, so it does not substantiate the claim about the absence of cudaMalloc parameter descriptions."
+  },
+  {
+    "query_id": "Q1",
+    "claim": "None of the passages describe the parameters of cudaMalloc, so the question cannot be answered from the given information.",
+    "chunk_id": "b390a0086cd2ebb9237c24b4",
+    "supported": false,
+    "rationale": "The chunk is about cudaHostNodeParams::fn, not cudaMalloc, so it does not substantiate a claim specifically about the absence of cudaMalloc parameter descriptions across passages."
+  },
+  {
+    "query_id": "Q1",
+    "claim": "None of the passages describe the parameters of cudaMalloc, so the question cannot be answered from the given information.",
+    "chunk_id": "a1db062e97d26a49ab333961",
+    "supported": false,
+    "rationale": "The chunk is a brief note about error codes from asynchronous launches and does not mention cudaMalloc parameters at all, so it cannot substantiate a claim about what other passages do or do not describe regarding cudaMalloc."
+  },
+  {
+    "query_id": "Q2",
+    "claim": "cudaMemcpyAsync() is a non-blocking variant of cudaMemcpy() in which control is returned to the calling thread before the copy completes.",
+    "chunk_id": "242e353090d3f493c8ef64dc",
+    "supported": true,
+    "rationale": "The chunk directly states that cudaMemcpyAsync() is a non-blocking variant of cudaMemcpy() where control is returned before the copy completes, matching the claim verbatim."
+  },
+  {
+    "query_id": "Q2",
+    "claim": "cudaMemcpyAsync is referenced alongside cudaMemcpy, cudaMemcpy2D, cudaMemcpy2DFromArray, cudaMemcpy2DArrayToArray, cudaMemcpyToSymbol, and cudaMemcpyFromSymbol in related documentation sections.",
+    "chunk_id": "f9f67e7b94c193a8782f538e",
+    "supported": true,
+    "rationale": "The chunk lists cudaMemcpyAsync together with cudaMemcpy, cudaMemcpy2D, cudaMemcpy2DFromArray, cudaMemcpy2DArrayToArray, cudaMemcpyToSymbol, and cudaMemcpyFromSymbol in a 'See also' section, directly matching the claim."
+  },
+  {
+    "query_id": "Q2",
+    "claim": "Another passage similarly lists cudaMemcpy, cudaMemcpy2D, cudaMemcpy2DToArray, and cudaMemcpy2DArrayToArray as related functions, but does not detail the stream parameter of cudaMemcpyAsync.",
+    "chunk_id": "03bdaee52ee8d2e972e53567",
+    "supported": true,
+    "rationale": "The chunk lists exactly the \"See also\" functions cudaMemcpy, cudaMemcpy2D, cudaMemcpy2DToArray, and cudaMemcpy2DArrayToArray, and contains no mention of a stream parameter for cudaMemcpyAsync, matching the claim."
+  },
+  {
+    "query_id": "Q4",
+    "claim": "The passages discuss GPU metrics, CUDA occupancy calculation, and shared memory limits, but none specify the number of shader processors per streaming multiprocessor.",
+    "chunk_id": "a8c35fe2813fdaec5c5356ab",
+    "supported": false,
+    "rationale": "The chunk only shows a brief note about GPU Metrics percentage being low; it does not mention CUDA occupancy calculation, shared memory limits, or the absence of shader processor counts per SM, so it does not substantiate the claim."
+  },
+  {
+    "query_id": "Q4",
+    "claim": "The passages discuss GPU metrics, CUDA occupancy calculation, and shared memory limits, but none specify the number of shader processors per streaming multiprocessor.",
+    "chunk_id": "2f30edbe2de5b983a611eeca",
+    "supported": true,
+    "rationale": "The chunk title references the CUDA Occupancy Calculator and GPU metrics, consistent with the claim's description of general topics, and does not mention shader processors per streaming multiprocessor."
+  },
+  {
+    "query_id": "Q4",
+    "claim": "The passages discuss GPU metrics, CUDA occupancy calculation, and shared memory limits, but none specify the number of shader processors per streaming multiprocessor.",
+    "chunk_id": "3ce249ad487299808540397f",
+    "supported": false,
+    "rationale": "The chunk only briefly mentions shared memory per thread block and does not discuss GPU metrics, CUDA occupancy calculation, or the absence of shader processor counts per SM, so it does not substantiate the full claim."
+  },
+  {
+    "query_id": "Q5",
+    "claim": "One passage is only a header/title for an OpenGL Trace chapter in an NVIDIA user guide, with no performance optimization content.",
+    "chunk_id": "2f3be97a48ce2563233a8c64",
+    "supported": true,
+    "rationale": "The chunk consists solely of a page footer/header (\"www.nvidia.com User Guide v2023.3.1 | 192\") and the chapter title \"Chapter 15. OPENGL TRACE OpenGL and OpenG\" with no actual performance optimization content, matching the claim."
+  },
+  {
+    "query_id": "Q5",
+    "claim": "Another passage merely mentions that recipes can be altered or new ones written to meet needs, without giving specific GPU performance advice.",
+    "chunk_id": "877ff33f7c2010c9d7b8f97b",
+    "supported": true,
+    "rationale": "The chunk explicitly states that recipes may be altered or new ones written to meet needs, and contains no GPU performance advice, matching the claim."
+  },
+  {
+    "query_id": "Q5",
+    "claim": "The third passage only notes that a CUDA introduction document has been replaced by a newer CUDA Programming Guide, without giving the actual optimization details.",
+    "chunk_id": "490bb9d312a2fb7e58e6591f",
+    "supported": true,
+    "rationale": "The chunk shows a warning stating the document has been replaced by a new CUDA Programming Guide, with no optimization details included, matching the claim."
+  },
+  {
+    "query_id": "Q6",
+    "claim": "It is a high-priority recommendation to avoid different execution paths within the same warp, since flow control instructions can cause threads to diverge and execute different code paths.",
+    "chunk_id": "3c9b5ecfb38e9ee9377cf4f6",
+    "supported": true,
+    "rationale": "The chunk explicitly states \"High Priority: Avoid different execution paths within the same warp\" and mentions flow control instructions, directly supporting the claim."
+  },
+  {
+    "query_id": "Q6",
+    "claim": "Independent Thread Scheduling can lead to a different set of threads participating in an operation than would be expected under the traditional lockstep execution model.",
+    "chunk_id": "3e21f636c1f80ac2500aee2a",
+    "supported": true,
+    "rationale": "The chunk directly states that Independent Thread Scheduling can lead to a different set of threads participating in an operation, matching the claim's content even though it is truncated."
+  },
+  {
+    "query_id": "Q7",
+    "claim": "Atomic memory operations provide inter-thread synchronization guarantees.",
+    "chunk_id": "ccd7708bb87a3ea7259deb4c",
+    "supported": true,
+    "rationale": "The chunk explicitly states that atomic memory operations provide inter-thread synchronization guarantees, directly matching the claim."
+  },
+  {
+    "query_id": "Q7",
+    "claim": "Atomic operations deliver much better performance than volatile operations for synchronization purposes.",
+    "chunk_id": "ccd7708bb87a3ea7259deb4c",
+    "supported": true,
+    "rationale": "The chunk explicitly states that atomic memory operations deliver much better performance than volatile operations, directly supporting the claim."
+  },
+  {
+    "query_id": "Q7",
+    "claim": "The other available passages (module listing and code snippet) do not provide additional details on synchronization performance overhead.",
+    "chunk_id": "330acac2ad5d9a1c0811c6c1",
+    "supported": false,
+    "rationale": "The chunk is merely a fragment of a module listing/API reference with no discussion of synchronization performance overhead, so it does not substantiate the claim that other passages lack such details."
+  },
+  {
+    "query_id": "Q7",
+    "claim": "The other available passages (module listing and code snippet) do not provide additional details on synchronization performance overhead.",
+    "chunk_id": "494b88549e8af5043ac119c8",
+    "supported": false,
+    "rationale": "The chunk is a code snippet from the CUDA Programming Guide with no discussion of synchronization performance overhead, so it does not substantiate the claim."
+  },
+  {
+    "query_id": "Q8",
+    "claim": "Bank conflicts occur when copying a tile from global memory into shared memory.",
+    "chunk_id": "f6f2063c3d7aac6f24143411",
+    "supported": true,
+    "rationale": "The chunk explicitly states that bank conflicts occur when copying the tile from global memory into shared memory, directly matching the claim."
+  },
+  {
+    "query_id": "Q8",
+    "claim": "To minimize bank conflicts, it is important to understand how memory addresses map to memory banks and how to optimally schedule memory requests.",
+    "chunk_id": "1fabb00b8793f603b648e7d1",
+    "supported": true,
+    "rationale": "The chunk contains the exact sentence matching the claim verbatim, directly substantiating it."
+  },
+  {
+    "query_id": "Q8",
+    "claim": "Changing the shared memory bank size will not increase shared memory usage or affect occupancy.",
+    "chunk_id": "4e0a7be7279a20f0a57b1d18",
+    "supported": true,
+    "rationale": "The chunk contains an exact verbatim match of the claim's statement."
+  },
+  {
+    "query_id": "Q9",
+    "claim": "Memory coalescing is a very important performance consideration when programming CUDA-capable GPU architectures, specifically regarding global memory access.",
+    "chunk_id": "3c8573a7f22cd37a771b4816",
+    "supported": true,
+    "rationale": "The chunk explicitly states that a very important performance consideration for CUDA-capable GPU architectures is coalesced access to global memory, directly matching the claim."
+  },
+  {
+    "query_id": "Q9",
+    "claim": "If a 32-byte memory transaction is generated for each thread's 4-byte access, this indicates inefficient, non-coalesced memory access.",
+    "chunk_id": "48ba7e1f690b446f51401f82",
+    "supported": false,
+    "rationale": "The chunk is truncated mid-sentence and does not include the conclusion that this indicates inefficient, non-coalesced memory access."
+  },
+  {
+    "query_id": "Q9",
+    "claim": "This guidance is part of the CUDA C++ Best Practices Guide, Release 13.3, which provides recommendations for achieving high performance on GPU hardware.",
+    "chunk_id": "b5ca753b8b44006b10045187",
+    "supported": true,
+    "rationale": "The chunk explicitly identifies itself as the CUDA C++ Best Practices Guide, Release 13.3, matching the claim's title and release version."
+  }
+]

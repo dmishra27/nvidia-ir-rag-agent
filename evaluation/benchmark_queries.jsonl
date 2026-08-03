@@ -1,0 +1,50 @@
+{"query_id":"bq01","query":"CUDA cudaMalloc function parameters"}
+{"query_id":"bq02","query":"cudaMemcpyAsync stream parameter"}
+{"query_id":"bq03","query":"CUDA error cudaErrorInvalidValue description"}
+{"query_id":"bq04","query":"cudaDeviceSynchronize return value"}
+{"query_id":"bq05","query":"dim3 struct constructor syntax"}
+{"query_id":"bq06","query":"cudaMallocHost pinned memory benefits"}
+{"query_id":"bq07","query":"cudaStreamCreate flags parameter"}
+{"query_id":"bq08","query":"cudaEventRecord usage for timing kernels"}
+{"query_id":"bq09","query":"cudaGetLastError versus cudaPeekAtLastError"}
+{"query_id":"bq10","query":"cudaMemGetInfo free and total memory"}
+{"query_id":"bq11","query":"shared memory bank conflicts and how to avoid them"}
+{"query_id":"bq12","query":"memory coalescing rules for global memory access patterns"}
+{"query_id":"bq13","query":"warp divergence performance impact"}
+{"query_id":"bq14","query":"occupancy versus performance tradeoffs"}
+{"query_id":"bq15","query":"register pressure and its effect on occupancy"}
+{"query_id":"bq16","query":"latency hiding through instruction level parallelism"}
+{"query_id":"bq17","query":"L2 cache persistence for CUDA kernels"}
+{"query_id":"bq18","query":"unified memory page migration overhead"}
+{"query_id":"bq19","query":"asynchronous memory prefetching with cudaMemPrefetchAsync"}
+{"query_id":"bq20","query":"stream priorities and concurrent kernel execution"}
+{"query_id":"bq21","query":"NVLink 4.0 bandwidth specifications"}
+{"query_id":"bq22","query":"NVSwitch topology for multi-GPU communication"}
+{"query_id":"bq23","query":"H100 HBM3 memory capacity"}
+{"query_id":"bq24","query":"streaming multiprocessor count per GPU architecture"}
+{"query_id":"bq25","query":"Tensor Core precision modes supported"}
+{"query_id":"bq26","query":"PCIe Gen5 versus NVLink bandwidth comparison"}
+{"query_id":"bq27","query":"GPU Direct RDMA for network transfers"}
+{"query_id":"bq28","query":"multi-instance GPU partitioning"}
+{"query_id":"bq29","query":"thermal design power limits for datacenter GPUs"}
+{"query_id":"bq30","query":"NVDEC hardware video decode throughput"}
+{"query_id":"bq31","query":"how does GPU memory work for parallel processing"}
+{"query_id":"bq32","query":"best practices for optimising neural network training"}
+{"query_id":"bq33","query":"what causes memory errors in GPU applications"}
+{"query_id":"bq34","query":"how to make GPU programs run faster"}
+{"query_id":"bq35","query":"problems with threads executing different code paths"}
+{"query_id":"bq36","query":"techniques for reducing kernel launch overhead"}
+{"query_id":"bq37","query":"strategies for balancing compute and memory bound kernels"}
+{"query_id":"bq38","query":"why does my CUDA kernel run slower than expected"}
+{"query_id":"bq39","query":"how to profile a CUDA application for bottlenecks"}
+{"query_id":"bq40","query":"approaches to overlapping data transfer and computation"}
+{"query_id":"bq41","query":"shader processor count per streaming multiprocessor"}
+{"query_id":"bq42","query":"global memory coalescing techniques"}
+{"query_id":"bq43","query":"texture memory caching behavior"}
+{"query_id":"bq44","query":"constant memory broadcast access pattern"}
+{"query_id":"bq45","query":"warp scheduler instruction issue rate"}
+{"query_id":"bq46","query":"CUDA thread synchronization performance overhead"}
+{"query_id":"bq47","query":"cooperative groups grid synchronization"}
+{"query_id":"bq48","query":"dynamic parallelism kernel launch from device code"}
+{"query_id":"bq49","query":"cuDNN convolution algorithm selection"}
+{"query_id":"bq50","query":"NCCL all-reduce collective communication pattern"}
