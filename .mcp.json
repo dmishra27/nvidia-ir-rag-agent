@@ -15,6 +15,14 @@
         "C:\\Users\\dmish\\projects\\nvidia-ir-rag-agent\\mcp\\mcp_airflow\\server.py"
       ],
       "env": {}
+    },
+    "nvidia-ir-mlflow": {
+      "type": "stdio",
+      "command": "C:\\Users\\dmish\\projects\\nvidia-ir-rag-agent\\.venv\\Scripts\\python.exe",
+      "args": [
+        "C:\\Users\\dmish\\projects\\nvidia-ir-rag-agent\\mcp\\mcp_mlflow\\server.py"
+      ],
+      "env": {}
     }
   }
 }
