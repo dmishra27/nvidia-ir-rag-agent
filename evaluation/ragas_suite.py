@@ -74,7 +74,14 @@ def build_default_llm() -> Any:
     from langchain_anthropic import ChatAnthropic
     from ragas.llms import LangchainLLMWrapper
 
-    return LangchainLLMWrapper(ChatAnthropic(model=MODEL))
+    # claude-sonnet-5 rejects any non-default `temperature` value (extended
+    # thinking forces it fixed), but ragas's wrapper overrides temperature
+    # per-call for self-consistency sampling by default. bypass_temperature
+    # is ragas's documented escape hatch for reasoning models with this
+    # constraint (see LangchainLLMWrapper's own OpenAI o1 comment) — without
+    # it every call fails with `invalid_request_error: temperature is
+    # deprecated for this model`, verified live 2026-08-04.
+    return LangchainLLMWrapper(ChatAnthropic(model=MODEL), bypass_temperature=True)
 
 
 def build_default_embeddings() -> Any:

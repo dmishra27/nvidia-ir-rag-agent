@@ -24,6 +24,7 @@ import structlog
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 
+from api.telemetry import traced_stage
 from retrieval.bm25_index import BM25Index
 from retrieval.candidates import Candidate
 from retrieval.dense_index import DenseIndex
@@ -54,9 +55,12 @@ def make_retrieve_node(bm25_index: BM25Index, dense_index: DenseIndex) -> Callab
     def retrieve(state: AgentState) -> AgentState:
         log.info("retrieve", query_id=state.query_id, stage="retrieve")
         try:
-            bm25_results = bm25_index.search(state.query, top_k=state.candidate_pool_size)
-            dense_results = dense_index.search(state.query, top_k=state.candidate_pool_size)
-            fused_results = fuse(bm25_results, dense_results, top_k=state.candidate_pool_size)
+            with traced_stage("bm25", state.query_id, top_k=state.candidate_pool_size):
+                bm25_results = bm25_index.search(state.query, top_k=state.candidate_pool_size)
+            with traced_stage("dense", state.query_id, top_k=state.candidate_pool_size):
+                dense_results = dense_index.search(state.query, top_k=state.candidate_pool_size)
+            with traced_stage("rrf", state.query_id, pool_size=state.candidate_pool_size):
+                fused_results = fuse(bm25_results, dense_results, top_k=state.candidate_pool_size)
         except Exception as exc:
             log.error("retrieve_failed", query_id=state.query_id, stage="retrieve", exc=str(exc))
             return state.model_copy(update={"error": str(exc)})
@@ -77,9 +81,10 @@ def make_rerank_node(router: RerankerRouter) -> Callable[[AgentState], AgentStat
         if state.error:
             return state
         try:
-            reranked = router.rerank(
-                state.query, state.fused_results, top_k=state.top_k, query_id=state.query_id
-            )
+            with traced_stage("rerank", state.query_id, top_k=state.top_k):
+                reranked = router.rerank(
+                    state.query, state.fused_results, top_k=state.top_k, query_id=state.query_id
+                )
         except Exception as exc:
             log.error("rerank_failed", query_id=state.query_id, stage="rerank", exc=str(exc))
             return state.model_copy(update={"error": str(exc)})

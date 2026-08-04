@@ -56,6 +56,21 @@
     ports:
       - '8080:8080'
 
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: 'true'
+    ports:
+      - '16686:16686' # UI
+      - '4317:4317' # OTLP gRPC (api/telemetry.py's DEFAULT_OTLP_ENDPOINT)
+      - '4318:4318' # OTLP HTTP
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O- http://localhost:16686/ || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
   qdrant_data:
