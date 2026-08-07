@@ -71,7 +71,28 @@
       timeout: 5s
       retries: 5
 
+  phoenix:
+    image: arizephoenix/phoenix:latest
+    restart: unless-stopped
+    environment:
+      PHOENIX_PROJECT_NAME: nvidia-ir-rag-agent
+    volumes:
+      - phoenix_data:/mnt/data
+    ports:
+      - '6006:6006' # UI + OTLP/HTTP trace receiver at /v1/traces (monitoring/phoenix_config.py's DEFAULT_PHOENIX_ENDPOINT)
+    # Not mapping Phoenix's gRPC OTLP port (4317) — the jaeger service above
+    # already owns host port 4317; phoenix_config.py uses the http/protobuf
+    # protocol against 6006 instead, so no conflict.
+    healthcheck:
+      # arizephoenix/phoenix is a Python image without wget/curl guaranteed —
+      # use the interpreter itself, mirroring how the app serves its own UI.
+      test: ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://localhost:6006/")']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
   qdrant_data:
   airflow_data:
+  phoenix_data:

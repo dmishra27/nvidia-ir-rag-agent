@@ -32,7 +32,7 @@ def main() -> None:
         print(f"\n--- DB result ({len(result.sql_result or [])} rows) ---")
         for row in (result.sql_result or []):
             print(f"  {row}")
-        print(f"\n--- Agent answer ---")
+        print("\n--- Agent answer ---")
         print(result.answer)
 
     print(f"\n{SEP}")

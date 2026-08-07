@@ -34,7 +34,6 @@ import structlog
 import tiktoken
 from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from sqlalchemy.orm import Session
 
 from airflow.decorators import dag, task
 from airflow.operators.python import get_current_context

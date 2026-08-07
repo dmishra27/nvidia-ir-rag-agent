@@ -125,7 +125,7 @@ class TestExecuteQuery:
         state = TextToSQLState(question="q", tool_name=None)
 
         with patch("agents.text_to_sql_agent._dispatch") as mock_dispatch:
-            result = execute_query(state)
+            execute_query(state)
 
         mock_dispatch.assert_not_called()
 
@@ -153,7 +153,7 @@ class TestExecuteQuery:
         p_engine, p_sf = _make_db_patches()
         with p_engine, p_sf as mock_sf, \
              patch("agents.text_to_sql_agent._dispatch", return_value=[]) as mock_dispatch:
-            mock_session = _configure_session(mock_sf)
+            _configure_session(mock_sf)
             execute_query(state)
             _, kwargs = mock_dispatch.call_args
             assert mock_dispatch.call_args[0][1] == "chunks_below_quality_threshold"

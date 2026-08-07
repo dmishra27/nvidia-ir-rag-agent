@@ -13,7 +13,6 @@ import pytest
 
 from retrieval.chunk_quality import (
     QUALITY_FLAG_THRESHOLD,
-    ChunkQualityResult,
     _mean_sentence_len,
     _nonascii_ratio,
     _sent_len_score,

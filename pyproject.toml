@@ -1,0 +1,33 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint.per-file-ignores]
+# airflow/dags/ingest_nvidia_docs.py inserts the project root onto sys.path
+# before importing project modules -- required for Airflow's own scheduler
+# process to discover project imports. Deliberate, not accidental.
+"airflow/dags/*.py" = ["E402"]
+# Root-level run_*.py scripts are one-off orchestration/smoke-test runners
+# (see day_09_storyline.md: "throwaway orchestration scripts, not the
+# tested library code"), not part of the AGENTS.md package layout -- several
+# set sys.path/stdout encoding before their imports. Not held to the same
+# import-order bar as the actual package under agents/, retrieval/, etc.
+"run_*.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+# Third-party packages this project depends on ship without inline types or
+# stubs (mlflow, ragas, langchain-community, sentence-transformers, etc.);
+# --strict on our own code shouldn't fail on their absence.
+ignore_missing_imports = true
+exclude = ["^notebooks/", "^airflow/", "^\\.venv/", "^data/"]
+
+[[tool.mypy.overrides]]
+# ragas/llms/base.py has a byte mypy's UTF-8 reader can't decode -- `skip`
+# treats the module as `Any` without opening its source, scoped to just this
+# package so pydantic/SQLAlchemy/LangGraph (which our own type-checking
+# actually depends on) are still followed and checked normally.
+module = "ragas.*"
+follow_imports = "skip"
