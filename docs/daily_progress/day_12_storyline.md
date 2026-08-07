@@ -155,9 +155,15 @@ no separate dev-requirements file exists in this project. `mypy`'s
 `pyproject.toml` config already excludes `airflow/`, `notebooks/`,
 `.venv/`, `data/` and skips following `ragas.*` (a byte its UTF-8 reader
 can't decode), so `mypy .` in CI runs with the same scope as local `mypy .`
-does. Not run against GitHub's actual runners this session (no push/PR
-opened yet to trigger it) — code-complete, live-unverified, same status as
-several of today's other components.
+does.
+
+**Correction (see §6 Addendum below):** this paragraph originally said the
+workflow was "not run against GitHub's actual runners this session (no
+push/PR opened yet to trigger it)." That was wrong — this repo's `main`
+was already pushed to `origin` by the time this doc was written, so
+`ci.yml` ran automatically on the `3b37b68` push and **failed** at the
+"Install dependencies" step. §6 covers what broke and how it was fixed in
+a follow-up audit.
 
 ### RAGAS live scores (carried from Day 11, referenced throughout Day 12's UI/monitor)
 
@@ -225,7 +231,7 @@ actually run) would slot into both without a schema change.
 | Layer 6 (monitoring) | PSI drift + term-shift (Day 11) + quality regression (Day 12) all unit-verified; now wired into one Airflow DAG (`airflow/dags/drift_monitor.py`), not yet run against a live scheduler | `monitoring/quality_regression.py`, `airflow/dags/drift_monitor.py` |
 | Layer 7 (observability) | LangSmith live-verified (Day 9); OTel + Jaeger live-verified (Day 11); Arize Phoenix code-complete, not run against a live collector | `monitoring/phoenix_config.py` |
 | Layer 8 (drift + HITL) | PSI/term-shift/quality-regression now wired into `drift_monitor.py`; Slackbot feedback loop not started | `airflow/dags/drift_monitor.py` |
-| CI/CD | **New this session**: `.github/workflows/ci.yml` — lint/type-check/test/NDCG-gate on push to `main` and every PR. Not yet triggered against GitHub's runners | `.github/workflows/ci.yml` |
+| CI/CD | `.github/workflows/ci.yml` — lint/type-check/test/NDCG-gate on push to `main` and every PR. First real run failed (pywin32 install + mypy crash, see §6); both fixed and pushed | `.github/workflows/ci.yml`, §6 Addendum |
 | UI | 5-tab Streamlit shell built, mock/historical data only, not launched live this session | `streamlit_app/app.py` |
 
 **Test suite**: 415 `def test_` definitions counted across `tests/` (368
@@ -239,11 +245,12 @@ commits this note builds on (`64acd47`, `a8ea248`) were themselves committed
 without a local pytest pass.
 
 **Open items for next session**:
-1. Run pytest live and confirm the 429 estimate (or find and fix whatever
-   it's actually short/over by).
-2. Trigger `.github/workflows/ci.yml` for real — open a PR or push to `main`
-   and confirm all 5 steps (ruff, mypy, pytest, NDCG gate) pass on GitHub's
-   runners, not just locally reasoned through.
+1. ~~Run pytest live and confirm the 429 estimate~~ — done in the §6 audit:
+   429/429, confirmed exactly.
+2. ~~Trigger `.github/workflows/ci.yml` for real~~ — done in the §6 audit:
+   it ran, failed, and was fixed; see §6 for the two root causes and their
+   fixes. Still open: watch the next push/PR run to confirm green now that
+   both fixes are in.
 3. Start the `phoenix` docker-compose service and send one real span through
    `monitoring/phoenix_config.py::configure_phoenix()`, mirroring Day 11's
    Jaeger smoke test.
@@ -260,3 +267,63 @@ without a local pytest pass.
 11. Build bge-reranker-v2-m3 (Config B) in a GPU environment (carried over).
 12. Slackbot HITL feedback loop, including wiring `drift_monitor.py`'s
     `alert_fn` (Layer 8 remainder) — not started.
+
+## 6. Addendum — CI audit and fixes (same-day follow-up session)
+
+A follow-up session audited every Day 12 component against its stated
+intent (existence, correctness, test coverage, gaps) and, per its own
+instruction, actually ran `pytest tests/ -x --no-header -q`: **429 passed**,
+confirming §5's estimate exactly. `ruff check .` was clean.
+
+That audit also discovered `main` had already been pushed to `origin` (by
+whatever pushed the `64acd47`/`a8ea248`/`3b37b68` commits), which meant
+`.github/workflows/ci.yml` had already run for real on GitHub's runner —
+and failed, at the "Install dependencies" step, contradicting §3's original
+"not yet triggered" claim (corrected above). Two independent, confirmed
+root causes:
+
+1. **`requirements.txt` pinned `pywin32==312` / `pywin32-ctypes==0.2.3`
+   with no `sys_platform` marker.** Neither package is imported anywhere
+   in this project's own code (`agents/`, `api/`, `monitoring/`,
+   `evaluation/`, `retrieval/`, `streamlit_app/`, `schema/` all grepped
+   clean) — they're artifacts of freezing a Windows dev venv (almost
+   certainly pulled in transitively by `keyring`'s Windows credential
+   backend), not a real dependency. `pip install -r requirements.txt`
+   hard-fails on any Linux target as a result. This broke **two** Day 12
+   deliverables identically: `.github/workflows/ci.yml` (confirmed via the
+   live failed run) and the `Dockerfile`'s build (same install command,
+   same Debian-family base image — never actually built locally, so this
+   was latent until the audit). **Fixed**: appended `; sys_platform ==
+   "win32"` to both lines, preserving `requirements.txt`'s UTF-16LE
+   encoding+BOM exactly (a plain-text edit would have silently
+   re-encoded it to UTF-8, an unintended side effect).
+2. **`mypy .` crashes with an INTERNAL ERROR on `genai_prices/data.py`.**
+   `genai_prices` is a transitive dependency (via `pydantic-ai-slim`),
+   ships a `py.typed` marker, and is a 637KB/~12,900-line **generated**
+   pricing-data file — mypy 2.2.0 tries to fully type-check it (`py.typed`
+   means `ignore_missing_imports` doesn't shield it) and crashes, the same
+   class of problem `pyproject.toml` already had one documented workaround
+   for (`ragas.llms.base`'s undecodable byte). No override existed for
+   `genai_prices` yet, so even a fixed `pip install` would still have
+   failed CI's `mypy .` step. **Fixed**: added a matching
+   `[[tool.mypy.overrides]]` block (`module = "genai_prices.*"`,
+   `follow_imports = "skip"`) in `pyproject.toml`, mirroring the existing
+   `ragas.*` entry.
+
+Both fixes were re-verified with `pytest tests/ -x --no-header -q` (still
+429/429 — neither change touches application code) and pushed as a
+follow-up commit; the next `.github/workflows/ci.yml` run on `main` is the
+live confirmation that both root causes are actually resolved, not just
+locally reasoned through.
+
+**Why this matters for next time**: `requirements.txt` was generated by
+`pip freeze` on this Windows dev machine at some point without a
+cross-platform target in mind, so any future re-freeze risks
+reintroducing Windows-only pins (`pywin32*`, and potentially others) with
+no marker — worth a quick `Select-String -Pattern 'pywin32|win32com'`
+check (plain `grep` won't see it, due to the UTF-16 encoding) after any
+`pip freeze > requirements.txt`. Similarly, any new dependency that ships
+`py.typed` and has a large generated-data submodule is a candidate for the
+same mypy-crash class of problem `ragas.*`/`genai_prices.*` both hit —
+worth trying `mypy .` locally before assuming a new dependency is
+type-check-safe.

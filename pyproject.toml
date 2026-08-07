@@ -31,3 +31,14 @@ exclude = ["^notebooks/", "^airflow/", "^\\.venv/", "^data/"]
 # actually depends on) are still followed and checked normally.
 module = "ragas.*"
 follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+# genai_prices/data.py (a transitive dep of pydantic-ai-slim, itself pulled
+# in by mcp) is a generated, 637KB/~12,900-line py.typed pricing-data
+# module -- mypy 2.2.0 hits an INTERNAL ERROR trying to fully type-check
+# it (found auditing Day 12's CI workflow, see day_12_storyline.md). Same
+# category of problem as the ragas.* override above: `skip` treats it as
+# `Any` without opening its source, so `mypy .` completes instead of
+# crashing, without weakening --strict on this project's own code.
+module = "genai_prices.*"
+follow_imports = "skip"
