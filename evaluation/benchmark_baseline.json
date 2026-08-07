@@ -1,0 +1,21 @@
+{
+  "_note": "Real, live-measured Day 9 Config A/C benchmark results (docs/daily_progress/day_09_storyline.md §3), committed as the CI NDCG gate's baseline snapshot. Per AGENTS.md ('End-to-end: ... no live API calls in CI'), the gate reads this file rather than re-running evaluation/benchmark_runner.py's main() live -- that needs BM25Index/DenseIndex/Qdrant/Cohere, none of which are available to a GitHub Actions runner. Scope: 15 cached queries (Day 5 UAT superiority pool), top-3 RRF candidates each -- a smoke-scope benchmark, not the full 50-query x top-100 run evaluation/benchmark_runner.py is designed for (still an open item, see day_12_storyline.md). Config B (bge-reranker-v2-m3) is hardware-blocked on this project's CPU-only dev machine and has no live number to report.",
+  "configs": [
+    {
+      "config": "config_A_ms_marco",
+      "run_id": "a55012a4",
+      "mean_ndcg_at_10": 0.5333,
+      "mean_mrr": 0.5333,
+      "mean_prec_at_3": 0.2444,
+      "num_queries": 15
+    },
+    {
+      "config": "config_C_cohere_rerank",
+      "run_id": "c827cd71",
+      "mean_ndcg_at_10": 0.5280,
+      "mean_mrr": 0.5333,
+      "mean_prec_at_3": 0.2444,
+      "num_queries": 15
+    }
+  ]
+}

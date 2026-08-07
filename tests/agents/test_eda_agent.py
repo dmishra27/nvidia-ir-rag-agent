@@ -19,7 +19,6 @@ from unittest.mock import MagicMock
 
 import pandas as pd
 import pandasai as pai
-import pytest
 
 from agents.eda_agent import (
     AnthropicPandasAILLM,
@@ -233,7 +232,10 @@ def test_build_eda_agent_wires_one_pandasai_dataframe_per_entry() -> None:
     agent = build_eda_agent(dataframes, client=MagicMock())
 
     assert isinstance(agent, pai.Agent)
-    assert len(agent.context.dfs) == 2
+    # pandasai 3.0.0 stores per-agent state on `_state` (an AgentState),
+    # not the `context` attribute some older docs/versions reference --
+    # `agent.context` doesn't exist on this installed version at all.
+    assert len(agent._state.dfs) == 2
 
 
 def test_build_eda_agent_uses_the_injected_client() -> None:
@@ -241,5 +243,5 @@ def test_build_eda_agent_uses_the_injected_client() -> None:
 
     agent = build_eda_agent({"a": pd.DataFrame({"x": [1]})}, client=client, model="claude-sonnet-5")
 
-    assert isinstance(agent.context.config.llm, AnthropicPandasAILLM)
-    assert agent.context.config.llm._client is client
+    assert isinstance(agent._state.config.llm, AnthropicPandasAILLM)
+    assert agent._state.config.llm._client is client
