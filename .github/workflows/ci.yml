@@ -1,0 +1,56 @@
+# nvidia-ir-rag-agent — CI
+#
+# checkout -> setup Python 3.11 -> install deps -> ruff -> mypy -> pytest
+# -> NDCG regression gate.
+#
+# Per AGENTS.md ("End-to-end: ... no live API calls in CI" / "LLM quality:
+# RAGAS threshold gates in CI, not unit tests"): every step here runs on a
+# bare GitHub-hosted runner with no Postgres/Qdrant/Airflow/Jaeger/Phoenix
+# service and no ANTHROPIC_API_KEY/COHERE_API_KEY. That works because
+# tests/ mocks every embedding/LLM/DB call (AGENTS.md's "Mock all embedding
+# and LLM calls in unit tests"), and evaluation/ci_ndcg_gate.py gates on
+# evaluation/benchmark_baseline.json -- a committed snapshot of Day 9's real
+# live-measured benchmark -- rather than re-running
+# evaluation/benchmark_runner.py against live infra (see that module's
+# docstring). ruff/mypy/pytest are all pinned inside requirements.txt itself
+# (ruff==0.15.20, mypy==2.2.0, pytest==9.1.1) alongside runtime deps, so one
+# `pip install -r requirements.txt` covers the whole job -- no separate dev
+# install step. Note: requirements.txt is UTF-16-encoded (Windows-authored);
+# pip's own requirements-file parser auto-detects the BOM and decodes it
+# correctly regardless of runner OS, so this needs no special handling here.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Type-check (mypy)
+        run: mypy .
+
+      - name: Test (pytest)
+        run: pytest
+
+      - name: NDCG regression gate
+        run: python -m evaluation.ci_ndcg_gate
