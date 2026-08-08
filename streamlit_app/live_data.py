@@ -15,6 +15,16 @@ Each fetcher raises on failure rather than swallowing errors -- callers
 constructor-injection convention (streamlit_app/benchmark_tab.py's
 `SummariesFn` was already designed for exactly this swap, per its own
 docstring) rather than baking a silent fallback in here.
+
+mlflow's own HTTP client defaults to a 120s timeout and 7 retries with
+exponential backoff (`MLFLOW_HTTP_REQUEST_TIMEOUT`/`_MAX_RETRIES`) -- fine
+for a flaky-but-present server, but when MLflow is simply not running (a
+fresh clone before `docker-compose up`, or CI, which never runs live
+services at all per AGENTS.md) that turns "unreachable" into a multi-minute
+hang instead of the fast, gracefully-handled failure `_load_summaries()`'s
+try/except is designed around. Set short here -- only if the environment
+hasn't already set them, so a real deployment can still tune for a slow
+network -- before any MlflowClient is created.
 """
 
 from __future__ import annotations
@@ -36,6 +46,14 @@ CITATION_JUDGMENTS_PATH = Path("evaluation/day9_citation_judgments.json")
 
 
 def _mlflow_client() -> MlflowClient:
+    # Only if unset, so a real deployment can still tune for a slow network.
+    # 15s/1 retry: generous enough for a real-but-loaded server's round trip
+    # (a tight 5s timeout was observed to false-positive against this
+    # project's own shared dev MLflow instance under load), while still
+    # capping the worst case at ~30s instead of mlflow's default ~15 minutes
+    # (120s timeout x 7 retries) when nothing is listening at all.
+    os.environ.setdefault("MLFLOW_HTTP_REQUEST_TIMEOUT", "15")
+    os.environ.setdefault("MLFLOW_HTTP_REQUEST_MAX_RETRIES", "1")
     return MlflowClient(tracking_uri=MLFLOW_TRACKING_URI)
 
 
