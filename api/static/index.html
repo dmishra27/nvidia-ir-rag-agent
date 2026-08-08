@@ -279,6 +279,24 @@
     color: var(--border);
   }
 
+  footer .signature {
+    margin: 16px auto 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    max-width: 420px;
+    font-size: 0.78rem;
+    color: #999;
+    line-height: 1.6;
+  }
+
+  footer .signature a {
+    color: #999;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  footer .signature a:hover { text-decoration: underline; }
+
   @media (max-width: 520px) {
     .page { padding: 32px 14px 24px; }
     header h1 { font-size: 1.6rem; }
@@ -327,6 +345,11 @@
       <a href="/docs">API docs</a>
       <span class="sep">&middot;</span>
       <a href="https://github.com/dmishra27/nvidia-ir-rag-agent" target="_blank" rel="noopener noreferrer">GitHub repository</a>
+    </p>
+    <p class="signature">
+      Built by <a href="https://github.com/dmishra27" target="_blank" rel="noopener noreferrer">Debabrata Mishra</a><br />
+      ACM SIGIR 2024 Co-author &middot; Data Scientist &amp; ML Engineer<br />
+      MSc Data Science, University of Glasgow &middot; Greenock, Scotland
     </p>
   </footer>
 

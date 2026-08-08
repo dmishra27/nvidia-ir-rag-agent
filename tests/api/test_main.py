@@ -133,6 +133,17 @@ class TestUI:
         assert 'href="/docs"' in html
         assert "github.com/dmishra27/nvidia-ir-rag-agent" in html
 
+    def test_page_has_author_signature_linked_to_github_profile(self) -> None:
+        client = TestClient(create_app(session_factory=MagicMock()))
+
+        html = client.get("/").text
+
+        assert 'href="https://github.com/dmishra27"' in html
+        assert "Debabrata Mishra" in html
+        assert "ACM SIGIR 2024 Co-author" in html
+        assert "MSc Data Science, University of Glasgow" in html
+        assert "Greenock, Scotland" in html
+
     def test_ui_route_is_excluded_from_the_openapi_schema(self) -> None:
         client = TestClient(create_app(session_factory=MagicMock()))
 
