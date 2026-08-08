@@ -9,6 +9,19 @@ built as a 13-day build log (see [Project docs](#project-docs) below).
 SIGIR 2024 co-author — this project directly extends prior neural
 passage-quality-estimation research into a production-shaped RAG system.
 
+## Live demo
+
+**Production API:** [https://nvidia-ir-rag-agent.onrender.com](https://nvidia-ir-rag-agent.onrender.com)
+(`/health`, `/search`, `/ask` — see [Deploy](#deploy-rendercom) below for
+scope/known limitations). `POSTGRES_URL` and `RERANKER_MODE` are configured
+in the Render dashboard.
+
+> ⚠️ At the time this URL was added, `/health` did not respond to repeated
+> checks from this session (HTTP/2 and HTTP/1.1, up to 60s each — no
+> response reached the origin at all, not a 4xx/5xx). That may just be a
+> slow first build/cold-start; if it's still unresponsive, check the
+> Render dashboard's build/deploy logs for the actual cause.
+
 ## Problem statement
 
 NVIDIA's own technical documentation is large, fragmented across dozens of
@@ -283,7 +296,7 @@ repo doesn't ship (`data/` is gitignored, and Qdrant needs a populated
 cloud collection). `/search` and `/ask` will 500 until that data-wiring
 step happens against `QDRANT_CLOUD_URL`/a managed Postgres.
 
-**Live URL:** _pending — added here once deployed._
+**Live URL:** see [Live demo](#live-demo) at the top of this file.
 
 ## Project docs
 
