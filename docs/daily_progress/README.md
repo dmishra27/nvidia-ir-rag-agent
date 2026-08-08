@@ -20,6 +20,7 @@ recaps everything before it, so any single file can be read on its own.
 | 11 | RAGAS live (real bug fixed), multi-agent orchestrator, drift/term-shift monitors, OTel + Jaeger live | 42 | 368/368 | [day_11_storyline.md](day_11_storyline.md) |
 | 12 | EDA agent, Phoenix config, quality regression monitor, Streamlit UI, drift DAG, Docker/Render deploy, CI/CD gate | 61 | 429/429 | [day_12_storyline.md](day_12_storyline.md) |
 | 13 | CI fully green (torch wheel + 4 more stacked pip conflicts + ragas patch + mypy strict debt), Slackbot + HITL feedback, feedback aggregator DAG, Streamlit live data, README, Render deploy prepared | 40 | 469/469 | [day_13_storyline.md](day_13_storyline.md) |
+| 14 | Render deployment confirmed live, A2A protocol (retrieval→QA agent handoff), final evaluation report, CHANGELOG.md, **v1.0.0 tagged release** | 11 | 480/480 | [day_14_storyline.md](day_14_storyline.md) |
 
 ## Architecture reference
 

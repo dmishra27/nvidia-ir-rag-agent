@@ -5,7 +5,8 @@ CUDA Runtime API, best-practices guides, architecture whitepapers — with a
 full evaluation/monitoring/HITL stack behind it, not just a search box.
 
 Portfolio project by Debabrata Mishra ([dmishra27](https://github.com/dmishra27)),
-built as a 13-day build log (see [Project docs](#project-docs) below).
+built as a 14-day build log (see [Project docs](#project-docs) below),
+tagged `v1.0.0` (see [`CHANGELOG.md`](CHANGELOG.md)).
 SIGIR 2024 co-author — this project directly extends prior neural
 passage-quality-estimation research into a production-shaped RAG system.
 
@@ -174,7 +175,7 @@ python -m slackbot.app
 ### 5. Tests
 
 ```bash
-pytest                 # 469 tests, all mocked (no live API/DB calls — see AGENTS.md)
+pytest                 # 480 tests, all mocked (no live API/DB calls — see AGENTS.md)
 ruff check .
 mypy .                  # strict on agents/, api/, retrieval/, monitoring/, evaluation/, schema/, mcp/, slackbot/
 ```
@@ -281,7 +282,7 @@ runs live services, per `AGENTS.md`'s "no live API calls in CI" rule.
 
 ## Testing / CI
 
-- **469 tests**, all mocking embedding/LLM/DB calls per `AGENTS.md`'s
+- **480 tests**, all mocking embedding/LLM/DB calls per `AGENTS.md`'s
   "Mock all embedding and LLM calls in unit tests" rule — `pytest` runs in
   under 2 minutes with no live services.
 - `.github/workflows/ci.yml`: checkout → install (CPU-only torch wheel
