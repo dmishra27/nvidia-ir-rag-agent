@@ -11,16 +11,29 @@ passage-quality-estimation research into a production-shaped RAG system.
 
 ## Live demo
 
-**Live API:** [https://nvidia-ir-rag-agent.onrender.com](https://nvidia-ir-rag-agent.onrender.com) — confirmed live: `/health` returns `{"status": "ok", "service": "nvidia-ir-rag-agent"}`.
+| Endpoint | Status |
+|---|---|
+| [Live API health check](https://nvidia-ir-rag-agent.onrender.com/health) | ✅ `200 OK` — `{"status": "ok", "service": "nvidia-ir-rag-agent"}` |
+| [Swagger UI](https://nvidia-ir-rag-agent.onrender.com/docs) | ✅ accessible — `POST /search`, `POST /ask`, `GET /health` all listed |
+| `POST /search` / `POST /ask` | ❌ `500` — see below |
 
-**Swagger UI:** [https://nvidia-ir-rag-agent.onrender.com/docs](https://nvidia-ir-rag-agent.onrender.com/docs) —
-`POST /search`, `POST /ask`, and `GET /health` are all listed and callable
-directly from the browser. Reviewers can try `/search` and `/ask` there
-with no local setup at all — no clone, no `.env`, no `docker-compose up`.
+The service itself is genuinely live (`POSTGRES_URL`/`RERANKER_MODE`
+configured in the Render dashboard) — but `/search` and `/ask` 500, exactly
+the known limitation this README and `render.yaml` documented before
+deploying: `retrieval/bm25_index.py`'s `BM25Index.load()` reads
+`data/indexes/bm25_index.pkl`, and the whole `data/` tree is gitignored (DVC
+tracks parts of it locally — `data/raw/`, `data/chunks/` — but the built
+index itself isn't committed or shipped in the Docker image either way).
+The container simply has no index file to load. Fixing this for real means
+either baking a built index into the image or pointing the deployed
+service at `QDRANT_CLOUD_URL` + a populated managed Postgres so retrieval
+doesn't depend on a local pickle at all — not done yet (see [Known
+limitations](#known-limitations--open-items)).
 
-`POSTGRES_URL` and `RERANKER_MODE` are configured in the Render dashboard.
-See [Deploy](#deploy-rendercom) below for the scope/known limitations this
-deployment still has (retrieval stack data-wiring).
+**For working `/search` and `/ask`, run it locally** — see
+[How to run](#how-to-run) below (`docker-compose up`, then
+`uvicorn api.main:app`, which loads the same `BM25Index`/`DenseIndex` from
+your local `data/`/Qdrant instead of Render's empty one).
 
 ## Problem statement
 
@@ -289,12 +302,13 @@ secrets Render prompts for (`ANTHROPIC_API_KEY`, `COHERE_API_KEY`,
 `POSTGRES_URL`, etc. — see `render.yaml`'s `sync: false` list), and it
 builds the root `Dockerfile`.
 
-**Known limitation** (documented in `render.yaml` itself): this gets the
-*service* deployed and `/health` responding, not the full retrieval stack
-live — `BM25Index.load()` and `DenseIndex.connect()` both need data this
-repo doesn't ship (`data/` is gitignored, and Qdrant needs a populated
-cloud collection). `/search` and `/ask` will 500 until that data-wiring
-step happens against `QDRANT_CLOUD_URL`/a managed Postgres.
+**Known limitation** (documented in `render.yaml` itself, and confirmed
+live post-deploy): this gets the *service* deployed and `/health`
+responding, not the full retrieval stack live — `BM25Index.load()` and
+`DenseIndex.connect()` both need data this repo doesn't ship (`data/` is
+gitignored, and Qdrant needs a populated cloud collection). `/search` and
+`/ask` 500 until that data-wiring step happens against
+`QDRANT_CLOUD_URL`/a managed Postgres.
 
 **Live URL:** see [Live demo](#live-demo) at the top of this file.
 
