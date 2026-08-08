@@ -1,0 +1,42 @@
+requirements.txt notes
+======================
+
+ragas==0.4.3 (patched)
+-----------------------
+ragas 0.4.3 unconditionally imports `ChatVertexAI` from
+`langchain_community.chat_models.vertexai` in ragas/llms/base.py. That
+submodule does not exist in this project's pinned langchain-community==0.4.2
+(the Vertex AI chat model integration moved out to the standalone
+langchain-google-vertexai package), so a plain `pip install -r
+requirements.txt` followed by `import ragas` -- and therefore
+evaluation/ragas_suite.py, and anything that imports it -- raises
+ModuleNotFoundError.
+
+This project does not use Vertex AI (see AGENTS.md's re-ranker/LLM config:
+Anthropic + Cohere only) and deliberately does not carry
+langchain-google-vertexai as a dependency: every version of it compatible
+with this project's langchain-core==1.4.9 requires pyarrow>=19.0.1, which is
+incompatible with pandasai==3.0.0's pyarrow<19.0.0 (agents/eda_agent.py's
+real, in-use dependency) -- those two ranges don't overlap, so both can't be
+installed together.
+
+Fix: scripts/patch_ragas.py removes ragas's one broken import (and its one
+usage in MULTIPLE_COMPLETION_SUPPORTED) from the installed package after
+`pip install`. Run automatically by .github/workflows/ci.yml and Dockerfile
+right after the install step. Idempotent -- safe to run again, and a no-op
+once ragas ships a fix upstream.
+
+pyarrow==17.0.0 / pillow==10.4.0 / pdfplumber==0.11.9 / pdfminer.six==20251230
+-------------------------------------------------------------------------------
+Pinned together deliberately: pandasai==3.0.0 requires pyarrow<19.0.0 and
+pillow<11.0.0; pdfplumber==0.11.9 is the newest pdfplumber release whose
+Pillow requirement is still the loose `>=9.1` (0.11.10 tightened to
+Pillow>=12.2.0, which conflicts with pandasai's pillow<11.0.0), and its
+pdfminer.six==20251230 pin has to match exactly.
+
+datasets==4.0.0
+----------------
+ragas==0.4.3 requires datasets>=4.0.0. Pinned to the minimum satisfying
+version rather than latest, to keep the diff from Day 9/11's original
+datasets==2.21.0 as small as possible. evaluation/ragas_suite.py's only use
+of the package (`Dataset.from_dict`) is unaffected by the 2.x -> 4.x bump.

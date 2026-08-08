@@ -22,6 +22,13 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
     --extra-index-url https://download.pytorch.org/whl/cpu
 
+# See requirements_notes.txt: ragas==0.4.3 unconditionally imports a
+# langchain-community submodule this project's pinned langchain-community
+# doesn't ship; patch it out of the installed package rather than pull in
+# langchain-google-vertexai (which conflicts with pandasai's pyarrow pin).
+COPY scripts/patch_ragas.py scripts/patch_ragas.py
+RUN python scripts/patch_ragas.py
+
 COPY agents/ agents/
 COPY api/ api/
 COPY evaluation/ evaluation/

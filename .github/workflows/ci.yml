@@ -1,7 +1,7 @@
 # nvidia-ir-rag-agent — CI
 #
-# checkout -> setup Python 3.11 -> install deps -> ruff -> mypy -> pytest
-# -> NDCG regression gate.
+# checkout -> setup Python 3.11 -> install deps -> patch ragas -> ruff ->
+# mypy -> pytest -> NDCG regression gate.
 #
 # Per AGENTS.md ("End-to-end: ... no live API calls in CI" / "LLM quality:
 # RAGAS threshold gates in CI, not unit tests"): every step here runs on a
@@ -43,6 +43,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt \
             --extra-index-url https://download.pytorch.org/whl/cpu
+
+      - name: Patch ragas (see requirements_notes.txt)
+        run: python scripts/patch_ragas.py
 
       - name: Lint (ruff)
         run: ruff check .
