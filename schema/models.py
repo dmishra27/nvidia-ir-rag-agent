@@ -121,6 +121,17 @@ class BenchmarkResults(Base):
     created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class FeedbackLog(Base):
+    __tablename__ = "feedback_log"
+
+    feedback_id = Column(String, primary_key=True)
+    query_id = Column(String, ForeignKey("query_log.query_id"))
+    user_id = Column(String)
+    reaction = Column(String)
+    source = Column(String, default="slackbot")
+    created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 def get_engine(url: str | None = None) -> Engine:
     db_url = url or os.environ["POSTGRES_URL"]
     return create_engine(db_url, pool_pre_ping=True)
