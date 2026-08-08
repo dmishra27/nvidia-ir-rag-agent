@@ -96,4 +96,5 @@ class _CohereClientAdapter:
 
     def rerank(self, query: str, documents: list[str], model: str, top_n: int) -> list[RerankResultProtocol]:
         response = self._client.rerank(query=query, documents=documents, model=model, top_n=top_n)  # type: ignore[attr-defined]
-        return response.results
+        results: list[RerankResultProtocol] = response.results
+        return results

@@ -45,7 +45,7 @@ import pandas as pd
 import pandasai as pai
 import structlog
 from pandasai.llm.base import LLM
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from schema.models import BenchmarkResults, get_engine, get_session_factory
 
@@ -55,7 +55,7 @@ MODEL = "claude-sonnet-5"
 DAY9_CITATION_JUDGMENTS_PATH = Path("evaluation/day9_citation_judgments.json")
 
 
-class AnthropicPandasAILLM(LLM):
+class AnthropicPandasAILLM(LLM):  # type: ignore[misc]  # pandasai ships no type stubs; LLM resolves to Any
     """Adapts `anthropic.Anthropic` to pandasai.llm.base.LLM's `call()`
     interface -- pandasai's PromptStudio prompts (schema description +
     conversation history + question) render to a single string via
@@ -87,7 +87,7 @@ class AnthropicPandasAILLM(LLM):
 # ---------------------------------------------------------------------------
 
 
-def load_benchmark_df(session_factory: sessionmaker | None = None) -> pd.DataFrame:
+def load_benchmark_df(session_factory: sessionmaker[Session] | None = None) -> pd.DataFrame:
     """Real evaluation/benchmark_runner.py results: Day 9's Config A/C
     benchmark, live-queried from Postgres' `benchmark_results` table."""
     session_factory = session_factory or get_session_factory(get_engine())
@@ -172,9 +172,11 @@ def ask(agent: pai.Agent, question: str) -> Any:
 
 
 def main() -> None:
+    import io
     import sys
 
-    sys.stdout.reconfigure(encoding="utf-8")
+    if isinstance(sys.stdout, io.TextIOWrapper):
+        sys.stdout.reconfigure(encoding="utf-8")
 
     dataframes = load_dataframes()
     for name, df in dataframes.items():

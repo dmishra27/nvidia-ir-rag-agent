@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, Text, create_engine
 from sqlalchemy.dialects.postgresql import ARRAY, TIMESTAMP
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 
@@ -57,7 +58,7 @@ class CoverageLog(Base):
     total_manifest = Column(Integer)
     total_indexed = Column(Integer)
     coverage_pct = Column(Float)
-    missing_docs = Column(ARRAY(String))
+    missing_docs: Column[list[str]] = Column(ARRAY(String))
     checked_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
@@ -120,12 +121,12 @@ class BenchmarkResults(Base):
     created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
-def get_engine(url: str | None = None):
+def get_engine(url: str | None = None) -> Engine:
     db_url = url or os.environ["POSTGRES_URL"]
     return create_engine(db_url, pool_pre_ping=True)
 
 
-def get_session_factory(engine=None) -> sessionmaker[Session]:
+def get_session_factory(engine: Engine | None = None) -> sessionmaker[Session]:
     if engine is None:
         engine = get_engine()
     return sessionmaker(bind=engine)

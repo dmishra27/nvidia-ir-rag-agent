@@ -27,6 +27,7 @@ AGENTS.md's mock-everything-in-tests rule.
 
 from __future__ import annotations
 
+import io
 import sys
 from typing import Any
 
@@ -125,7 +126,8 @@ def log_to_mlflow(scores: dict[str, float], experiment: str = MLFLOW_EXPERIMENT)
 
 
 def main() -> None:
-    sys.stdout.reconfigure(encoding="utf-8")
+    if isinstance(sys.stdout, io.TextIOWrapper):
+        sys.stdout.reconfigure(encoding="utf-8")
     sample_queries = BENCHMARK_QUERIES[:SAMPLE_SIZE]
 
     qa_states = [qa_agent.run(bq.query, query_id=bq.query_id) for bq in sample_queries]

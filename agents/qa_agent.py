@@ -25,6 +25,7 @@ from typing import Any, Callable
 
 import anthropic
 import structlog
+from anthropic.types import MessageParam, ToolChoiceToolParam, ToolParam
 from dotenv import load_dotenv
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
@@ -41,7 +42,7 @@ log = structlog.get_logger()
 
 MODEL = "claude-sonnet-5"
 
-CITE_TOOL: dict[str, Any] = {
+CITE_TOOL: ToolParam = {
     "name": "answer_with_citations",
     "description": (
         "Provide a grounded answer to the user's question, decomposed into "
@@ -148,25 +149,27 @@ def make_generate_node(model: str = MODEL) -> Callable[[QAState], QAState]:
             return state.model_copy(update={"answer": "", "citations": []})
 
         client = anthropic.Anthropic()
+        tool_choice: ToolChoiceToolParam = {"type": "tool", "name": "answer_with_citations"}
+        messages: list[MessageParam] = [
+            {
+                "role": "user",
+                "content": (
+                    "Answer the question using only the passages below. Each "
+                    "passage is prefixed with its chunk_id in brackets. Every "
+                    "claim in your answer must cite the chunk_id(s) that "
+                    "support it.\n\n"
+                    f"Question: {state.query}\n\nPassages:\n{_build_context(passages)}"
+                ),
+            }
+        ]
         try:
             with traced_stage("llm", state.query_id, model=model):
                 response = client.messages.create(
                     model=model,
                     max_tokens=1024,
                     tools=[CITE_TOOL],
-                    tool_choice={"type": "tool", "name": "answer_with_citations"},
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": (
-                                "Answer the question using only the passages below. Each "
-                                "passage is prefixed with its chunk_id in brackets. Every "
-                                "claim in your answer must cite the chunk_id(s) that "
-                                "support it.\n\n"
-                                f"Question: {state.query}\n\nPassages:\n{_build_context(passages)}"
-                            ),
-                        }
-                    ],
+                    tool_choice=tool_choice,
+                    messages=messages,
                 )
         except Exception as exc:
             log.error("generate_failed", query_id=state.query_id, stage="generate", exc=str(exc))
@@ -231,9 +234,13 @@ def build_graph(
     bm25_index: BM25Index, dense_index: DenseIndex, router: RerankerRouter, model: str = MODEL
 ) -> Any:
     graph = StateGraph(QAState)
-    graph.add_node("retrieve", make_retrieve_node(bm25_index, dense_index))
-    graph.add_node("rerank", make_rerank_node(router))
-    graph.add_node("generate", make_generate_node(model))
+    # mypy strict can't unify NodeInputT through add_node's StateNode Union-of-Protocols
+    # overloads for a plain Callable[[QAState], QAState] (known langgraph/mypy stub
+    # limitation, not a real type error -- each node's signature is correct). Bare
+    # ignore because the reported error code flips between call-overload/arg-type.
+    graph.add_node("retrieve", make_retrieve_node(bm25_index, dense_index))  # type: ignore
+    graph.add_node("rerank", make_rerank_node(router))  # type: ignore
+    graph.add_node("generate", make_generate_node(model))  # type: ignore
     graph.set_entry_point("retrieve")
     graph.add_edge("retrieve", "rerank")
     graph.add_edge("rerank", "generate")

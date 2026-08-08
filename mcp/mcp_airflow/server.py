@@ -39,7 +39,8 @@ def _get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         timeout=15,
     )
     response.raise_for_status()
-    return response.json()
+    result: dict[str, Any] = response.json()
+    return result
 
 
 @mcp.tool()

@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Protocol, cast
 
 import structlog
 from dotenv import load_dotenv
@@ -68,7 +68,8 @@ def build_default_encoder() -> QueryEncoder:
     log.info("dense_index_encoder_loaded", stage="dense_index", query_id="startup", hf_id=hf_id)
 
     def encode(query: str) -> list[float]:
-        return model.encode(query_prefix + query, normalize_embeddings=True).tolist()
+        vector: list[float] = model.encode(query_prefix + query, normalize_embeddings=True).tolist()
+        return vector
 
     return encode
 
@@ -103,7 +104,12 @@ class DenseIndex:
             query_id="startup",
             collection=collection_name,
         )
-        return cls(client, encoder, collection_name=collection_name)
+        # QdrantClient's real query_points signature is far wider than the
+        # QdrantSearchClient Protocol we deliberately narrowed it to (so unit
+        # tests can inject a fake without importing qdrant_client) -- mypy
+        # can't verify the structural subset match itself, but this project
+        # only ever calls the 3 args the Protocol declares.
+        return cls(cast(QdrantSearchClient, client), encoder, collection_name=collection_name)
 
     def search(self, query: str, top_k: int = 10) -> list[Candidate]:
         if top_k <= 0 or not query or not query.strip():
@@ -114,7 +120,12 @@ class DenseIndex:
         )
         return [
             Candidate(
-                chunk_id=(point.payload or {}).get("chunk_id"),
+                # Candidate.chunk_id is annotated str, but this project's dataclasses
+                # aren't runtime-validated (see retrieval/candidates.py) and a missing
+                # payload field is deliberately surfaced as None, not "", so downstream
+                # code can distinguish "no chunk_id" from "empty chunk_id" (see
+                # tests/retrieval/test_dense_index.py's missing-payload-fields test).
+                chunk_id=cast(str, (point.payload or {}).get("chunk_id")),
                 text=(point.payload or {}).get("text", ""),
                 score=float(point.score),
                 rank=rank,

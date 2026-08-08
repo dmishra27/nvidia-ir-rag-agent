@@ -105,8 +105,12 @@ def return_results(state: AgentState) -> AgentState:
 
 def build_graph(bm25_index: BM25Index, dense_index: DenseIndex, router: RerankerRouter) -> Any:
     graph = StateGraph(AgentState)
-    graph.add_node("retrieve", make_retrieve_node(bm25_index, dense_index))
-    graph.add_node("rerank", make_rerank_node(router))
+    # mypy strict can't unify NodeInputT through add_node's StateNode Union-of-Protocols
+    # overloads for a plain Callable[[AgentState], AgentState] (known langgraph/mypy stub
+    # limitation, not a real type error -- each node's signature is correct). Bare
+    # ignore because the reported error code flips between call-overload/arg-type.
+    graph.add_node("retrieve", make_retrieve_node(bm25_index, dense_index))  # type: ignore
+    graph.add_node("rerank", make_rerank_node(router))  # type: ignore
     graph.add_node("return_results", return_results)
     graph.set_entry_point("retrieve")
     graph.add_edge("retrieve", "rerank")

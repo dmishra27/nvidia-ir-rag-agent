@@ -165,7 +165,7 @@ QUERIES: list[EvalQuery] = [
 
 
 def _dcg(gains: list[int]) -> float:
-    return sum((2**g - 1) / np.log2(i + 2) for i, g in enumerate(gains))
+    return float(sum((2**g - 1) / np.log2(i + 2) for i, g in enumerate(gains)))
 
 
 def ndcg_at_k(ranked_chunk_ids: list[str], judgments: dict[str, int], k: int = TOP_K) -> float:

@@ -36,10 +36,15 @@ def build_graph(
     model: str = MODEL,
 ) -> Any:
     graph = StateGraph(EvalState)
-    graph.add_node("retrieve", make_retrieve_node(bm25_index, dense_index))
-    graph.add_node("rerank", make_rerank_node(router))
-    graph.add_node("generate", make_generate_node(model))
-    graph.add_node("evaluate", make_evaluate_node(client, model))
+    # mypy strict can't unify NodeInputT through add_node's StateNode Union-of-Protocols
+    # overloads for plain Callable[[QAState/EvalState], QAState/EvalState] nodes (known
+    # langgraph/mypy stub limitation, not a real type error -- each node's signature is
+    # correct, and EvalState subclasses QAState per agents/eval_agent.py). Bare ignore
+    # because the reported error code flips between call-overload/arg-type.
+    graph.add_node("retrieve", make_retrieve_node(bm25_index, dense_index))  # type: ignore
+    graph.add_node("rerank", make_rerank_node(router))  # type: ignore
+    graph.add_node("generate", make_generate_node(model))  # type: ignore
+    graph.add_node("evaluate", make_evaluate_node(client, model))  # type: ignore
     graph.set_entry_point("retrieve")
     graph.add_edge("retrieve", "rerank")
     graph.add_edge("rerank", "generate")

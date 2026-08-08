@@ -20,10 +20,9 @@ patching a module-level import.
 
 from __future__ import annotations
 
-from typing import Any
-
 import anthropic
 import structlog
+from anthropic.types import MessageParam, ToolChoiceToolParam, ToolParam
 from pydantic import BaseModel
 
 from agents.qa_agent import QAState
@@ -33,7 +32,7 @@ log = structlog.get_logger()
 
 MODEL = "claude-sonnet-5"
 
-JUDGE_TOOL: dict[str, Any] = {
+JUDGE_TOOL: ToolParam = {
     "name": "judge_citation",
     "description": (
         "Judge whether a passage (chunk) actually supports a claim: does the "
@@ -75,18 +74,20 @@ def judge_claim(
     model: str = MODEL,
 ) -> CitationJudgment | None:
     log.info("judge_claim", query_id=query_id, stage="citation_judge", chunk_id=chunk_id)
+    tool_choice: ToolChoiceToolParam = {"type": "tool", "name": "judge_citation"}
+    messages: list[MessageParam] = [
+        {
+            "role": "user",
+            "content": f"Claim: {claim}\n\nChunk: {chunk_text}",
+        }
+    ]
     try:
         response = client.messages.create(
             model=model,
             max_tokens=256,
             tools=[JUDGE_TOOL],
-            tool_choice={"type": "tool", "name": "judge_citation"},
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"Claim: {claim}\n\nChunk: {chunk_text}",
-                }
-            ],
+            tool_choice=tool_choice,
+            messages=messages,
         )
     except Exception as exc:
         log.error("judge_claim_failed", query_id=query_id, stage="citation_judge", exc=str(exc))

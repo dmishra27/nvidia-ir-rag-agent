@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any
+from typing import Any, cast
 
 import anthropic
 import structlog
+from anthropic.types import MessageParam, ToolChoiceAnyParam, ToolParam
 from dotenv import load_dotenv
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
@@ -18,7 +19,7 @@ log = structlog.get_logger()
 
 MODEL = "claude-opus-4-8"
 
-TOOLS: list[dict[str, Any]] = [
+TOOLS: list[ToolParam] = [
     {
         "name": "count_docs_by_gpu_family",
         "description": "Count indexed documents grouped by GPU family (Hopper, Ampere, Ada Lovelace, etc.).",
@@ -173,21 +174,23 @@ def _dispatch(session: Session, tool_name: str, params: dict[str, Any]) -> list[
 def plan_query(state: TextToSQLState) -> TextToSQLState:
     log.info("plan_query", query_id=state.query_id, stage="plan_query")
     client = anthropic.Anthropic()
+    tool_choice: ToolChoiceAnyParam = {"type": "any"}
+    messages: list[MessageParam] = [
+        {
+            "role": "user",
+            "content": (
+                "You are a text-to-SQL assistant for an NVIDIA documentation RAG system. "
+                f"User question: {state.question}\n\n"
+                "Select the most appropriate tool to answer this question."
+            ),
+        }
+    ]
     response = client.messages.create(
         model=MODEL,
         max_tokens=512,
         tools=TOOLS,
-        tool_choice={"type": "any"},
-        messages=[
-            {
-                "role": "user",
-                "content": (
-                    "You are a text-to-SQL assistant for an NVIDIA documentation RAG system. "
-                    f"User question: {state.question}\n\n"
-                    "Select the most appropriate tool to answer this question."
-                ),
-            }
-        ],
+        tool_choice=tool_choice,
+        messages=messages,
     )
     tool_block = next((b for b in response.content if b.type == "tool_use"), None)
     if tool_block is None:
@@ -242,7 +245,7 @@ def format_answer(state: TextToSQLState) -> TextToSQLState:
 
 # ── Graph ─────────────────────────────────────────────────────────────────────
 
-def build_graph():
+def build_graph() -> Any:
     graph = StateGraph(TextToSQLState)
     graph.add_node("plan_query", plan_query)
     graph.add_node("execute_query", execute_query)
@@ -263,4 +266,4 @@ def run(question: str, query_id: str | None = None) -> TextToSQLState:
     result = graph.invoke(initial)
     if isinstance(result, dict):
         return TextToSQLState(**result)
-    return result
+    return cast(TextToSQLState, result)

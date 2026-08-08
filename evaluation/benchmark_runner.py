@@ -25,6 +25,7 @@ history plus run-level aggregates, and one benchmark_results row per
 
 from __future__ import annotations
 
+import io
 import sys
 import uuid
 from pathlib import Path
@@ -34,6 +35,7 @@ import mlflow
 import structlog
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from sqlalchemy.orm import Session, sessionmaker
 
 from evaluation.relevance_labeller import (
     BENCHMARK_QUERIES_PATH,
@@ -206,7 +208,7 @@ def log_to_mlflow(config: str, rows: list[BenchmarkRow], experiment: str = MLFLO
         mlflow.log_param("num_queries", len(rows))
 
 
-def write_to_postgres(rows: list[BenchmarkRow], run_id: str, session_factory) -> int:
+def write_to_postgres(rows: list[BenchmarkRow], run_id: str, session_factory: sessionmaker[Session]) -> int:
     written = 0
     try:
         with session_factory() as session:
@@ -235,7 +237,8 @@ def write_to_postgres(rows: list[BenchmarkRow], run_id: str, session_factory) ->
 
 
 def main() -> None:
-    sys.stdout.reconfigure(encoding="utf-8")
+    if isinstance(sys.stdout, io.TextIOWrapper):
+        sys.stdout.reconfigure(encoding="utf-8")
     run_id = str(uuid.uuid4())[:8]
 
     bm25_index = BM25Index.load()

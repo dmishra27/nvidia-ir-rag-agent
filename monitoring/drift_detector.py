@@ -16,6 +16,7 @@ from __future__ import annotations
 from typing import Callable
 
 import numpy as np
+import numpy.typing as npt
 import structlog
 from pydantic import BaseModel
 
@@ -43,7 +44,7 @@ def _severity(psi: float) -> str:
 
 
 def population_stability_index(
-    baseline: np.ndarray, current: np.ndarray, buckets: int = DEFAULT_BUCKETS
+    baseline: npt.NDArray[np.float64], current: npt.NDArray[np.float64], buckets: int = DEFAULT_BUCKETS
 ) -> float:
     """PSI between two 1-D scalar samples, bucketed on baseline quantiles.
 
@@ -71,17 +72,22 @@ def population_stability_index(
     return float(np.sum((cur_pct - base_pct) * np.log(cur_pct / base_pct)))
 
 
-def _project_to_scalar(embeddings: np.ndarray, centroid: np.ndarray) -> np.ndarray:
+def _project_to_scalar(
+    embeddings: npt.NDArray[np.float64], centroid: npt.NDArray[np.float64]
+) -> npt.NDArray[np.float64]:
     """Cosine similarity of each embedding to the baseline centroid — a
     single scalar per query capturing how 'on-topic' it is relative to the
     baseline distribution, suitable for PSI bucketing."""
     norms = np.linalg.norm(embeddings, axis=1) * np.linalg.norm(centroid)
     norms = np.where(norms == 0, 1e-8, norms)
-    return (embeddings @ centroid) / norms
+    result: npt.NDArray[np.float64] = (embeddings @ centroid) / norms
+    return result
 
 
 def compute_drift(
-    baseline_embeddings: np.ndarray, current_embeddings: np.ndarray, buckets: int = DEFAULT_BUCKETS
+    baseline_embeddings: npt.NDArray[np.float64],
+    current_embeddings: npt.NDArray[np.float64],
+    buckets: int = DEFAULT_BUCKETS,
 ) -> DriftResult:
     centroid = baseline_embeddings.mean(axis=0)
     baseline_scores = _project_to_scalar(baseline_embeddings, centroid)
@@ -99,9 +105,9 @@ def compute_drift(
 
 
 def run(
-    baseline_embeddings: np.ndarray,
+    baseline_embeddings: npt.NDArray[np.float64],
     fetch_queries_fn: Callable[[], list[str]],
-    embed_fn: Callable[[list[str]], np.ndarray],
+    embed_fn: Callable[[list[str]], npt.NDArray[np.float64]],
     buckets: int = DEFAULT_BUCKETS,
 ) -> DriftResult:
     """Airflow-task-shaped entry point: fetch today's sampled queries, embed

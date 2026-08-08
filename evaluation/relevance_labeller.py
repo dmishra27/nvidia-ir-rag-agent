@@ -25,12 +25,14 @@ mirroring agents/qa_agent.py's convention for LLM calls.
 
 from __future__ import annotations
 
+import io
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
 
 import anthropic
 import structlog
+from anthropic.types import MessageParam, ToolChoiceToolParam, ToolParam
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
@@ -47,7 +49,7 @@ CANDIDATE_POOL_SIZE = 100
 BENCHMARK_QUERIES_PATH = Path("evaluation/benchmark_queries.jsonl")
 RELEVANCE_LABELS_PATH = Path("evaluation/relevance_labels.jsonl")
 
-JUDGE_TOOL: dict[str, Any] = {
+JUDGE_TOOL: ToolParam = {
     "name": "judge_relevance",
     "description": (
         "Judge whether a passage is relevant to a query: does the passage "
@@ -185,21 +187,23 @@ def label_pairs(pairs: list[RelevancePair], client: anthropic.Anthropic, model: 
     labels: list[RelevanceLabel] = []
     for pair in pairs:
         log.info("label_pair", query_id=pair.query_id, stage="label_pairs")
+        tool_choice: ToolChoiceToolParam = {"type": "tool", "name": "judge_relevance"}
+        messages: list[MessageParam] = [
+            {
+                "role": "user",
+                "content": (
+                    "Judge whether this passage is relevant to the query.\n\n"
+                    f"Query: {pair.query}\n\nPassage: {pair.passage_text}"
+                ),
+            }
+        ]
         try:
             response = client.messages.create(
                 model=model,
                 max_tokens=256,
                 tools=[JUDGE_TOOL],
-                tool_choice={"type": "tool", "name": "judge_relevance"},
-                messages=[
-                    {
-                        "role": "user",
-                        "content": (
-                            "Judge whether this passage is relevant to the query.\n\n"
-                            f"Query: {pair.query}\n\nPassage: {pair.passage_text}"
-                        ),
-                    }
-                ],
+                tool_choice=tool_choice,
+                messages=messages,
             )
         except Exception as exc:
             log.error("label_pair_failed", query_id=pair.query_id, stage="label_pairs", exc=str(exc))
@@ -224,14 +228,15 @@ def label_pairs(pairs: list[RelevancePair], client: anthropic.Anthropic, model: 
 # ── Output ───────────────────────────────────────────────────────────────
 
 
-def write_jsonl(path: Path, records: list[BaseModel]) -> None:
+def write_jsonl(path: Path, records: Sequence[BaseModel]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = (record.model_dump_json() for record in records)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def main() -> None:
-    sys.stdout.reconfigure(encoding="utf-8")
+    if isinstance(sys.stdout, io.TextIOWrapper):
+        sys.stdout.reconfigure(encoding="utf-8")
     bm25_index = BM25Index.load()
     dense_index = DenseIndex.connect()
 

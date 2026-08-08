@@ -19,7 +19,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, PointStruct, VectorParams
 from sentence_transformers import SentenceTransformer
 
-from retrieval.biencoder_eval import MODELS, load_corpus_with_doc_ids
+from retrieval.biencoder_eval import MODELS, BiEncoderConfig, load_corpus_with_doc_ids
 
 load_dotenv()
 log = structlog.get_logger()
@@ -30,7 +30,7 @@ EVAL_RESULTS_PATH = Path("biencoder_eval_results.json")
 EMBEDDINGS_CACHE_PATH = Path("data/indexes/qdrant_corpus_embeddings.npy")
 
 
-def _winning_config():
+def _winning_config() -> BiEncoderConfig:
     data = json.loads(EVAL_RESULTS_PATH.read_text())
     winner_label = data["winner"]
     for r in data["results"]:
