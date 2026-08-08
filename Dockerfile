@@ -37,15 +37,30 @@ COPY retrieval/ retrieval/
 COPY schema/ schema/
 COPY AGENTS.md SKILLS.md ./
 
+# BM25Index.load()'s default path (retrieval/bm25_index.py's
+# DEFAULT_INDEX_PATH). data/ is gitignored wholesale, but this one built
+# artifact was deliberately force-added to git (see .dockerignore's
+# !data/indexes negation, mirroring this) so the deployed image has
+# something to load -- BM25Index.load() no longer needs a populated
+# external store the way DenseIndex.connect() still does.
+COPY data/indexes/ data/indexes/
+
 # Reranker weights (ms-marco-MiniLM-L-6-v2, RERANKER_MODE=live_fast default)
 # are downloaded from HF Hub at first request, not baked into the image --
 # keeps the image small; the tradeoff is a cold-start latency spike on the
-# first /search or /ask call per container. BM25's index.pkl and the dense
-# Qdrant collection are *not* image contents: both are gitignored build/data
-# artifacts (see .gitignore's trailing "data/") that must be populated
-# against the target environment's Postgres/Qdrant before this container
-# can serve real results -- see render.yaml and day_12_storyline.md's
-# "known limitations" for the open item this leaves.
+# first /search or /ask call per container. The dense Qdrant collection is
+# still *not* image content -- DenseIndex.connect() needs a populated cloud
+# collection wired up via QDRANT_CLOUD_URL/QDRANT_CLOUD_API_KEY, which
+# nothing has pointed the deployed service at yet. Unlike the previous
+# BM25-file-missing failure (which 500'd via an unhandled exception during
+# FastAPI's Depends() resolution, before the route body ever ran),
+# agents/retrieval_agent.py's retrieve node wraps *both* the BM25 and dense
+# calls in one try/except -- a dense-search failure discards the already-
+# succeeded BM25 results too and sets state.error, so return_results()
+# comes back empty rather than BM25-only. Net effect once this image
+# includes the BM25 index: /search and /ask should return `200` with
+# `results: []` (not 500) until Qdrant is wired up for real -- see
+# render.yaml and README.md's "Known limitations" for that open item.
 
 EXPOSE 8000
 
