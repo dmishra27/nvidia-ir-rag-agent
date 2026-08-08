@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NVIDIA Documentation Search</title>
+<meta name="description" content="AI-powered hybrid search over NVIDIA CUDA and GPU architecture documentation." />
+<style>
+  :root {
+    --nv-green: #76b900;
+    --nv-green-dark: #5c9200;
+    --ink: #1a1a1a;
+    --ink-muted: #5b5b5b;
+    --ink-faint: #8a8a8a;
+    --surface: #ffffff;
+    --page-bg: #f5f6f4;
+    --border: #e4e4e0;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.09), 0 1px 3px rgba(0, 0, 0, 0.08);
+    --radius: 12px;
+    --error: #c0392b;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--page-bg);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 20px 32px;
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  header h1 {
+    margin: 0 0 10px;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  header h1 .accent {
+    color: var(--nv-green-dark);
+  }
+
+  header p.subtitle {
+    margin: 0 auto;
+    max-width: 520px;
+    color: var(--ink-muted);
+    font-size: 1.02rem;
+  }
+
+  /* ---------- Example query chips ---------- */
+  .examples {
+    margin-bottom: 20px;
+  }
+
+  .examples-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .chip {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-muted);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 0.86rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+
+  .chip:hover,
+  .chip:focus-visible {
+    border-color: var(--nv-green);
+    color: var(--nv-green-dark);
+    background: #f4faec;
+  }
+
+  /* ---------- Search box ---------- */
+  .search-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  #query-input {
+    flex: 1;
+    min-width: 0;
+    padding: 14px 16px;
+    font-size: 1rem;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+    font-family: inherit;
+  }
+
+  #query-input:focus {
+    outline: none;
+    border-color: var(--nv-green);
+    box-shadow: 0 0 0 3px rgba(118, 185, 0, 0.15);
+  }
+
+  #search-btn {
+    appearance: none;
+    border: none;
+    background: var(--nv-green);
+    color: #0f1a00;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 14px 24px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, transform 0.05s ease;
+  }
+
+  #search-btn:hover { background: var(--nv-green-dark); color: #fff; }
+  #search-btn:active { transform: translateY(1px); }
+  #search-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .search-hint {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+    margin-bottom: 36px;
+  }
+
+  /* ---------- Results ---------- */
+  #results { min-height: 20px; }
+
+  .result-card {
+    display: flex;
+    gap: 16px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    transition: box-shadow 0.15s ease;
+  }
+
+  .result-card:hover { box-shadow: var(--shadow-hover); }
+
+  .rank-badge {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--nv-green);
+    color: #0f1a00;
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .result-body { flex: 1; min-width: 0; }
+
+  .relevance-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .relevance-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    flex: none;
+  }
+
+  .relevance-track {
+    flex: 1;
+    max-width: 160px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+  }
+
+  .relevance-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--nv-green), var(--nv-green-dark));
+  }
+
+  .passage-text {
+    font-size: 0.96rem;
+    color: var(--ink);
+    margin: 0 0 10px;
+    word-wrap: break-word;
+  }
+
+  .source-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    color: var(--ink-faint);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--page-bg);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+
+  /* ---------- Status states ---------- */
+  .status-box {
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--ink-muted);
+  }
+
+  .spinner {
+    width: 30px;
+    height: 30px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    border: 3px solid var(--border);
+    border-top-color: var(--nv-green);
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status-box.error { color: var(--error); }
+
+  /* ---------- Footer ---------- */
+  footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+  }
+
+  footer .tagline { margin: 0 0 10px; }
+
+  footer .links a {
+    color: var(--nv-green-dark);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  footer .links a:hover { text-decoration: underline; }
+
+  footer .links .sep {
+    margin: 0 8px;
+    color: var(--border);
+  }
+
+  @media (max-width: 520px) {
+    .page { padding: 32px 14px 24px; }
+    header h1 { font-size: 1.6rem; }
+    .search-bar { flex-direction: column; }
+    #search-btn { width: 100%; }
+    .result-card { padding: 14px 16px; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>NVIDIA <span class="accent">Documentation</span> Search</h1>
+    <p class="subtitle">AI-powered search over 5,389 passages from NVIDIA CUDA and GPU architecture documentation</p>
+  </header>
+
+  <div class="examples">
+    <div class="examples-label">Try an example</div>
+    <div class="chip-row" id="example-chips">
+      <button class="chip" type="button">How does CUDA memory allocation work?</button>
+      <button class="chip" type="button">What is warp divergence and how does it affect performance?</button>
+      <button class="chip" type="button">NVLink bandwidth specifications</button>
+      <button class="chip" type="button">Best practices for GPU memory optimization</button>
+      <button class="chip" type="button">cudaMalloc function parameters</button>
+      <button class="chip" type="button">What causes memory errors in GPU applications?</button>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <input
+      type="text"
+      id="query-input"
+      placeholder="Ask a question about NVIDIA GPU programming, CUDA APIs, or GPU architecture..."
+      autocomplete="off"
+    />
+    <button id="search-btn" type="button">Search Documentation</button>
+  </div>
+  <div class="search-hint">Press Enter to search</div>
+
+  <div id="results"></div>
+
+  <footer>
+    <p class="tagline">Powered by hybrid BM25 + semantic search with cross-encoder re-ranking</p>
+    <p class="links">
+      <a href="/docs">API docs</a>
+      <span class="sep">&middot;</span>
+      <a href="https://github.com/dmishra27/nvidia-ir-rag-agent" target="_blank" rel="noopener noreferrer">GitHub repository</a>
+    </p>
+  </footer>
+
+</div>
+
+<script>
+  const input = document.getElementById("query-input");
+  const searchBtn = document.getElementById("search-btn");
+  const resultsEl = document.getElementById("results");
+  const chipsEl = document.getElementById("example-chips");
+
+  chipsEl.addEventListener("click", (evt) => {
+    const chip = evt.target.closest(".chip");
+    if (!chip) return;
+    input.value = chip.textContent;
+    input.focus();
+  });
+
+  searchBtn.addEventListener("click", runSearch);
+  input.addEventListener("keydown", (evt) => {
+    if (evt.key === "Enter") runSearch();
+  });
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function showLoading() {
+    resultsEl.innerHTML = `
+      <div class="status-box">
+        <div class="spinner"></div>
+        <div>Searching the documentation...</div>
+      </div>`;
+  }
+
+  function showError() {
+    resultsEl.innerHTML = `
+      <div class="status-box error">
+        Search service is unavailable right now. Please try again in a moment.
+      </div>`;
+  }
+
+  function showEmpty() {
+    resultsEl.innerHTML = `
+      <div class="status-box">
+        No relevant passages found. Try rephrasing your question.
+      </div>`;
+  }
+
+  function renderResults(results) {
+    if (!results || results.length === 0) {
+      showEmpty();
+      return;
+    }
+
+    const scores = results.map((r) => r.score);
+    const max = Math.max(...scores);
+    const min = Math.min(...scores);
+    const range = max - min;
+
+    resultsEl.innerHTML = results
+      .map((r) => {
+        const pct = range > 0 ? Math.round(((r.score - min) / range) * 100) : 100;
+        const sourceTag = r.chunk_id
+          ? `<span class="source-tag">chunk: ${escapeHtml(r.chunk_id)}</span>`
+          : "";
+        return `
+          <div class="result-card">
+            <div class="rank-badge">${r.rank}</div>
+            <div class="result-body">
+              <div class="relevance-row">
+                <span class="relevance-label">Relevance</span>
+                <div class="relevance-track">
+                  <div class="relevance-fill" style="width: ${pct}%"></div>
+                </div>
+              </div>
+              <p class="passage-text">${escapeHtml(r.text)}</p>
+              ${sourceTag}
+            </div>
+          </div>`;
+      })
+      .join("");
+  }
+
+  async function runSearch() {
+    const query = input.value.trim();
+    if (!query) {
+      input.focus();
+      return;
+    }
+
+    searchBtn.disabled = true;
+    showLoading();
+
+    try {
+      const resp = await fetch("/search?RERANKER_MODE=fallback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: query, top_k: 10, candidate_pool_size: 100 }),
+      });
+
+      if (!resp.ok) {
+        showError();
+        return;
+      }
+
+      const data = await resp.json();
+      renderResults(data.results);
+    } catch (err) {
+      showError();
+    } finally {
+      searchBtn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>

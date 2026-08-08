@@ -82,6 +82,74 @@ class TestHealth:
 
 
 # ---------------------------------------------------------------------------
+# / (HTML search UI)
+# ---------------------------------------------------------------------------
+
+
+class TestUI:
+    def test_returns_html_page(self) -> None:
+        client = TestClient(create_app(session_factory=MagicMock()))
+
+        resp = client.get("/")
+
+        assert resp.status_code == 200
+        assert resp.headers["content-type"].startswith("text/html")
+
+    def test_page_has_title_and_subtitle(self) -> None:
+        client = TestClient(create_app(session_factory=MagicMock()))
+
+        html = client.get("/").text
+
+        assert "NVIDIA" in html and "Documentation" in html and "Search" in html
+        assert "5,389 passages" in html
+
+    def test_page_lists_all_six_example_queries(self) -> None:
+        client = TestClient(create_app(session_factory=MagicMock()))
+
+        html = client.get("/").text
+
+        for example in [
+            "How does CUDA memory allocation work?",
+            "What is warp divergence and how does it affect performance?",
+            "NVLink bandwidth specifications",
+            "Best practices for GPU memory optimization",
+            "cudaMalloc function parameters",
+            "What causes memory errors in GPU applications?",
+        ]:
+            assert example in html
+
+    def test_page_calls_search_with_fallback_reranker_mode(self) -> None:
+        client = TestClient(create_app(session_factory=MagicMock()))
+
+        html = client.get("/").text
+
+        assert "/search?RERANKER_MODE=fallback" in html
+
+    def test_page_links_to_docs_and_github(self) -> None:
+        client = TestClient(create_app(session_factory=MagicMock()))
+
+        html = client.get("/").text
+
+        assert 'href="/docs"' in html
+        assert "github.com/dmishra27/nvidia-ir-rag-agent" in html
+
+    def test_ui_route_is_excluded_from_the_openapi_schema(self) -> None:
+        client = TestClient(create_app(session_factory=MagicMock()))
+
+        schema = client.get("/openapi.json").json()
+
+        assert "/" not in schema["paths"]
+
+    def test_docs_still_serves_swagger_ui(self) -> None:
+        client = TestClient(create_app(session_factory=MagicMock()))
+
+        resp = client.get("/docs")
+
+        assert resp.status_code == 200
+        assert "swagger" in resp.text.lower()
+
+
+# ---------------------------------------------------------------------------
 # /search
 # ---------------------------------------------------------------------------
 
