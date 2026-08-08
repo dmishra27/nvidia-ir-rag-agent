@@ -22,9 +22,8 @@ that no longer has the problem.
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
-
-import ragas.llms
 
 IMPORT_LINE = "from langchain_community.chat_models.vertexai import ChatVertexAI\n"
 IMPORT_REPLACEMENT = (
@@ -35,7 +34,13 @@ USAGE_REPLACEMENT = "    # ChatVertexAI removed\n"
 
 
 def main() -> None:
-    path = Path(ragas.llms.__file__).parent / "base.py"
+    # `import ragas.llms` would execute the very module we're here to patch (it's
+    # the broken import that's the whole problem), so locate the package on disk
+    # via find_spec instead -- that resolves the path without running its code.
+    spec = importlib.util.find_spec("ragas")
+    if spec is None or spec.origin is None:
+        raise RuntimeError("ragas is not installed")
+    path = Path(spec.origin).parent / "llms" / "base.py"
     text = path.read_text(encoding="utf-8")
 
     if IMPORT_LINE not in text:
