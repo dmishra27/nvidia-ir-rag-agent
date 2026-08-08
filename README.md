@@ -16,7 +16,7 @@ passage-quality-estimation research into a production-shaped RAG system.
 |---|---|
 | [Live API health check](https://nvidia-ir-rag-agent.onrender.com/health) | ✅ `200 OK` — `{"status": "ok", "service": "nvidia-ir-rag-agent"}` |
 | [Swagger UI](https://nvidia-ir-rag-agent.onrender.com/docs) | ✅ accessible — `POST /search`, `POST /ask`, `GET /health` all listed |
-| `POST /search` / `POST /ask` | ⏳ BM25 fix pushed, pending Render redeploy + re-verification — see below |
+| `POST /search` / `POST /ask` | ❌ still `500` as of the last check — see below |
 
 The service itself is genuinely live (`POSTGRES_URL`/`RERANKER_MODE`
 configured in the Render dashboard). `/search` and `/ask` previously 500'd
@@ -26,13 +26,21 @@ deploying: `retrieval/bm25_index.py`'s `BM25Index.load()` reads
 the container had no index file to load — an unhandled exception during
 FastAPI's dependency resolution, before either route's body ever ran.
 
-**Fixed**: `data/indexes/bm25_index.pkl` is now committed directly to git
-(`.dockerignore` negates it back through the otherwise-blanket `data/`
-exclusion: `!data/indexes` / `!data/indexes/**`), and `Dockerfile` copies it
-into the image. Verified locally that the file lands in a built image;
-*not yet re-verified against the live Render deployment* at the time this
-was written (that needs Render's next redeploy to actually pick up the new
-image).
+**Partially fixed, not yet resolved live**: `data/indexes/bm25_index.pkl`
+is now committed directly to git (`.dockerignore` negates it back through
+the otherwise-blanket `data/` exclusion: `!data/indexes` /
+`!data/indexes/**`), and `Dockerfile` copies it into the image — verified
+locally with an isolated test build that the file actually lands there.
+But repeated live checks against the deployed URL after that fix was
+pushed still return `500`, not the expected `200`/empty-results (`/health`
+did briefly stop responding mid-check, consistent with a redeploy
+happening, then came back — but `/search` was still `500` afterward).
+Possible causes not distinguishable from outside the Render dashboard:
+the new image may not have finished building/deploying yet, Render's
+`autoDeploy` may not have triggered, or something else in the request
+path is failing before the fix even gets exercised. **Unresolved as of
+this writing** — checking Render's own build/deploy logs directly is the
+next step, not something observable from a client-side `curl`.
 
 **Still open**: dense retrieval isn't wired up — `DenseIndex.connect()`
 needs a populated Qdrant collection via `QDRANT_CLOUD_URL`/`QDRANT_CLOUD_API_KEY`,
@@ -318,18 +326,22 @@ secrets Render prompts for (`ANTHROPIC_API_KEY`, `COHERE_API_KEY`,
 `POSTGRES_URL`, etc. — see `render.yaml`'s `sync: false` list), and it
 builds the root `Dockerfile`.
 
-**Known limitation** (documented in `render.yaml` itself; partially
-resolved since): this gets the *service* deployed and `/health`
+**Known limitation** (documented in `render.yaml` itself; fix pushed, not
+yet confirmed live): this gets the *service* deployed and `/health`
 responding, not the full retrieval stack live. `BM25Index.load()`'s
-missing index file — confirmed as the live 500's actual cause — is fixed:
-`data/indexes/bm25_index.pkl` is now committed to git and copied into the
-image (see [Live demo](#live-demo) for the `.dockerignore` mechanism).
-`DenseIndex.connect()` still needs a populated Qdrant cloud collection via
-`QDRANT_CLOUD_URL`/`QDRANT_CLOUD_API_KEY`, which nothing has pointed the
-deployed service at yet — until that happens, expect `/search`/`/ask` to
-return `200` with empty results rather than real hybrid search results
-(retrieval_agent.py's single try/except around both BM25 and dense search
-means a dense failure discards BM25's results too, not just skips dense).
+missing index file — confirmed as the live 500's actual cause — has a fix
+pushed: `data/indexes/bm25_index.pkl` is now committed to git and copied
+into the image (see [Live demo](#live-demo) for the `.dockerignore`
+mechanism, verified locally with an isolated test build). Repeated live
+checks against the deployed URL after that push still return `500`,
+though — see [Live demo](#live-demo) for the current unresolved status.
+Separately, `DenseIndex.connect()` still needs a populated Qdrant cloud
+collection via `QDRANT_CLOUD_URL`/`QDRANT_CLOUD_API_KEY`, which nothing
+has pointed the deployed service at yet — once the BM25 500 is actually
+resolved, expect `/search`/`/ask` to return `200` with empty results
+rather than real hybrid search results (retrieval_agent.py's single
+try/except around both BM25 and dense search means a dense failure
+discards BM25's results too, not just skips dense).
 
 **Live URL:** see [Live demo](#live-demo) at the top of this file.
 
@@ -357,8 +369,10 @@ most recent work (this Slackbot/HITL/live-Streamlit/README/Render session).
   `alert_fn` — both already `structlog.warning()` on their own; posting
   that back into Slack via `slack_sdk.WebClient.chat_postMessage` is a
   natural next step now that `slackbot/` exists.
-- Render deploy: BM25 index now ships in the image (see
-  [Deploy](#deploy-rendercom) above), but dense/Qdrant retrieval is still
-  not wired up, and `agents/retrieval_agent.py`'s combined BM25+dense
-  error handling means a dense failure currently discards BM25's results
-  too rather than degrading to BM25-only.
+- Render deploy: `/search`/`/ask` are still `500` live despite the BM25
+  index fix being pushed (see [Deploy](#deploy-rendercom) above) — cause
+  not yet confirmed, needs the Render dashboard's own logs to diagnose.
+  Separately, once that's resolved, dense/Qdrant retrieval is still not
+  wired up, and `agents/retrieval_agent.py`'s combined BM25+dense error
+  handling means a dense failure will discard BM25's results too rather
+  than degrading to BM25-only.
