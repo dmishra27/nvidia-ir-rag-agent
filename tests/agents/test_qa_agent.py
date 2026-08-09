@@ -145,6 +145,20 @@ class TestRetrieveNode:
         assert result.error == "bm25 index unavailable"
         assert result.fused_results == []
 
+    def test_none_dense_index_skips_dense_and_keeps_bm25_results(self) -> None:
+        """RERANKER_MODE=fallback (api/dependencies.py) passes dense_index=None
+        on purpose -- that's a deliberate skip, not a failure, so BM25 results
+        still come back fused/ranked instead of being discarded via state.error."""
+        calls: list = []
+        bm25_results = [_c("b1", 1)]
+        node = make_retrieve_node(_FakeBM25(bm25_results, calls), None)
+        state = QAState(query="q")
+
+        result = node(state)
+
+        assert result.error is None
+        assert [c.chunk_id for c in result.fused_results] == ["b1"]
+
 
 # ---------------------------------------------------------------------------
 # rerank node
@@ -443,3 +457,34 @@ class TestRunEndToEnd:
         final = QAState(**result) if isinstance(result, dict) else result
         assert final.answer == ""
         assert final.citations == []
+
+    def test_run_with_explicit_none_dense_index_skips_connect(self) -> None:
+        """Regression test: dense_index or DenseIndex.connect() used to treat an
+        explicitly-passed None the same as "omitted", silently reconnecting to
+        Qdrant anyway -- which would reintroduce the >512MB OOM RERANKER_MODE=
+        fallback (api/dependencies.py) is meant to avoid. Must stay None."""
+        with patch("agents.qa_agent.DenseIndex.connect") as mock_connect, patch(
+            "agents.qa_agent.anthropic.Anthropic"
+        ) as MockClient:
+            MockClient.return_value.messages.create.return_value = _tool_response("ans", [])
+            run(
+                "q",
+                bm25_index=_FakeBM25([_c("b1", 1)], []),
+                dense_index=None,
+                router=_FakeRouter([_c("b1", 1)], []),
+            )
+
+        mock_connect.assert_not_called()
+
+    def test_run_without_dense_index_arg_still_connects_for_real(self) -> None:
+        """monitoring/quality_regression.py and evaluation/ragas_suite.py call
+        qa_agent.run() without a dense_index -- they must keep getting a real
+        connected DenseIndex; only an explicit None skips it."""
+        with patch("agents.qa_agent.DenseIndex.connect") as mock_connect, patch(
+            "agents.qa_agent.anthropic.Anthropic"
+        ) as MockClient:
+            mock_connect.return_value = _FakeDense([], [])
+            MockClient.return_value.messages.create.return_value = _tool_response("ans", [])
+            run("q", bm25_index=_FakeBM25([], []), router=_FakeRouter([], []))
+
+        mock_connect.assert_called_once()

@@ -3,16 +3,23 @@
 # Render dashboard as a Blueprint, which reads this file from the repo
 # root; Render builds the root Dockerfile and runs its CMD (uvicorn).
 #
-# Known limitation (see docs/daily_progress/day_12_storyline.md): this
-# config gets the *service* deployed and healthy, not the full retrieval
-# stack live. BM25Index.load() and DenseIndex.connect() both need real
-# data this repo doesn't ship: data/indexes/bm25_index.pkl is gitignored
-# (see .gitignore's trailing "data/") and a populated Qdrant collection.
-# QDRANT_CLOUD_URL/QDRANT_CLOUD_API_KEY exist in .env for exactly this
-# reason but nothing has pointed the deployed service at them yet, and no
-# managed Postgres has been provisioned to replace docker-compose.yml's
-# local `postgres` service. /health will report "ok"; /search and /ask
-# will fail until that data-wiring step happens.
+# Known limitation (see docs/daily_progress/day_12_storyline.md and
+# api/dependencies.py): this config gets the *service* deployed and
+# healthy, not the full retrieval stack live. BM25Index.load() now has
+# real data (data/indexes/bm25_index.pkl is force-added to git and copied
+# into the image), but DenseIndex.connect() still needs a populated Qdrant
+# cloud collection via QDRANT_CLOUD_URL/QDRANT_CLOUD_API_KEY, which nothing
+# has pointed the deployed service at yet, and no managed Postgres has been
+# provisioned to replace docker-compose.yml's local `postgres` service.
+#
+# RERANKER_MODE=fallback below is load-bearing, not just a quality choice:
+# this plan's 512MB RAM can't fit DenseIndex.connect() + MSMarcoReranker.load()
+# (qdrant_client + two sentence-transformers/torch model loads) — confirmed
+# via Render's Events log ("Ran out of memory (used over 512MB)") on every
+# /search call before this was set. api/dependencies.py skips loading both
+# entirely in fallback mode, so /search and /ask return BM25-ranked results
+# without needing Qdrant wired up at all; switching this back to live_fast/
+# live_quality/live_frontier needs a bigger plan first.
 services:
   - type: web
     name: nvidia-ir-rag-agent-api
@@ -46,6 +53,6 @@ services:
         value: nvidia-ir-rag-agent-prod
       # Non-secret config.
       - key: RERANKER_MODE
-        value: live_fast
+        value: fallback
       - key: PYTHONUNBUFFERED
         value: "1"

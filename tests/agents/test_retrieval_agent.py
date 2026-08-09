@@ -10,6 +10,8 @@ load a cross-encoder model.
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 from agents.retrieval_agent import (
     AgentState,
     build_graph,
@@ -158,6 +160,22 @@ class TestRetrieveNode:
         result = node(state)
 
         assert result.query_id == "fixed0001"
+
+    def test_none_dense_index_skips_dense_and_keeps_bm25_results(self) -> None:
+        """RERANKER_MODE=fallback (api/dependencies.py) passes dense_index=None
+        on purpose -- that's a deliberate skip, not a failure, so BM25 results
+        still come back fused/ranked instead of being discarded via state.error."""
+        calls: list = []
+        bm25_results = [_c("b1", 1)]
+        node = make_retrieve_node(_FakeBM25(bm25_results, calls), None)
+        state = AgentState(query="q")
+
+        result = node(state)
+
+        assert result.error is None
+        assert result.bm25_results == bm25_results
+        assert result.dense_results == []
+        assert [c.chunk_id for c in result.fused_results] == ["b1"]
 
 
 # ---------------------------------------------------------------------------
@@ -326,3 +344,35 @@ class TestRunEndToEnd:
 
         final = AgentState(**result) if isinstance(result, dict) else result
         assert final.results == []
+
+    def test_run_with_explicit_none_dense_index_skips_connect_and_returns_bm25_results(
+        self,
+    ) -> None:
+        """Regression test: dense_index or DenseIndex.connect() used to treat an
+        explicitly-passed None the same as "omitted", silently reconnecting to
+        Qdrant anyway -- which would reintroduce the >512MB OOM RERANKER_MODE=
+        fallback (api/dependencies.py) is meant to avoid. Must stay None."""
+        with patch("agents.retrieval_agent.DenseIndex.connect") as mock_connect:
+            result = run(
+                "q",
+                bm25_index=_FakeBM25([_c("b1", 1)], []),
+                dense_index=None,
+                router=_FakeRouter([], []),
+            )
+
+        mock_connect.assert_not_called()
+        assert [r.chunk_id for r in result] == ["b1"]
+
+    def test_run_without_dense_index_arg_still_connects_for_real(self) -> None:
+        """Callers that omit dense_index entirely (run_hybrid_search.py, ad hoc
+        scripts) must keep getting a real connected DenseIndex -- only an
+        explicit None (the RERANKER_MODE=fallback path) skips it."""
+        with patch("agents.retrieval_agent.DenseIndex.connect") as mock_connect:
+            mock_connect.return_value = _FakeDense([], [])
+            run(
+                "q",
+                bm25_index=_FakeBM25([], []),
+                router=_FakeRouter([], []),
+            )
+
+        mock_connect.assert_called_once()

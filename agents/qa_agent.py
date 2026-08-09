@@ -40,6 +40,14 @@ from retrieval.rrf_fusion import fuse
 load_dotenv()
 log = structlog.get_logger()
 
+# See agents/retrieval_agent.py's identical sentinel for why: `dense_index or
+# DenseIndex.connect()` can't distinguish "omitted" (auto-connect, used by
+# monitoring/quality_regression.py and evaluation/ragas_suite.py) from
+# "explicitly None" (RERANKER_MODE=fallback skipped loading it on purpose --
+# api/dependencies.py -- and connecting for real here would reintroduce the
+# >512MB OOM on Render's free tier).
+_UNSET_DENSE_INDEX: Any = object()
+
 MODEL = "claude-sonnet-5"
 
 CITE_TOOL: ToolParam = {
@@ -98,14 +106,23 @@ class QAState(BaseModel):
 
 # ── Node factories ────────────────────────────────────────────────────────────
 
-def make_retrieve_node(bm25_index: BM25Index, dense_index: DenseIndex) -> Callable[[QAState], QAState]:
+def make_retrieve_node(
+    bm25_index: BM25Index, dense_index: DenseIndex | None
+) -> Callable[[QAState], QAState]:
     def retrieve(state: QAState) -> QAState:
         log.info("retrieve", query_id=state.query_id, stage="retrieve")
         try:
             with traced_stage("bm25", state.query_id, top_k=state.candidate_pool_size):
                 bm25_results = bm25_index.search(state.query, top_k=state.candidate_pool_size)
-            with traced_stage("dense", state.query_id, top_k=state.candidate_pool_size):
-                dense_results = dense_index.search(state.query, top_k=state.candidate_pool_size)
+            if dense_index is None:
+                # RERANKER_MODE=fallback deliberately skipped loading DenseIndex
+                # (api/dependencies.py) -- see agents/retrieval_agent.py's identical
+                # guard: a configuration choice, not a failure, so BM25 results
+                # still get fused/returned instead of being discarded.
+                dense_results: list[Candidate] = []
+            else:
+                with traced_stage("dense", state.query_id, top_k=state.candidate_pool_size):
+                    dense_results = dense_index.search(state.query, top_k=state.candidate_pool_size)
             with traced_stage("rrf", state.query_id, pool_size=state.candidate_pool_size):
                 fused_results = fuse(bm25_results, dense_results, top_k=state.candidate_pool_size)
         except Exception as exc:
@@ -231,7 +248,7 @@ def make_generate_node(model: str = MODEL) -> Callable[[QAState], QAState]:
 # ── Graph ─────────────────────────────────────────────────────────────────────
 
 def build_graph(
-    bm25_index: BM25Index, dense_index: DenseIndex, router: RerankerRouter, model: str = MODEL
+    bm25_index: BM25Index, dense_index: DenseIndex | None, router: RerankerRouter, model: str = MODEL
 ) -> Any:
     graph = StateGraph(QAState)
     # mypy strict can't unify NodeInputT through add_node's StateNode Union-of-Protocols
@@ -260,12 +277,12 @@ def run(
     candidate_pool_size: int = 100,
     query_id: str | None = None,
     bm25_index: BM25Index | None = None,
-    dense_index: DenseIndex | None = None,
+    dense_index: DenseIndex | None = _UNSET_DENSE_INDEX,
     router: RerankerRouter | None = None,
     model: str = MODEL,
 ) -> QAState:
     bm25_index = bm25_index or BM25Index.load()
-    dense_index = dense_index or DenseIndex.connect()
+    dense_index = DenseIndex.connect() if dense_index is _UNSET_DENSE_INDEX else dense_index
     router = router or build_default_router()
     graph = build_graph(bm25_index, dense_index, router, model)
     initial = QAState(

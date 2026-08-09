@@ -26,8 +26,8 @@ def ask(
     request: Request,
     reranker_mode: str | None = Query(default=None, alias="RERANKER_MODE"),
     bm25_index: BM25Index = Depends(get_bm25_index),
-    dense_index: DenseIndex = Depends(get_dense_index),
-    msmarco: MSMarcoReranker = Depends(get_msmarco_reranker),
+    dense_index: DenseIndex | None = Depends(get_dense_index),
+    msmarco: MSMarcoReranker | None = Depends(get_msmarco_reranker),
 ) -> AskResponse:
     query_id = str(uuid.uuid4())[:8]
     request.state.query_id = query_id
@@ -35,7 +35,12 @@ def ask(
 
     log.info("ask_request", query_id=query_id, stage="ask", reranker_mode=reranker_mode)
 
-    reranker_router = RerankerRouter(live_fast=msmarco.rerank, mode=reranker_mode)
+    # msmarco is None when RERANKER_MODE=fallback skipped loading it (see
+    # api/dependencies.py) -- RerankerRouter already degrades gracefully to
+    # its fallback tier when a higher tier is None, per reranker_router.py.
+    reranker_router = RerankerRouter(
+        live_fast=msmarco.rerank if msmarco is not None else None, mode=reranker_mode
+    )
     state = qa_agent.run(
         body.query,
         top_k=body.top_k,

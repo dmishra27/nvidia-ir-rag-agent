@@ -45,22 +45,25 @@ COPY AGENTS.md SKILLS.md ./
 # external store the way DenseIndex.connect() still does.
 COPY data/indexes/ data/indexes/
 
-# Reranker weights (ms-marco-MiniLM-L-6-v2, RERANKER_MODE=live_fast default)
-# are downloaded from HF Hub at first request, not baked into the image --
-# keeps the image small; the tradeoff is a cold-start latency spike on the
-# first /search or /ask call per container. The dense Qdrant collection is
-# still *not* image content -- DenseIndex.connect() needs a populated cloud
-# collection wired up via QDRANT_CLOUD_URL/QDRANT_CLOUD_API_KEY, which
-# nothing has pointed the deployed service at yet. Unlike the previous
-# BM25-file-missing failure (which 500'd via an unhandled exception during
-# FastAPI's Depends() resolution, before the route body ever ran),
-# agents/retrieval_agent.py's retrieve node wraps *both* the BM25 and dense
-# calls in one try/except -- a dense-search failure discards the already-
-# succeeded BM25 results too and sets state.error, so return_results()
-# comes back empty rather than BM25-only. Net effect once this image
-# includes the BM25 index: /search and /ask should return `200` with
-# `results: []` (not 500) until Qdrant is wired up for real -- see
-# render.yaml and README.md's "Known limitations" for that open item.
+# Reranker weights (ms-marco-MiniLM-L-6-v2) are downloaded from HF Hub at
+# first request, not baked into the image -- only matters for RERANKER_MODE
+# live_fast/live_quality/live_frontier, since fallback (render.yaml's
+# current default) never loads a cross-encoder at all. The dense Qdrant
+# collection is still *not* image content -- DenseIndex.connect() needs a
+# populated cloud collection wired up via QDRANT_CLOUD_URL/
+# QDRANT_CLOUD_API_KEY, which nothing has pointed the deployed service at
+# yet. That used to sink /search and /ask entirely: agents/retrieval_agent.py
+# and agents/qa_agent.py's retrieve nodes wrapped *both* the BM25 and dense
+# calls in one try/except, so a dense-search failure (or, on this plan's
+# 512MB RAM, DenseIndex.connect()/MSMarcoReranker.load() themselves OOMing
+# before a request was even served) discarded the already-succeeded BM25
+# results too. api/dependencies.py now skips loading DenseIndex/
+# MSMarcoReranker entirely under RERANKER_MODE=fallback, and the retrieve
+# nodes treat that None as a deliberate skip rather than a failure -- net
+# effect: /search and /ask return real BM25-ranked results without Qdrant
+# wired up at all. See render.yaml and README.md's "Known limitations" for
+# what's still open (real hybrid dense+BM25 search needs Qdrant + a bigger
+# plan).
 
 EXPOSE 8000
 

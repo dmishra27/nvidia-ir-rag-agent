@@ -35,6 +35,16 @@ from retrieval.rrf_fusion import fuse
 
 log = structlog.get_logger()
 
+# `dense_index or DenseIndex.connect()` below can't tell "caller omitted
+# dense_index" (auto-connect a real one, used by run_hybrid_search.py and
+# tests that call run() bare) apart from "caller explicitly passed None"
+# (RERANKER_MODE=fallback skipped loading it on purpose -- see
+# api/dependencies.py -- and a real DenseIndex.connect() here would defeat
+# that, reintroducing the >512MB OOM on Render's free tier). This sentinel
+# default lets `is _UNSET_DENSE_INDEX` distinguish the two; `Any` keeps
+# mypy strict happy about the DenseIndex | None annotation below.
+_UNSET_DENSE_INDEX: Any = object()
+
 
 class AgentState(BaseModel):
     query_id: str = Field(default_factory=lambda: str(uuid.uuid4())[:8])
@@ -51,14 +61,24 @@ class AgentState(BaseModel):
 
 # ── Node factories ────────────────────────────────────────────────────────────
 
-def make_retrieve_node(bm25_index: BM25Index, dense_index: DenseIndex) -> Callable[[AgentState], AgentState]:
+def make_retrieve_node(
+    bm25_index: BM25Index, dense_index: DenseIndex | None
+) -> Callable[[AgentState], AgentState]:
     def retrieve(state: AgentState) -> AgentState:
         log.info("retrieve", query_id=state.query_id, stage="retrieve")
         try:
             with traced_stage("bm25", state.query_id, top_k=state.candidate_pool_size):
                 bm25_results = bm25_index.search(state.query, top_k=state.candidate_pool_size)
-            with traced_stage("dense", state.query_id, top_k=state.candidate_pool_size):
-                dense_results = dense_index.search(state.query, top_k=state.candidate_pool_size)
+            if dense_index is None:
+                # RERANKER_MODE=fallback deliberately skipped loading DenseIndex
+                # (api/dependencies.py, to fit Render's free-tier 512MB) -- that's
+                # a configuration choice, not a failure, so BM25 results still get
+                # fused/returned below instead of being discarded into state.error
+                # the way an actual dense-search exception is (except clause below).
+                dense_results: list[Candidate] = []
+            else:
+                with traced_stage("dense", state.query_id, top_k=state.candidate_pool_size):
+                    dense_results = dense_index.search(state.query, top_k=state.candidate_pool_size)
             with traced_stage("rrf", state.query_id, pool_size=state.candidate_pool_size):
                 fused_results = fuse(bm25_results, dense_results, top_k=state.candidate_pool_size)
         except Exception as exc:
@@ -103,7 +123,7 @@ def return_results(state: AgentState) -> AgentState:
 
 # ── Graph ─────────────────────────────────────────────────────────────────────
 
-def build_graph(bm25_index: BM25Index, dense_index: DenseIndex, router: RerankerRouter) -> Any:
+def build_graph(bm25_index: BM25Index, dense_index: DenseIndex | None, router: RerankerRouter) -> Any:
     graph = StateGraph(AgentState)
     # mypy strict can't unify NodeInputT through add_node's StateNode Union-of-Protocols
     # overloads for a plain Callable[[AgentState], AgentState] (known langgraph/mypy stub
@@ -136,11 +156,11 @@ def run(
     candidate_pool_size: int = 100,
     query_id: str | None = None,
     bm25_index: BM25Index | None = None,
-    dense_index: DenseIndex | None = None,
+    dense_index: DenseIndex | None = _UNSET_DENSE_INDEX,
     router: RerankerRouter | None = None,
 ) -> list[Candidate]:
     bm25_index = bm25_index or BM25Index.load()
-    dense_index = dense_index or DenseIndex.connect()
+    dense_index = DenseIndex.connect() if dense_index is _UNSET_DENSE_INDEX else dense_index
     router = router or build_default_router()
     graph = build_graph(bm25_index, dense_index, router)
     initial = AgentState(

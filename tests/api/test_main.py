@@ -200,6 +200,21 @@ class TestSearch:
 
         assert resp.status_code == 422
 
+    def test_fallback_mode_with_no_dense_index_or_reranker_still_returns_200(self) -> None:
+        """This is the shape RERANKER_MODE=fallback actually produces on Render
+        (api/dependencies.py returns None for both rather than loading torch/
+        qdrant_client, to fit the 512MB free tier) -- must not 500."""
+        app = create_app(session_factory=MagicMock())
+        app.dependency_overrides[get_bm25_index] = lambda: _FakeBM25([_c("b1", 1)])
+        app.dependency_overrides[get_dense_index] = lambda: None
+        app.dependency_overrides[get_msmarco_reranker] = lambda: None
+        client = TestClient(app)
+
+        resp = client.post("/search?RERANKER_MODE=fallback", json={"query": "cudaMalloc parameters"})
+
+        assert resp.status_code == 200
+        assert [r["chunk_id"] for r in resp.json()["results"]] == ["b1"]
+
 
 # ---------------------------------------------------------------------------
 # /ask
@@ -254,3 +269,19 @@ class TestAsk:
             resp = client.post("/ask?RERANKER_MODE=fallback", json={"query": "q"})
 
         assert resp.json()["reranker_mode"] == "fallback"
+
+    def test_fallback_mode_with_no_dense_index_or_reranker_still_returns_200(self) -> None:
+        """Same real Render shape as TestSearch's equivalent test -- must not 500."""
+        app = create_app(session_factory=MagicMock())
+        app.dependency_overrides[get_bm25_index] = lambda: _FakeBM25([_c("b1", 1)])
+        app.dependency_overrides[get_dense_index] = lambda: None
+        app.dependency_overrides[get_msmarco_reranker] = lambda: None
+        client = TestClient(app)
+        mock_resp = _tool_response("ans", [{"claim": "ans", "chunk_ids": ["b1"]}])
+
+        with patch("agents.qa_agent.anthropic.Anthropic") as MockClient:
+            MockClient.return_value.messages.create.return_value = mock_resp
+            resp = client.post("/ask?RERANKER_MODE=fallback", json={"query": "cudaMalloc parameters"})
+
+        assert resp.status_code == 200
+        assert resp.json()["answer"] == "ans"
