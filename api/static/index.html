@@ -152,8 +152,42 @@
     margin-bottom: 36px;
   }
 
+  /* ---------- Mode badge ---------- */
+  .mode-badge {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--ink-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    width: fit-content;
+  }
+
+  .mode-badge.visible { display: flex; }
+
+  .mode-badge .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--nv-green);
+    flex: none;
+  }
+
   /* ---------- Results ---------- */
   #results { min-height: 20px; }
+
+  .quality-note {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+    margin-top: 16px;
+  }
 
   .result-card {
     display: flex;
@@ -337,10 +371,12 @@
   </div>
   <div class="search-hint">Press Enter to search</div>
 
+  <div class="mode-badge" id="mode-badge"><span class="dot"></span><span id="mode-badge-text"></span></div>
+
   <div id="results"></div>
 
   <footer>
-    <p class="tagline">Powered by hybrid BM25 + semantic search with cross-encoder re-ranking</p>
+    <p class="tagline">Powered by BM25 keyword search &middot; Full hybrid pipeline (BM25 + semantic + re-ranking) available via local setup</p>
     <p class="links">
       <a href="/docs">API docs</a>
       <span class="sep">&middot;</span>
@@ -360,6 +396,23 @@
   const searchBtn = document.getElementById("search-btn");
   const resultsEl = document.getElementById("results");
   const chipsEl = document.getElementById("example-chips");
+  const modeBadge = document.getElementById("mode-badge");
+  const modeBadgeText = document.getElementById("mode-badge-text");
+
+  const MODE_LABELS = {
+    fallback: "BM25 keyword search (fallback)",
+    live_fast: "Hybrid BM25 + semantic search with cross-encoder re-ranking",
+  };
+
+  function hideModeBadge() {
+    modeBadge.classList.remove("visible");
+  }
+
+  function showModeBadge(mode) {
+    const label = MODE_LABELS[mode] || (mode ? `${mode} mode` : "BM25 keyword search (fallback)");
+    modeBadgeText.textContent = `Search mode: ${label}`;
+    modeBadge.classList.add("visible");
+  }
 
   chipsEl.addEventListener("click", (evt) => {
     const chip = evt.target.closest(".chip");
@@ -380,6 +433,7 @@
   }
 
   function showLoading() {
+    hideModeBadge();
     resultsEl.innerHTML = `
       <div class="status-box">
         <div class="spinner"></div>
@@ -388,6 +442,7 @@
   }
 
   function showError() {
+    hideModeBadge();
     resultsEl.innerHTML = `
       <div class="status-box error">
         Search service is unavailable right now. Please try again in a moment.
@@ -401,7 +456,9 @@
       </div>`;
   }
 
-  function renderResults(results) {
+  function renderResults(results, mode) {
+    showModeBadge(mode);
+
     if (!results || results.length === 0) {
       showEmpty();
       return;
@@ -433,7 +490,8 @@
             </div>
           </div>`;
       })
-      .join("");
+      .join("") +
+      `<p class="quality-note">Results ranked by BM25 keyword relevance. Run locally for hybrid semantic + re-ranking results.</p>`;
   }
 
   async function runSearch() {
@@ -459,7 +517,7 @@
       }
 
       const data = await resp.json();
-      renderResults(data.results);
+      renderResults(data.results, data.reranker_mode);
     } catch (err) {
       showError();
     } finally {
