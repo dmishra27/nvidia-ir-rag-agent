@@ -249,6 +249,20 @@
     background: linear-gradient(90deg, var(--nv-green), var(--nv-green-dark));
   }
 
+  .relevance-score {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--ink-faint);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    flex: none;
+  }
+
+  .doc-label {
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    margin: 0 0 6px;
+  }
+
   .passage-text {
     font-size: 0.96rem;
     color: var(--ink);
@@ -475,6 +489,13 @@
         const sourceTag = r.chunk_id
           ? `<span class="source-tag">chunk: ${escapeHtml(r.chunk_id)}</span>`
           : "";
+
+        const docMatch = /^\[([^\]]+)\]\s*/.exec(r.text || "");
+        const docLabel = docMatch
+          ? `<p class="doc-label">📄 ${escapeHtml(docMatch[1])}</p>`
+          : "";
+        const passageText = docMatch ? r.text.slice(docMatch[0].length) : r.text;
+
         return `
           <div class="result-card">
             <div class="rank-badge">${r.rank}</div>
@@ -484,8 +505,10 @@
                 <div class="relevance-track">
                   <div class="relevance-fill" style="width: ${pct}%"></div>
                 </div>
+                <span class="relevance-score">${r.score.toFixed(2)}</span>
               </div>
-              <p class="passage-text">${escapeHtml(r.text)}</p>
+              ${docLabel}
+              <p class="passage-text">${escapeHtml(passageText)}</p>
               ${sourceTag}
             </div>
           </div>`;
