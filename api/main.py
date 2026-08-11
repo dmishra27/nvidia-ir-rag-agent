@@ -8,23 +8,43 @@ this avoids a live Postgres connection in unit tests while still letting
 `/` serves api/routers/ui.py's guided HTML search page; `/docs` stays at
 FastAPI's default Swagger UI location (ui.router's route is registered
 with include_in_schema=False so it doesn't show up as an operation there).
+
+The lifespan handler calls api/telemetry.py's `configure_tracing()` once at
+startup, gated by ENABLE_TRACING (default off) so `trace.get_tracer()`
+keeps returning OTel's no-op tracer -- and every `traced_stage` span in
+agents/retrieval_agent.py and agents/qa_agent.py stays inert -- unless a
+Jaeger collector is actually expected to be listening. This keeps
+TestClient(create_app(...)) and every existing contract test unaffected,
+since ENABLE_TRACING is unset in the test environment. OTLP_ENDPOINT
+overrides where spans get exported (see api/telemetry.py's
+DEFAULT_OTLP_ENDPOINT).
 """
 
 from __future__ import annotations
 
-from typing import Any, Callable
+import os
+from contextlib import asynccontextmanager
+from typing import Any, AsyncIterator, Callable
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from api.middleware import RequestLatencyMiddleware
 from api.routers import ask, health, search, ui
+from api.telemetry import DEFAULT_OTLP_ENDPOINT, configure_tracing
 
 load_dotenv()
 
 
+@asynccontextmanager
+async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
+    if os.environ.get("ENABLE_TRACING", "").lower() in ("1", "true", "yes"):
+        configure_tracing(otlp_endpoint=os.environ.get("OTLP_ENDPOINT", DEFAULT_OTLP_ENDPOINT))
+    yield
+
+
 def create_app(session_factory: Callable[[], Any] | None = None) -> FastAPI:
-    app = FastAPI(title="nvidia-ir-rag-agent")
+    app = FastAPI(title="nvidia-ir-rag-agent", version="1.0.0", lifespan=_lifespan)
     app.add_middleware(RequestLatencyMiddleware, session_factory=session_factory)
     app.include_router(ui.router)
     app.include_router(search.router)

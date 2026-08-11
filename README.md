@@ -168,6 +168,7 @@ cp .env.example .env                               # then fill in the keys below
 | `QDRANT_CLOUD_URL`, `QDRANT_CLOUD_API_KEY` | Render deploy | managed Qdrant for prod (local `QDRANT_URL` won't resolve there) |
 | `MLFLOW_TRACKING_URI` | benchmark logging, Streamlit live charts | defaults to `http://localhost:5000` |
 | `LANGCHAIN_API_KEY`, `LANGCHAIN_TRACING_V2`, `LANGCHAIN_PROJECT` | LangSmith tracing | optional but recommended |
+| `ENABLE_TRACING`, `OTLP_ENDPOINT` | Jaeger tracing (`api/telemetry.py`) | off by default; `OTLP_ENDPOINT` defaults to `http://localhost:4317` |
 | `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN` | Slack bot (Day 13) | Socket Mode — `xoxb-...` / `xapp-...` |
 | `FASTAPI_BASE_URL` | Slack bot | defaults to `http://localhost:8000` |
 | `RERANKER_MODE` | `/ask`, `/search` | `live_fast` (default) / `live_quality` / `live_frontier` / `benchmark` / `fallback` |
