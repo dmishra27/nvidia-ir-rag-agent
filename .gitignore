@@ -38,3 +38,6 @@ Thumbs.db
 verify_phase_c*.py
 
 data/
+
+ask.json
+body.json
