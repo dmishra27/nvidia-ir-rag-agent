@@ -15,7 +15,6 @@ notebooks/
 docs/
 tests/
 airflow/
-streamlit_app/
 slackbot/
 ollama/
 *.log

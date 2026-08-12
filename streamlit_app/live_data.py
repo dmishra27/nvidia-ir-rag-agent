@@ -41,7 +41,7 @@ from mlflow.tracking import MlflowClient
 from schema.models import BenchmarkResults, get_engine, get_session_factory
 from streamlit_app.mock_data import BenchmarkConfigSummary
 
-MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000")
+MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5001")
 CITATION_JUDGMENTS_PATH = Path("evaluation/day9_citation_judgments.json")
 
 

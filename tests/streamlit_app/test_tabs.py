@@ -14,7 +14,9 @@ AGENTS.md's mock-everything-in-tests rule.
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
+import pytest
 from streamlit.testing.v1 import AppTest
 
 # AppTest.from_file() resolves relative paths against the *calling file's*
@@ -22,6 +24,34 @@ from streamlit.testing.v1 import AppTest
 # `pythonpath = .` at the repo root, which AppTest doesn't use) -- so every
 # path here is anchored to the repo root explicitly instead.
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+@pytest.fixture(autouse=True)
+def _no_live_mlflow_or_postgres() -> None:
+    """DEF-04: benchmark_tab.py's and eval_dashboard.py's `render()` default
+    to streamlit_app/live_data.py's live fetchers, which reach for a real
+    MLflow/Postgres. Against an unreachable MLflow, live_data._mlflow_client()'s
+    own 15s timeout (set deliberately generous there for a real deployment --
+    see its docstring) turns each of the ~5 affected `render()` calls in this
+    file into a 15s stall, stretching a ~2min suite past 7 minutes, and
+    non-deterministically depending on what's running locally.
+
+    Patching _mlflow_client/get_engine (not the fetch_* functions themselves)
+    works even though benchmark_tab.render()/eval_dashboard.render() already
+    bound live_data.fetch_* as default argument values at import time -- each
+    fetch_* function still looks up _mlflow_client/get_engine through
+    live_data's module namespace on every call, so the patched version is
+    what actually gets invoked. Every affected test only asserts on tab
+    content that's identical whether it came from a live query or the
+    mock_data fallback (e.g. config names, metric labels), so failing fast
+    into that already-tested fallback path is a correctness-neutral, and
+    much faster + deterministic, substitute for a live service.
+    """
+    with (
+        patch("streamlit_app.live_data._mlflow_client", side_effect=RuntimeError("mocked: no live MLflow in tests")),
+        patch("streamlit_app.live_data.get_engine", side_effect=RuntimeError("mocked: no live Postgres in tests")),
+    ):
+        yield
 
 
 def _run(relative_path: str) -> AppTest:

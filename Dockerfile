@@ -1,8 +1,18 @@
-# nvidia-ir-rag-agent — production image for the FastAPI service
-# (api/main.py: /search, /ask, /health). Not used for Airflow, Streamlit,
-# or the MCP servers -- each of those has its own runtime shape and stays
-# on docker-compose.yml's images for local dev.
-FROM python:3.11-slim AS base
+# nvidia-ir-rag-agent — multi-stage image for the two Python services this
+# project actually ships: the FastAPI app (api/main.py: /search, /ask,
+# /health) and the Streamlit UI (streamlit_app/app.py's 5 tabs). Not used
+# for Airflow, MLflow, or the MCP servers -- each of those has its own
+# runtime shape and stays on docker-compose.yml's images for local dev.
+#
+# `deps` installs the ~3GB torch/transformers/langchain/mlflow/streamlit
+# stack exactly once; `api` and `streamlit` both build FROM it. docker-
+# compose.yml points both services at this one Dockerfile with a different
+# `target:`, so the second service's build is a cache hit on the expensive
+# pip-install layer instead of paying a second ~5-15min cold install --
+# streamlit_app/benchmark_tab.py and eval_dashboard.py import
+# evaluation/benchmark_runner.py (torch-backed rerankers), so there's no
+# meaningfully lighter dependency set available for the UI image anyway.
+FROM python:3.11-slim AS deps
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -47,23 +57,23 @@ COPY data/indexes/ data/indexes/
 
 # Reranker weights (ms-marco-MiniLM-L-6-v2) are downloaded from HF Hub at
 # first request, not baked into the image -- only matters for RERANKER_MODE
-# live_fast/live_quality/live_frontier, since fallback (render.yaml's
-# current default) never loads a cross-encoder at all. The dense Qdrant
-# collection is still *not* image content -- DenseIndex.connect() needs a
-# populated cloud collection wired up via QDRANT_CLOUD_URL/
-# QDRANT_CLOUD_API_KEY, which nothing has pointed the deployed service at
-# yet. That used to sink /search and /ask entirely: agents/retrieval_agent.py
-# and agents/qa_agent.py's retrieve nodes wrapped *both* the BM25 and dense
-# calls in one try/except, so a dense-search failure (or, on this plan's
-# 512MB RAM, DenseIndex.connect()/MSMarcoReranker.load() themselves OOMing
-# before a request was even served) discarded the already-succeeded BM25
-# results too. api/dependencies.py now skips loading DenseIndex/
-# MSMarcoReranker entirely under RERANKER_MODE=fallback, and the retrieve
-# nodes treat that None as a deliberate skip rather than a failure -- net
-# effect: /search and /ask return real BM25-ranked results without Qdrant
-# wired up at all. See render.yaml and README.md's "Known limitations" for
-# what's still open (real hybrid dense+BM25 search needs Qdrant + a bigger
-# plan).
+# live_fast/live_quality/live_frontier, since fallback never loads a
+# cross-encoder at all. The dense Qdrant collection is also *not* image
+# content -- DenseIndex.connect() needs QDRANT_URL (docker-compose.yml's
+# `qdrant` service locally) or QDRANT_CLOUD_URL/QDRANT_CLOUD_API_KEY
+# (managed Qdrant in prod) pointed at a populated collection -- run
+# run_ingest_direct.py against it after `docker compose up -d` (see
+# README.md's quickstart).
+
+# `api` is deliberately the *last* stage in this file: render.yaml builds
+# this Dockerfile with no `--target` (Render's Blueprint spec has no field
+# for one), and a target-less `docker build` on a multi-stage file defaults
+# to the last stage -- so this ordering is what keeps the existing Render
+# deploy building the API image rather than the UI. docker-compose.yml
+# always builds both stages by explicit `target:`, so it's unaffected by
+# this ordering either way.
+# ---------------------------------------------------------------------------
+FROM deps AS api
 
 EXPOSE 8000
 
@@ -71,3 +81,15 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()" || exit 1
 
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# ---------------------------------------------------------------------------
+FROM deps AS streamlit
+
+COPY streamlit_app/ streamlit_app/
+
+EXPOSE 8501
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health').read()" || exit 1
+
+CMD ["streamlit", "run", "streamlit_app/app.py", "--server.address=0.0.0.0", "--server.port=8501"]

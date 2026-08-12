@@ -55,9 +55,10 @@ failure degrades to BM25-only instead of empty is a natural next step, not
 done here.
 
 **For working `/search` and `/ask` with real results today**, run it
-locally — see [How to run](#how-to-run) below (`docker-compose up`, then
-`uvicorn api.main:app`, which loads the same `BM25Index`/`DenseIndex` from
-your local `data/`/Qdrant instead of Render's still-Qdrant-less one).
+locally — see [How to run](#how-to-run) below (`docker compose up -d`
+brings up the `api` container itself now, loading the same
+`BM25Index`/`DenseIndex` from your local `data/`/Qdrant instead of
+Render's still-Qdrant-less one).
 
 ## Problem statement
 
@@ -146,63 +147,170 @@ structure live in [`AGENTS.md`](AGENTS.md); reusable code patterns live in
 
 ## How to run
 
-### 1. Setup
+Everything below works from a clean clone at any tagged commit — no step
+depends on state left over from a previous run.
+
+### 0. Prerequisites
+
+- Docker + Docker Compose v2 (`docker compose version` — bundled with
+  current Docker Desktop; the old standalone `docker-compose` binary works
+  too, just substitute the hyphenated form below).
+- Python 3.11 + a virtualenv, **only** for the corpus-ingestion step below
+  and for anything else that runs on the host rather than in a container
+  (tests, the MCP servers, the Slack bot, one-off `run_*.py` scripts) —
+  the FastAPI app and Streamlit UI themselves no longer need this.
+- An `ANTHROPIC_API_KEY` if you want `/ask` or the Slack bot to actually
+  generate answers — see the feature/key matrix in step 2.
+
+### 1. Clone
 
 ```bash
 git clone https://github.com/dmishra27/nvidia-ir-rag-agent.git
 cd nvidia-ir-rag-agent
+```
+
+### 2. Configure `.env`
+
+```bash
+cp .env.example .env
+```
+
+Every value in `.env.example` already has a working default for a local
+`docker compose up` — you do **not** need to fill in anything to get the
+stack running and `/search` returning real BM25 results. Fill in keys only
+for the features that need them:
+
+| Variable | Required for | Works without it? |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | `/ask` (Claude Sonnet 5 generation + citations), Slack bot, RAGAS eval | No — `/ask` returns a 500 without it. `/search` and `/health` are unaffected. |
+| `COHERE_API_KEY` | `RERANKER_MODE=live_frontier` / `benchmark` | Only needed for those two modes — default `RERANKER_MODE=live_fast` uses a local cross-encoder, no key. |
+| `QDRANT_CLOUD_URL`, `QDRANT_CLOUD_API_KEY` | Render/prod deploy only | Yes — local dev uses `QDRANT_URL` against the `qdrant` container instead. |
+| `LANGCHAIN_API_KEY` | LangSmith tracing | Yes — optional, off without it. |
+| `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN` | Slack bot (`python -m slackbot.app`, not part of `docker compose up`) | Yes — only needed if you run the Slack bot. |
+| everything else (`POSTGRES_*`, `QDRANT_URL`, `MLFLOW_TRACKING_URI`, `RERANKER_MODE`, `ENABLE_TRACING`, `ENABLE_PHOENIX`, `OTLP_ENDPOINT`, `PHOENIX_ENDPOINT`) | wiring between services | Yes — already defaulted to match `docker-compose.yml`. |
+
+`.env`'s `POSTGRES_URL`/`QDRANT_URL`/`MLFLOW_TRACKING_URI` point at
+`localhost` — that's correct for host-run tooling (MCP servers, `run_*.py`
+scripts, notebooks, `pytest`). The `api`/`streamlit` containers don't read
+these from `.env` at all; `docker-compose.yml` wires them to the
+in-network service names (`postgres`, `qdrant`, `mlflow`) directly, since
+`localhost` inside a container means the container itself, not the host.
+
+### 3. Bring up the stack
+
+```bash
+docker compose up -d
+```
+
+This builds and starts **every** service this project runs, including the
+app itself:
+
+| Service | What it is |
+|---|---|
+| `api` | FastAPI (`/search`, `/ask`, `/health`) — builds from the root `Dockerfile`'s `api` target |
+| `streamlit` | The 5-tab UI — builds from the same `Dockerfile`'s `streamlit` target |
+| `postgres` | Chunks/quality/coverage/benchmark tables |
+| `qdrant` | Dense vector index (`nvidia_ir_chunks` collection) |
+| `mlflow` | Experiment tracking (`reranker_benchmark`, `ragas_eval`, `citation_judge` runs) |
+| `pgadmin` | Postgres admin UI |
+| `airflow` | Standalone scheduler for the ingestion/monitoring DAGs |
+| `jaeger` | OpenTelemetry trace UI (`ENABLE_TRACING=true`) |
+| `phoenix` | Arize Phoenix trace UI (`ENABLE_PHOENIX=true`) |
+
+The `api`/`streamlit` images share one `pip install` layer (`Dockerfile`'s
+`deps` stage — see its comment for why) but that layer is still a ~3GB
+torch/transformers/langchain/mlflow/streamlit install; expect the first
+`docker compose up -d` to take **5–15 minutes** depending on bandwidth.
+Rebuilds after that are fast — Docker reuses the cached layer as long as
+`requirements.txt` hasn't changed.
+
+`api` won't report healthy until `postgres`/`qdrant` do (it `depends_on`
+them with `condition: service_healthy`); `streamlit` waits on `api` the
+same way. `docker compose ps` shows you where things are.
+
+### 4. Populate the corpus
+
+The `api`/`streamlit` containers ship with the BM25 index already built
+(`data/indexes/bm25_index.pkl` is committed to git and baked into the
+image — see the `Dockerfile`'s comment), so `/search`/`/ask` work
+immediately with BM25-only results. **Dense/hybrid retrieval needs
+Qdrant's `nvidia_ir_chunks` collection populated**, which is a host-run,
+one-time step (not part of `docker compose up` — it's a data load, not a
+service):
+
+```bash
 python -m venv .venv && .venv/Scripts/activate   # or source .venv/bin/activate on Linux/macOS
 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 python scripts/patch_ragas.py                     # see requirements_notes.txt
-cp .env.example .env                               # then fill in the keys below
+
+python run_ingest_direct.py       # PDFs -> parse -> chunk -> score -> Postgres (5,389 chunks)
+python retrieval/populate_qdrant.py   # embeds those chunks (e5-base-v2) -> upserts into Qdrant
 ```
 
-### 2. `.env` variables
+Both read `.env`'s `localhost`-pointed `POSTGRES_URL`/`QDRANT_URL`, so they
+talk to the same `docker compose`-published ports from the host. The
+embedding step is the slow part — `populate_qdrant.log` shows it took
+~86 minutes over 5,389 chunks on a CPU-only machine; that's expected, not
+hung. Re-running `populate_qdrant.py` is safe (it caches embeddings to
+`data/indexes/qdrant_corpus_embeddings.npy` and upserts by deterministic
+point ID, so a second run reuses the cache and overwrites rather than
+duplicating points); neither script needs to be redone unless you drop the
+`qdrant_data`/`postgres_data` volumes.
 
-| Variable | Required for | Notes |
+### 5. Verify
+
+```bash
+curl http://localhost:8001/health          # {"status": "ok", "service": "nvidia-ir-rag-agent"}
+curl -X POST http://localhost:8001/search -H 'content-type: application/json' -d '{"query": "cudaMemcpyAsync"}'
+```
+
+Then open `http://localhost:8501` for the Streamlit UI, or
+`http://localhost:8001/docs` for Swagger.
+
+### 6. Port map
+
+| Port | Service | What's there |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | `/ask`, Slack bot, RAGAS eval | Claude Sonnet 5 generation + judging |
-| `COHERE_API_KEY` | `RERANKER_MODE=live_frontier`/`benchmark` | Cohere Rerank v3 |
-| `POSTGRES_URL`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | everything DB-backed | matches `docker-compose.yml`'s `postgres` service |
-| `QDRANT_URL` | dense retrieval | local `docker-compose.yml` `qdrant` service |
-| `QDRANT_CLOUD_URL`, `QDRANT_CLOUD_API_KEY` | Render deploy | managed Qdrant for prod (local `QDRANT_URL` won't resolve there) |
-| `MLFLOW_TRACKING_URI` | benchmark logging, Streamlit live charts | defaults to `http://localhost:5000` |
-| `LANGCHAIN_API_KEY`, `LANGCHAIN_TRACING_V2`, `LANGCHAIN_PROJECT` | LangSmith tracing | optional but recommended |
-| `ENABLE_TRACING`, `OTLP_ENDPOINT` | Jaeger tracing (`api/telemetry.py`) | off by default; `OTLP_ENDPOINT` defaults to `http://localhost:4317` |
-| `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN` | Slack bot (Day 13) | Socket Mode — `xoxb-...` / `xapp-...` |
-| `FASTAPI_BASE_URL` | Slack bot | defaults to `http://localhost:8000` |
-| `RERANKER_MODE` | `/ask`, `/search` | `live_fast` (default) / `live_quality` / `live_frontier` / `benchmark` / `fallback` |
+| `8001` | `api` | FastAPI — `/search`, `/ask`, `/health`, `/docs` (container listens on 8000 internally; 8001 on the host since 8000 is frequently already taken) |
+| `8501` | `streamlit` | 5-tab UI |
+| `5432` | `postgres` | `nvidia_ir_db` |
+| `5050` | `pgadmin` | `admin@nvidia-ir.local` / `admin` |
+| `6333` / `6334` | `qdrant` | REST / gRPC |
+| `5001` | `mlflow` | Tracking UI + REST |
+| `8080` | `airflow` | Standalone webserver |
+| `16686` / `4317` / `4318` | `jaeger` | UI / OTLP gRPC / OTLP HTTP |
+| `6006` | `phoenix` | UI + OTLP/HTTP trace receiver (`/v1/traces`) |
 
-### 3. Bring up infra
+### 7. Things that still run on the host
 
-```bash
-docker-compose up -d        # postgres, pgadmin, qdrant, airflow, jaeger, phoenix
-```
-
-MLflow isn't in `docker-compose.yml` (no dedicated service) — run it however
-you run a local MLflow server, pointed at `MLFLOW_TRACKING_URI`
-(`mlflow server --host 0.0.0.0 --port 5000`).
-
-### 4. Run the pieces
+Not containerized — each needs the `.venv` from step 4 and reads `.env`'s
+`localhost`-pointed URLs:
 
 ```bash
-# API (FastAPI: /search, /ask, /health)
-uvicorn api.main:app --reload --port 8000
-
-# Streamlit UI (5 tabs: search, benchmark, eval, monitoring, drift)
-streamlit run streamlit_app/app.py
-
-# Slack bot (Socket Mode — needs SLACK_BOT_TOKEN + SLACK_APP_TOKEN)
+# Slack bot (Socket Mode — needs SLACK_BOT_TOKEN + SLACK_APP_TOKEN). Its
+# FASTAPI_BASE_URL default (localhost:8000) targets a locally-run uvicorn,
+# not the containerized `api` service -- point it at localhost:8001 instead
+# if you want the bot talking to the Dockerized API.
 python -m slackbot.app
+
+# MCP servers (mcp/mcp_postgres, mcp/mcp_qdrant, mcp/mcp_mlflow,
+# mcp/mcp_airflow) -- launched by Claude Code per .mcp.json, not run
+# directly.
 ```
 
-### 5. Tests
+### 8. Tests
 
 ```bash
-pytest                 # 480 tests, all mocked (no live API/DB calls — see AGENTS.md)
+pytest                 # 501 tests, all mocked (no live API/DB/MLflow calls — see AGENTS.md)
 ruff check .
-mypy .                  # strict on agents/, api/, retrieval/, monitoring/, evaluation/, schema/, mcp/, slackbot/
+mypy .                  # strict on agents/, api/, retrieval/, monitoring/, evaluation/, schema/, mcp/, slackbot/, streamlit_app/
 ```
+
+No backing services need to be running for `pytest` — including
+`tests/streamlit_app/test_tabs.py`'s benchmark/eval-dashboard tests, which
+mock `streamlit_app/live_data.py`'s MLflow/Postgres client constructors
+(DEF-04) rather than depending on a live MLflow, so the suite stays fast
+and deterministic whether or not `docker compose up` has been run.
 
 ## Example query
 
@@ -306,9 +414,12 @@ runs live services, per `AGENTS.md`'s "no live API calls in CI" rule.
 
 ## Testing / CI
 
-- **480 tests**, all mocking embedding/LLM/DB calls per `AGENTS.md`'s
+- **501 tests**, all mocking embedding/LLM/DB/MLflow calls per `AGENTS.md`'s
   "Mock all embedding and LLM calls in unit tests" rule — `pytest` runs in
-  under 2 minutes with no live services.
+  under 2 minutes with no live services (DEF-04: `tests/streamlit_app/test_tabs.py`'s
+  benchmark/eval-dashboard tests used to fall through to a live MLflow
+  client with a 15s timeout per call when no MLflow was running, pushing
+  the suite past 7 minutes non-deterministically — now mocked).
 - `.github/workflows/ci.yml`: checkout → install (CPU-only torch wheel
   index) → patch ragas (see `requirements_notes.txt`) → ruff → mypy
   (strict on production code) → pytest → NDCG regression gate. All green

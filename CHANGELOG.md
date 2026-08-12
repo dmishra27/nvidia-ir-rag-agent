@@ -9,6 +9,37 @@ incremental prior tags — format loosely follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning
 follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- **Reproducibility: app containerization.** `docker-compose.yml` only
+  provisioned backing services (postgres, qdrant, jaeger, phoenix,
+  airflow) — the FastAPI app and Streamlit UI still had to be run manually
+  from a host venv. `Dockerfile` is now multi-stage (`deps` → `api` /
+  `streamlit`), and both are compose services (`api` on host port 8001,
+  `streamlit` on 8501), so `docker compose up -d` alone brings up the
+  full stack. `render.yaml` needed no change — `api` stays the Dockerfile's
+  last stage, which is still Render's (target-less) default build.
+- **DEF-05: MLflow wasn't provisioned by this project.** `MLFLOW_TRACKING_URI`
+  defaulted to `http://localhost:5000` with no `docker-compose.yml` service
+  behind it at all, so it silently resolved to whatever unrelated local
+  project happened to have its own MLflow server on that port —
+  experiment history lived in another project's volume. Added a dedicated
+  `mlflow` service (port 5001, persistent SQLite backend store + artifact
+  volume); `.env.example`/`.env`, `streamlit_app/live_data.py`, and
+  `mcp/mcp_mlflow/server.py`'s fallback defaults all now point at it.
+- **DEF-04: 5 tests depended on a live MLflow.** `tests/streamlit_app/test_tabs.py`'s
+  benchmark/eval-dashboard tests exercised `streamlit_app/benchmark_tab.py`/
+  `eval_dashboard.py`'s default `render()` args, which reach for
+  `streamlit_app/live_data.py`'s real MLflow/Postgres fetchers — against an
+  unreachable MLflow, `_mlflow_client()`'s 15s timeout turned each of those
+  calls into a 15s stall, stretching the ~2min suite past 7 minutes,
+  non-deterministically. Now an autouse fixture patches `_mlflow_client`/
+  `get_engine` to fail instantly, exercising the tabs' already-tested
+  mock-data fallback path instead — the suite no longer needs any live
+  service running.
+
 ## [1.0.0] — 2026-08-08
 
 ### Added

@@ -26,7 +26,7 @@ log = structlog.get_logger()
 
 mcp = FastMCP("nvidia-ir-mlflow")
 
-MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000")
+MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5001")
 
 _client: MlflowClient | None = None
 

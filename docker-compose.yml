@@ -92,8 +92,95 @@
       timeout: 5s
       retries: 5
 
+  mlflow:
+    # v3.14.0 matches requirements.txt's pinned `mlflow==3.14.0` client --
+    # DEF-05: MLFLOW_TRACKING_URI used to default to localhost:5000 with no
+    # docker-compose service behind it at all, so it silently resolved to
+    # whatever unrelated local project happened to have its own MLflow
+    # server running on that port; experiment history for *this* project
+    # lived in that other project's volume instead of one of ours.
+    image: ghcr.io/mlflow/mlflow:v3.14.0
+    restart: unless-stopped
+    command: >
+      mlflow server
+        --host 0.0.0.0
+        --port 5001
+        --backend-store-uri sqlite:////mlflow/data/mlflow.db
+        --default-artifact-root /mlflow/artifacts
+    volumes:
+      - mlflow_data:/mlflow/data
+      - mlflow_artifacts:/mlflow/artifacts
+    ports:
+      - '5001:5001'
+    healthcheck:
+      test: ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://localhost:5001/")']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    restart: unless-stopped
+    environment:
+      RERANKER_MODE: ${RERANKER_MODE:-live_fast}
+      ENABLE_TRACING: ${ENABLE_TRACING:-false}
+      ENABLE_PHOENIX: ${ENABLE_PHOENIX:-false}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      COHERE_API_KEY: ${COHERE_API_KEY:-}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
+      # Service names, not localhost, and deliberately *not* sourced from
+      # .env's own POSTGRES_URL/QDRANT_URL/MLFLOW_TRACKING_URI/
+      # OTLP_ENDPOINT/PHOENIX_ENDPOINT -- those default to localhost
+      # because .env is also load_dotenv()'d by host-run tooling (the MCP
+      # servers, run_*.py scripts, notebooks, a `uvicorn`-from-venv dev
+      # loop) that isn't on this compose network and needs the published
+      # host ports instead. Inside this container, only the service names
+      # below resolve.
+      QDRANT_URL: http://qdrant:6333
+      POSTGRES_URL: postgresql://nvidia_ir:nvidia_ir_pass@postgres:5432/nvidia_ir_db
+      MLFLOW_TRACKING_URI: http://mlflow:5001
+      OTLP_ENDPOINT: http://jaeger:4317
+      PHOENIX_ENDPOINT: http://phoenix:6006/v1/traces
+    ports:
+      - '8001:8000' # host 8001 -- 8000 is frequently already taken locally
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://localhost:8000/health")']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: streamlit
+    restart: unless-stopped
+    environment:
+      # Streamlit puts the script's own directory on sys.path, not the CWD,
+      # so /app must be added explicitly for `from streamlit_app import ...`.
+      PYTHONPATH: /app
+      # Same service-name reasoning as the api service above.
+      POSTGRES_URL: postgresql://nvidia_ir:nvidia_ir_pass@postgres:5432/nvidia_ir_db
+      MLFLOW_TRACKING_URI: http://mlflow:5001
+    ports:
+      - '8501:8501'
+    depends_on:
+      api:
+        condition: service_healthy
+        
 volumes:
   postgres_data:
   qdrant_data:
   airflow_data:
   phoenix_data:
+  mlflow_data:
+  mlflow_artifacts:
