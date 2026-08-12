@@ -99,6 +99,18 @@
     # whatever unrelated local project happened to have its own MLflow
     # server running on that port; experiment history for *this* project
     # lived in that other project's volume instead of one of ours.
+    # DEF-17 (open): MLflow 3.x's DNS-rebinding protection only allows
+    # localhost Host headers, so in-network requests from api/streamlit
+    # (Host: mlflow:5001) get 403 and clients report the server as
+    # unreachable despite a passing healthcheck; the benchmark tab falls
+    # back to committed historical results. --allowed-hosts is the
+    # documented fix but is unusable on v3.14.0: passing it (verified with
+    # both `mlflow:5001,localhost:5001` and `mlflow,localhost`, on a
+    # freshly rebooted host) crash-loops uvicorn workers and the port never
+    # serves. Dead workers also become zombies (no reaper at PID 1),
+    # wedging the container against `docker stop` -- add `init: true` when
+    # revisiting. Forced kills can corrupt the SQLite store, which then
+    # crash-loops even without the flag; wiping mlflow_data restores it.
     image: ghcr.io/mlflow/mlflow:v3.14.0
     restart: unless-stopped
     command: >
@@ -117,6 +129,7 @@
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 60s
 
   api:
     build:
@@ -176,7 +189,7 @@
     depends_on:
       api:
         condition: service_healthy
-        
+
 volumes:
   postgres_data:
   qdrant_data:
