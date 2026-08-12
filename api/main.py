@@ -29,17 +29,20 @@ from typing import Any, AsyncIterator, Callable
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
+from api.telemetry import DEFAULT_OTLP_ENDPOINT, configure_tracing
+from monitoring.phoenix_config import DEFAULT_PHOENIX_ENDPOINT, configure_phoenix
+
 from api.middleware import RequestLatencyMiddleware
 from api.routers import ask, health, search, ui
-from api.telemetry import DEFAULT_OTLP_ENDPOINT, configure_tracing
 
 load_dotenv()
-
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     if os.environ.get("ENABLE_TRACING", "").lower() in ("1", "true", "yes"):
         configure_tracing(otlp_endpoint=os.environ.get("OTLP_ENDPOINT", DEFAULT_OTLP_ENDPOINT))
+    if os.environ.get("ENABLE_PHOENIX", "").lower() in ("1", "true", "yes"):
+        configure_phoenix(endpoint=os.environ.get("PHOENIX_ENDPOINT", DEFAULT_PHOENIX_ENDPOINT))
     yield
 
 

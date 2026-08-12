@@ -19,7 +19,8 @@
 
   pgadmin:
     image: dpage/pgadmin4
-    restart: unless-stopped
+    platform: linux/amd64
+    restart: "no"
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@nvidia-ir.local
       PGADMIN_DEFAULT_PASSWORD: admin
