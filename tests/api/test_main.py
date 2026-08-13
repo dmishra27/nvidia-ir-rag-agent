@@ -109,12 +109,12 @@ class TestUI:
         html = client.get("/").text
 
         for example in [
-            "How does CUDA memory allocation work?",
-            "What is warp divergence and how does it affect performance?",
-            "NVLink bandwidth specifications",
-            "Best practices for GPU memory optimization",
             "cudaMalloc function parameters",
-            "What causes memory errors in GPU applications?",
+            "cudaErrorInvalidValue error code",
+            "cudaMemcpy host to device",
+            "cudaHostAlloc pinned memory",
+            "cudaOccupancyMaxActiveBlocksPerMultiprocessor occupancy",
+            "nsys profile command line options",
         ]:
             assert example in html
 
