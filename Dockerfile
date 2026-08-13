@@ -73,6 +73,32 @@ COPY data/indexes/ data/indexes/
 # always builds both stages by explicit `target:`, so it's unaffected by
 # this ordering either way.
 # ---------------------------------------------------------------------------
+FROM deps AS streamlit
+
+COPY streamlit_app/ streamlit_app/
+
+# Streamlit puts the *script's* directory on sys.path, not the CWD, so
+# /app must be explicit for `from streamlit_app import ...` to resolve.
+# docker-compose.yml also sets this; baking it in keeps the image
+# self-sufficient when run outside compose.
+ENV PYTHONPATH=/app
+
+EXPOSE 8501
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health').read()" || exit 1
+
+CMD ["streamlit", "run", "streamlit_app/app.py", "--server.address=0.0.0.0", "--server.port=8501"]
+
+# `api` is deliberately the *last* stage in this file: render.yaml builds
+# this Dockerfile with no `--target` (Render's Blueprint spec has no field
+# for one), and a target-less `docker build` on a multi-stage file defaults
+# to the last stage -- so this ordering is what keeps the existing Render
+# deploy building the API image rather than the UI. docker-compose.yml
+# always builds both stages by explicit `target:`, so it's unaffected by
+# this ordering either way.
+# DO NOT append new stages below this one.
+# ---------------------------------------------------------------------------
 FROM deps AS api
 
 EXPOSE 8000
@@ -82,14 +108,3 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-# ---------------------------------------------------------------------------
-FROM deps AS streamlit
-
-COPY streamlit_app/ streamlit_app/
-
-EXPOSE 8501
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health').read()" || exit 1
-
-CMD ["streamlit", "run", "streamlit_app/app.py", "--server.address=0.0.0.0", "--server.port=8501"]
