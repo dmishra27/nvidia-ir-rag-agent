@@ -482,10 +482,19 @@
     const max = Math.max(...scores);
     const min = Math.min(...scores);
     const range = max - min;
+    // Floor the displayed/bar range at 20 rather than 0: this is a per-page
+    // relative ranking, not an absolute confidence score, so the weakest
+    // result on the page is still a real match and shouldn't read as "no
+    // relevance." Single-result and all-equal-score pages have no relative
+    // spread to show, so they fall back to 100 (nothing to rank against).
+    const RELEVANCE_FLOOR = 20;
 
     resultsEl.innerHTML = results
       .map((r) => {
-        const pct = range > 0 ? Math.round(((r.score - min) / range) * 100) : 100;
+        const pct =
+          range > 0
+            ? Math.round(RELEVANCE_FLOOR + ((r.score - min) / range) * (100 - RELEVANCE_FLOOR))
+            : 100;
         const sourceTag = r.chunk_id
           ? `<span class="source-tag">chunk: ${escapeHtml(r.chunk_id)}</span>`
           : "";
@@ -505,7 +514,7 @@
                 <div class="relevance-track">
                   <div class="relevance-fill" style="width: ${pct}%"></div>
                 </div>
-                <span class="relevance-score">${r.score.toFixed(2)}</span>
+                <span class="relevance-score" title="raw score: ${r.score.toFixed(4)}">${pct}</span>
               </div>
               ${docLabel}
               <p class="passage-text">${escapeHtml(passageText)}</p>
