@@ -94,12 +94,14 @@
 
   mlflow:
     # v3.14.0 matches requirements.txt's pinned `mlflow==3.14.0` client --
-    # DEF-05: MLFLOW_TRACKING_URI used to default to localhost:5000 with no
-    # docker-compose service behind it at all, so it silently resolved to
-    # whatever unrelated local project happened to have its own MLflow
-    # server running on that port; experiment history for *this* project
-    # lived in that other project's volume instead of one of ours.
-    # DEF-17 (open): MLflow 3.x's DNS-rebinding protection only allows
+    # DEF-05 (closed): MLFLOW_TRACKING_URI used to default to localhost:5000
+    # with no docker-compose service behind it at all, so it silently
+    # resolved to whatever unrelated local project happened to have its own
+    # MLflow server running on that port; experiment history for *this*
+    # project lived in that other project's volume instead of one of ours.
+    # This service, and the per-service MLFLOW_TRACKING_URI values below,
+    # close it.
+    # DEF-18 (open): MLflow 3.x's DNS-rebinding protection only allows
     # localhost Host headers, so in-network requests from api/streamlit
     # (Host: mlflow:5001) get 403 and clients report the server as
     # unreachable despite a passing healthcheck; the benchmark tab falls
@@ -111,6 +113,9 @@
     # wedging the container against `docker stop` -- add `init: true` when
     # revisiting. Forced kills can corrupt the SQLite store, which then
     # crash-loops even without the flag; wiping mlflow_data restores it.
+    # NOTE: this defect was first recorded as DEF-17 in commit c55bb0c's
+    # message; DEF-17 was already assigned to the Qdrant Cloud cluster
+    # deletion in Functional Test Sign-Off v2.1, so it is renumbered here.
     image: ghcr.io/mlflow/mlflow:v3.14.0
     restart: unless-stopped
     command: >
