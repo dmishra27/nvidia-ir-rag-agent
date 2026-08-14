@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Evaluation — NVIDIA Documentation Search</title>
+<meta name="description" content="Retrieval quality evaluation: method comparison, NDCG@10 benchmark gate, RAGAS faithfulness, and known limitations." />
+<style>
+  :root {
+    --nv-green: #76b900;
+    --nv-green-dark: #5c9200;
+    --ink: #1a1a1a;
+    --ink-muted: #5b5b5b;
+    --ink-faint: #8a8a8a;
+    --surface: #ffffff;
+    --page-bg: #f5f6f4;
+    --border: #e4e4e0;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.09), 0 1px 3px rgba(0, 0, 0, 0.08);
+    --radius: 12px;
+    --error: #c0392b;
+    --amber: #9a6b00;
+    --amber-bg: #fbf3e2;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--page-bg);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+
+  .page {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 20px 32px;
+  }
+
+  /* ---------- Header ---------- */
+  .back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--nv-green-dark);
+    text-decoration: none;
+  }
+
+  .back-link:hover { text-decoration: underline; }
+
+  header {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+
+  header h1 {
+    margin: 0 0 10px;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  header h1 .accent {
+    color: var(--nv-green-dark);
+  }
+
+  header p.subtitle {
+    margin: 0 auto;
+    max-width: 620px;
+    color: var(--ink-muted);
+    font-size: 1.02rem;
+  }
+
+  /* ---------- Key figures ---------- */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px 18px;
+    text-align: center;
+  }
+
+  .stat-card .stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--nv-green-dark);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .stat-card .stat-label {
+    margin-top: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+  }
+
+  /* ---------- Sections ---------- */
+  section.eval-section {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px 28px 28px;
+    margin-bottom: 24px;
+  }
+
+  section.eval-section h2 {
+    margin: 0 0 4px;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  section.eval-section h2 .step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--nv-green);
+    color: #0f1a00;
+    font-size: 0.85rem;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+
+  section.eval-section .section-intro {
+    color: var(--ink-muted);
+    margin: 10px 0 18px;
+  }
+
+  section.eval-section h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 22px 0 8px;
+  }
+
+  .finding-callout {
+    border-left: 3px solid var(--nv-green);
+    background: #f4faec;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+  }
+
+  .finding-callout strong { color: var(--nv-green-dark); }
+
+  /* ---------- Tables ---------- */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+    min-width: 480px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  th {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    background: var(--page-bg);
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  td.wrap { white-space: normal; }
+
+  td.num, th.num { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.88em;
+    background: var(--page-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 5px;
+  }
+
+  /* ---------- Badges ---------- */
+  .badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 2px 9px;
+    border-radius: 999px;
+  }
+
+  .badge-pass { background: #eaf6d8; color: var(--nv-green-dark); }
+  .badge-blocked { background: var(--amber-bg); color: var(--amber); }
+  .badge-winner { background: #eaf6d8; color: var(--nv-green-dark); }
+
+  /* ---------- Limitations list ---------- */
+  .limitations-list {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  .limitations-list li {
+    margin-bottom: 14px;
+  }
+
+  .limitations-list li:last-child { margin-bottom: 0; }
+
+  .source-note {
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    margin-top: 14px;
+  }
+
+  /* ---------- Footer ---------- */
+  footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+  }
+
+  footer .tagline { margin: 0 0 10px; }
+
+  footer .links a {
+    color: var(--nv-green-dark);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  footer .links a:hover { text-decoration: underline; }
+
+  footer .links .sep {
+    margin: 0 8px;
+    color: var(--border);
+  }
+
+  footer .signature {
+    margin: 16px auto 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    max-width: 420px;
+    font-size: 0.78rem;
+    color: #999;
+    line-height: 1.6;
+  }
+
+  footer .signature a {
+    color: #999;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  footer .signature a:hover { text-decoration: underline; }
+
+  @media (max-width: 560px) {
+    .page { padding: 32px 14px 24px; }
+    header h1 { font-size: 1.6rem; }
+    section.eval-section { padding: 18px 16px 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <a class="back-link" href="/">&larr; Back to search</a>
+
+  <header>
+    <h1>Retrieval <span class="accent">Evaluation</span></h1>
+    <p class="subtitle">How BM25, dense, and RRF-fused retrieval compare, what the live NDCG@10 benchmark says, and where these numbers are known to be incomplete or optimistic.</p>
+  </header>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-value">0.5333</div>
+      <div class="stat-label">NDCG@10 &middot; Config A (ms-marco)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">0.5280</div>
+      <div class="stat-label">NDCG@10 &middot; Config C (Cohere)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">0.50</div>
+      <div class="stat-label">CI gate threshold</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">0.7616</div>
+      <div class="stat-label">RAGAS faithfulness</div>
+    </div>
+  </div>
+
+  <!-- ============ 1. Method comparison ============ -->
+  <section class="eval-section">
+    <h2><span class="step">1</span>Method comparison — BM25 vs dense vs RRF</h2>
+    <p class="section-intro">
+      15 queries across 6 cases, each designed to probe a structural strength or
+      weakness of one retrieval method, run live against the 5,389-chunk corpus
+      (<code>docs/uat/uat_superiority_cases_raw.json</code> /
+      <code>uat_superiority_cases_executed.md</code>). This pool is referred to
+      here as the <strong>Round 2</strong> method-comparison set.
+    </p>
+
+    <div class="finding-callout">
+      <strong>Headline finding:</strong> BM25 wins on exact terminology
+      (rare API symbols like <code>cudaMalloc</code>, <code>cudaErrorInvalidValue</code>,
+      struct field names), dense wins on semantic phrasing (queries that
+      paraphrase rather than quote the source text), and RRF wins or ties on
+      mixed queries where both a lexical and a semantic signal are present.
+      No single method dominates end to end.
+    </div>
+
+    <p>
+      The case hypotheses held in 10 of 15 queries. Two flipped outright: Q2
+      was designed to showcase BM25 but RRF's pool corroboration found the
+      best chunk instead, and Q12 was designed as a BM25 "exact lookup" case
+      but dense won cleanly — term-frequency dilution across many API chunks
+      sharing the literal string <code>cudaDeviceSynchronize</code> hurt BM25
+      more than semantic similarity hurt dense.
+    </p>
+
+    <h3>Per-query winners</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Query</th><th>Case</th><th>Winner</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Q1</td><td class="wrap">CUDA cudaMalloc function parameters</td><td>1 &middot; BM25 lexical</td><td><span class="badge badge-winner">BM25</span></td></tr>
+          <tr><td>Q2</td><td class="wrap">cudaMemcpyAsync stream parameter</td><td>1 &middot; BM25 lexical</td><td><span class="badge badge-winner">RRF</span> <span class="source-note">(hypothesis missed)</span></td></tr>
+          <tr><td>Q3</td><td class="wrap">CUDA error cudaErrorInvalidValue description</td><td>1 &middot; BM25 lexical</td><td><span class="badge badge-winner">BM25</span></td></tr>
+          <tr><td>Q4</td><td class="wrap">shader processor count per streaming multiprocessor</td><td>2 &middot; Dense semantic</td><td>None (all weak)</td></tr>
+          <tr><td>Q5</td><td class="wrap">how to make GPU programs run faster</td><td>2 &middot; Dense semantic</td><td><span class="badge badge-winner">Dense</span> (weak)</td></tr>
+          <tr><td>Q6</td><td class="wrap">problems with threads executing different code paths</td><td>2 &middot; Dense semantic</td><td><span class="badge badge-winner">Dense</span> (ties RRF)</td></tr>
+          <tr><td>Q7</td><td class="wrap">CUDA thread synchronization performance overhead</td><td>3 &middot; RRF hybrid</td><td><span class="badge badge-winner">RRF</span></td></tr>
+          <tr><td>Q8</td><td class="wrap">shared memory bank conflicts and how to avoid them</td><td>3 &middot; RRF hybrid</td><td><span class="badge badge-winner">RRF</span> (ties Dense)</td></tr>
+          <tr><td>Q9</td><td class="wrap">memory coalescing rules for global memory access patterns</td><td>3 &middot; RRF hybrid</td><td><span class="badge badge-winner">RRF</span> (ties all)</td></tr>
+          <tr><td>Q10</td><td class="wrap">latency hiding through instruction level parallelism</td><td>4 &middot; BM25 failure / vocab gap</td><td><span class="badge badge-winner">Dense</span></td></tr>
+          <tr><td>Q11</td><td class="wrap">occupancy versus performance tradeoffs</td><td>4 &middot; BM25 failure / vocab gap</td><td><span class="badge badge-winner">Dense</span></td></tr>
+          <tr><td>Q12</td><td class="wrap">cudaDeviceSynchronize return value</td><td>5 &middot; Dense failure / exact lookup</td><td><span class="badge badge-winner">Dense</span> <span class="source-note">(hypothesis missed)</span></td></tr>
+          <tr><td>Q13</td><td class="wrap">dim3 struct constructor syntax</td><td>5 &middot; Dense failure / exact lookup</td><td><span class="badge badge-winner">BM25</span></td></tr>
+          <tr><td>Q14</td><td class="wrap">pinned memory cudaMallocHost benefits and when to use</td><td>6 &middot; RRF mixed</td><td>Tie (all three)</td></tr>
+          <tr><td>Q15</td><td class="wrap">register pressure and its effect on occupancy</td><td>6 &middot; RRF mixed</td><td><span class="badge badge-winner">RRF</span> (ties Dense)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="source-note">Full per-query candidate tables, scores, and verdict rationale: <code>docs/uat/uat_superiority_cases_executed.md</code>.</p>
+  </section>
+
+  <!-- ============ 2. Benchmark + gate ============ -->
+  <section class="eval-section">
+    <h2><span class="step">2</span>NDCG@10 benchmark &amp; CI quality gate</h2>
+    <p class="section-intro">
+      <code>evaluation/ci_ndcg_gate.py</code> gates every config's mean
+      NDCG@10 against <code>DEFAULT_THRESHOLD = 0.50</code>, reading a
+      committed snapshot at <code>evaluation/benchmark_baseline.json</code>
+      rather than re-running retrieval live in CI (no BM25 index, Qdrant, or
+      Cohere key available to a GitHub Actions runner).
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Config</th><th>Run ID</th><th class="num">NDCG@10</th><th class="num">MRR</th><th class="num">Prec@3</th><th># queries</th><th>Gate</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A &middot; ms-marco cross-encoder</td>
+            <td><code>a55012a4</code></td>
+            <td class="num">0.5333</td>
+            <td class="num">0.5333</td>
+            <td class="num">0.2444</td>
+            <td>15</td>
+            <td><span class="badge badge-pass">Pass</span></td>
+          </tr>
+          <tr>
+            <td>C &middot; Cohere Rerank v3</td>
+            <td><code>c827cd71</code></td>
+            <td class="num">0.5280</td>
+            <td class="num">0.5333</td>
+            <td class="num">0.2444</td>
+            <td>15</td>
+            <td><span class="badge badge-pass">Pass</span></td>
+          </tr>
+          <tr>
+            <td>B &middot; bge-reranker-v2-m3</td>
+            <td>&mdash;</td>
+            <td class="num">&mdash;</td>
+            <td class="num">&mdash;</td>
+            <td class="num">&mdash;</td>
+            <td>&mdash;</td>
+            <td><span class="badge badge-blocked">Hardware-blocked</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Scope: this is a smoke benchmark, not the full evaluation</h3>
+    <p>
+      Per <code>benchmark_baseline.json</code>'s own <code>_note</code> field, this is
+      <strong>15 cached queries, top-3 RRF candidates each</strong> — a
+      smoke-scope benchmark, not the full 50-query &times; top-100 run that
+      <code>evaluation/benchmark_runner.py</code> is designed for (that
+      full run remains an open item). The 15 queries here are the exact
+      same <strong>Round 2</strong> pool used in the method comparison
+      above (§1) — <code>benchmark_queries.jsonl</code>'s
+      <code>bq01</code>&ndash;<code>bq15</code> are the same 15 questions as
+      Q1&ndash;Q15, in the same order.
+    </p>
+    <p>
+      <strong>Config B (bge-reranker-v2-m3) is hardware-blocked</strong> on
+      this project's CPU-only, 8GB dev machine (OOM at model load) and has
+      no live number to report — not a zero, not omitted by choice, simply
+      never run.
+    </p>
+    <p class="source-note">Source: <code>evaluation/benchmark_baseline.json</code>, <code>evaluation/ci_ndcg_gate.py</code>.</p>
+  </section>
+
+  <!-- ============ 3. RAGAS faithfulness ============ -->
+  <section class="eval-section">
+    <h2><span class="step">3</span>RAGAS faithfulness</h2>
+    <p class="section-intro">
+      A live RAGAS run over 10 real QA-agent outputs measured
+      <strong>faithfulness: 0.7616</strong> — how well each generated claim
+      is actually supported by its retrieved passages (logged to MLflow
+      experiment <code>ragas_eval</code>, run <code>7d8f1005</code>).
+    </p>
+    <div class="finding-callout">
+      This is an automated, LLM-judged score of groundedness, not a human
+      judgement of answer quality. <strong>No human evaluation of the
+      QA agent's answers has been performed yet</strong> — faithfulness
+      tells you the model isn't hallucinating relative to what it
+      retrieved, not that what it retrieved (or answered) was actually the
+      right thing to say.
+    </div>
+    <p class="source-note">Source: <code>docs/daily_progress/day_11_storyline.md</code> (§3, RAGAS live run results table).</p>
+  </section>
+
+  <!-- ============ 4. Architectural findings ============ -->
+  <section class="eval-section">
+    <h2><span class="step">4</span>Architectural findings</h2>
+
+    <h3>RRF's corroboration bias</h3>
+    <p>
+      Reciprocal rank fusion rewards candidates two signals agree on, even
+      moderately, over a candidate either signal ranks highly alone. This
+      cost RRF the best available chunk on Q1 and Q10 above: a single
+      strong hit (BM25's <code>cudaMalloc</code> match on Q1, dense's
+      latency-hiding match on Q10) was crowded out by two mediocre chunks
+      both lists happened to rank moderately. A cross-encoder re-ranker
+      that scores each candidate independently — rather than by rank
+      position — should not be subject to this failure mode, which makes
+      Q1 and Q10 good regression-test candidates once full re-ranking
+      coverage lands.
+    </p>
+
+    <h3>Cross-encoder trade-off: discursive text over API signatures</h3>
+    <p>
+      The Day 6 ms-marco regression check (<code>docs/uat/uat_day6_regression.md</code>)
+      showed the same pattern on a narrow, 2-query sample: reranking a
+      cached RRF pool tends to confirm or promote fluent, explanatory prose
+      passages (definitions, "returns an error if..." style text) rather
+      than terse, structurally-formatted API reference entries — even when
+      a signature-style chunk is the more directly useful answer for a
+      lookup query. This is consistent with the corroboration-bias finding
+      above (Q1's actual <code>cudaMalloc()</code> signature entry never
+      reached the candidate pool the cross-encoder saw at all), and has
+      not yet been checked against a full 15-query, 3-way re-ranker
+      regression.
+    </p>
+  </section>
+
+  <!-- ============ 5. Limitations ============ -->
+  <section class="eval-section">
+    <h2><span class="step">5</span>Limitations</h2>
+    <ol class="limitations-list">
+      <li>
+        <strong>Smoke-scope benchmark.</strong> The NDCG@10 gate above runs
+        over 15 queries &times; top-3 RRF candidates, not the full
+        50-query &times; top-100 evaluation <code>benchmark_runner.py</code>
+        is designed for — still an open item.
+      </li>
+      <li>
+        <strong>Config B never ran.</strong> bge-reranker-v2-m3 is
+        hardware-blocked on this project's CPU-only 8GB dev machine; there
+        is no live number for it, and none should be assumed.
+      </li>
+      <li>
+        <strong>No human answer-quality judgement.</strong> RAGAS
+        faithfulness (0.7616) is an LLM-judged, automated proxy over only
+        10 QA outputs — no human has reviewed the agent's answers for
+        correctness or usefulness.
+      </li>
+      <li>
+        <strong>NDCG here is an upper bound, not a production estimate.</strong>
+        The live Qdrant collection holds 5,389 points — below Qdrant's
+        HNSW indexing threshold — so dense retrieval during evaluation ran
+        as <em>exact/exhaustive</em> search rather than the approximate
+        HNSW search a production-scale collection would use. Exhaustive
+        search never makes a worse ranking decision than an approximate
+        index would; every NDCG figure on this page is therefore an upper
+        bound on what a larger, HNSW-indexed collection would score, not a
+        number that generalizes as-is.
+      </li>
+    </ol>
+  </section>
+
+  <footer>
+    <p class="tagline">Evaluation figures are read from committed, live-measured artifacts — no numbers on this page are estimated or simulated.</p>
+    <p class="links">
+      <a href="/">&larr; Back to search</a>
+      <span class="sep">&middot;</span>
+      <a href="/docs">API docs</a>
+      <span class="sep">&middot;</span>
+      <a href="https://github.com/dmishra27/nvidia-ir-rag-agent" target="_blank" rel="noopener noreferrer">GitHub repository</a>
+    </p>
+    <p class="signature">
+      Built by <a href="https://github.com/dmishra27" target="_blank" rel="noopener noreferrer">Debabrata Mishra</a><br />
+      ACM SIGIR 2024 Co-author &middot; Data Scientist &amp; ML Engineer<br />
+      MSc Data Science, University of Glasgow &middot; Greenock, Scotland
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>
