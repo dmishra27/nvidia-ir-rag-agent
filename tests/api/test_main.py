@@ -159,6 +159,23 @@ class TestUI:
         assert resp.status_code == 200
         assert "swagger" in resp.text.lower()
 
+    def test_page_has_corpus_transparency_panel(self) -> None:
+        client = TestClient(create_app(session_factory=MagicMock()))
+
+        html = client.get("/").text
+
+        assert "<details" in html and 'class="corpus-panel"' in html
+        for doc in [
+            "CUDA C++ Programming Guide",
+            "CUDA C++ Best Practices Guide",
+            "CUDA Math API Reference",
+            "CUDA Runtime API",
+            "Nsight Systems User Guide",
+        ]:
+            assert doc in html
+        for out_of_scope_topic in ["NVLink", "H100", "TensorRT"]:
+            assert out_of_scope_topic in html
+
 
 # ---------------------------------------------------------------------------
 # /search

@@ -179,6 +179,56 @@
     flex: none;
   }
 
+  /* ---------- Corpus transparency panel ---------- */
+  .corpus-panel {
+    margin: 0 0 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 4px 18px;
+  }
+
+  .corpus-panel summary {
+    cursor: pointer;
+    padding: 12px 0;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--ink-muted);
+    list-style: none;
+  }
+
+  .corpus-panel summary::-webkit-details-marker { display: none; }
+
+  .corpus-panel summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 8px;
+    color: var(--ink-faint);
+    transition: transform 0.15s ease;
+  }
+
+  .corpus-panel[open] summary::before { transform: rotate(90deg); }
+
+  .corpus-panel .corpus-body {
+    padding: 0 0 16px;
+    font-size: 0.86rem;
+    color: var(--ink-muted);
+  }
+
+  .corpus-panel .corpus-body ul {
+    margin: 8px 0 12px;
+    padding-left: 20px;
+  }
+
+  .corpus-panel .corpus-body li {
+    margin-bottom: 4px;
+  }
+
+  .corpus-panel .corpus-note {
+    margin: 0;
+    color: var(--ink-faint);
+  }
+
   /* ---------- Results ---------- */
   #results { min-height: 20px; }
 
@@ -386,6 +436,21 @@
   <div class="search-hint">Press Enter to search</div>
 
   <div class="mode-badge" id="mode-badge"><span class="dot"></span><span id="mode-badge-text"></span></div>
+
+  <details class="corpus-panel">
+    <summary>What's in this corpus?</summary>
+    <div class="corpus-body">
+      <p>This search runs over 5,389 passages from five NVIDIA documents:</p>
+      <ul>
+        <li>CUDA C++ Programming Guide</li>
+        <li>CUDA C++ Best Practices Guide</li>
+        <li>CUDA Math API Reference</li>
+        <li>CUDA Runtime API</li>
+        <li>Nsight Systems User Guide</li>
+      </ul>
+      <p class="corpus-note">Topics outside these documents &mdash; such as NVLink, H100, and TensorRT &mdash; are not part of the source set. Queries on those topics will return low-relevance results rather than finding nothing.</p>
+    </div>
+  </details>
 
   <div id="results"></div>
 
