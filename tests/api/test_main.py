@@ -103,18 +103,24 @@ class TestUI:
         assert "NVIDIA" in html and "Documentation" in html and "Search" in html
         assert "5,389 passages" in html
 
-    def test_page_lists_all_six_example_queries(self) -> None:
+    def test_page_lists_all_five_example_queries_grouped_by_intent(self) -> None:
         client = TestClient(create_app(session_factory=MagicMock()))
 
         html = client.get("/").text
 
+        for group_label in [
+            "Look up an API",
+            "Diagnose an error",
+            "Understand a concept",
+        ]:
+            assert group_label in html
+
         for example in [
             "cudaMalloc function parameters",
-            "cudaErrorInvalidValue error code",
-            "cudaMemcpy host to device",
             "cudaHostAlloc pinned memory",
-            "cudaOccupancyMaxActiveBlocksPerMultiprocessor occupancy",
-            "nsys profile command line options",
+            "cudaMemcpy host to device",
+            "cudaErrorInvalidValue error code",
+            "problems with threads executing different code paths",
         ]:
             assert example in html
 

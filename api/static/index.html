@@ -76,6 +76,20 @@
     text-align: center;
   }
 
+  .chip-group {
+    margin-bottom: 12px;
+  }
+
+  .chip-group-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    margin-bottom: 6px;
+    text-align: center;
+  }
+
   .chip-row {
     display: flex;
     flex-wrap: wrap;
@@ -412,15 +426,27 @@
     <p class="subtitle">AI-powered search over 5,389 passages from NVIDIA CUDA and GPU architecture documentation</p>
   </header>
 
-  <div class="examples">
+  <div class="examples" id="example-chips">
     <div class="examples-label">Try an example</div>
-    <div class="chip-row" id="example-chips">
-      <button class="chip" type="button">cudaMalloc function parameters</button>
-      <button class="chip" type="button">cudaErrorInvalidValue error code</button>
-      <button class="chip" type="button">cudaMemcpy host to device</button>
-      <button class="chip" type="button">cudaHostAlloc pinned memory</button>
-      <button class="chip" type="button">cudaOccupancyMaxActiveBlocksPerMultiprocessor occupancy</button>
-      <button class="chip" type="button">nsys profile command line options</button>
+    <div class="chip-group">
+      <div class="chip-group-label">Look up an API</div>
+      <div class="chip-row">
+        <button class="chip" type="button">cudaMalloc function parameters</button>
+        <button class="chip" type="button">cudaHostAlloc pinned memory</button>
+        <button class="chip" type="button">cudaMemcpy host to device</button>
+      </div>
+    </div>
+    <div class="chip-group">
+      <div class="chip-group-label">Diagnose an error</div>
+      <div class="chip-row">
+        <button class="chip" type="button">cudaErrorInvalidValue error code</button>
+      </div>
+    </div>
+    <div class="chip-group">
+      <div class="chip-group-label">Understand a concept</div>
+      <div class="chip-row">
+        <button class="chip" type="button">problems with threads executing different code paths</button>
+      </div>
     </div>
   </div>
 
