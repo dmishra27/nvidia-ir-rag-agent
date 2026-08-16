@@ -40,6 +40,15 @@ SERVING_CHAIN = ["live_frontier", "live_quality", "live_fast", "fallback"]
 RerankFn = Callable[[str, list[Candidate], int, str], list[Candidate]]
 
 
+def resolve_mode(mode: str | None) -> str:
+    """The same precedence RerankerRouter itself uses to pick a mode:
+    explicit `mode` argument, else the RERANKER_MODE env var, else
+    DEFAULT_MODE. Exposed separately so callers (api/routers/search.py,
+    api/routers/ask.py) can report the mode actually in effect without
+    duplicating -- or drifting from -- this resolution order."""
+    return mode or os.environ.get(RERANKER_MODE_ENV_VAR, DEFAULT_MODE)
+
+
 def _fallback_rerank(
     query: str, candidates: list[Candidate], top_k: int, query_id: str
 ) -> list[Candidate]:
@@ -70,7 +79,7 @@ class RerankerRouter:
             "fallback": _fallback_rerank,
         }
         self._benchmark = benchmark
-        self._mode = mode or os.environ.get(RERANKER_MODE_ENV_VAR, DEFAULT_MODE)
+        self._mode = resolve_mode(mode)
 
     def rerank(
         self,

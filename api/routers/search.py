@@ -19,7 +19,7 @@ from api.schemas import CandidateOut, SearchRequest, SearchResponse
 from retrieval.bm25_index import BM25Index
 from retrieval.dense_index import DenseIndex
 from retrieval.reranker_msmarco import MSMarcoReranker
-from retrieval.reranker_router import RerankerRouter
+from retrieval.reranker_router import RerankerRouter, resolve_mode
 
 log = structlog.get_logger()
 
@@ -36,10 +36,11 @@ def search(
     msmarco: MSMarcoReranker | None = Depends(get_msmarco_reranker),
 ) -> SearchResponse:
     query_id = str(uuid.uuid4())[:8]
+    resolved_mode = resolve_mode(reranker_mode)
     request.state.query_id = query_id
     request.state.reranker_config = reranker_mode
 
-    log.info("search_request", query_id=query_id, stage="search", reranker_mode=reranker_mode)
+    log.info("search_request", query_id=query_id, stage="search", reranker_mode=resolved_mode)
 
     # msmarco is None when RERANKER_MODE=fallback skipped loading it (see
     # api/dependencies.py) -- RerankerRouter already degrades gracefully to
@@ -59,6 +60,6 @@ def search(
     return SearchResponse(
         query_id=query_id,
         query=body.query,
-        reranker_mode=reranker_mode,
+        reranker_mode=resolved_mode,
         results=[CandidateOut.from_candidate(c) for c in results],
     )

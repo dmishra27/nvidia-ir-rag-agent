@@ -12,11 +12,13 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from api.dependencies import get_bm25_index, get_dense_index, get_msmarco_reranker
 from api.main import create_app
 from retrieval.candidates import Candidate
+from retrieval.reranker_router import DEFAULT_MODE
 
 
 def _c(chunk_id: str, rank: int) -> Candidate:
@@ -228,6 +230,31 @@ class TestSearch:
         assert resp.status_code == 200
         assert resp.json()["reranker_mode"] == "fallback"
 
+    def test_reranker_mode_echoes_env_var_when_not_passed(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """DEF-03: no RERANKER_MODE query param -- must echo the mode
+        retrieval/reranker_router.py actually resolved to (the env var),
+        not null."""
+        monkeypatch.setenv("RERANKER_MODE", "live_quality")
+        client = _make_client([], [], [_c("r1", 1)])
+
+        resp = client.post("/search", json={"query": "q"})
+
+        assert resp.status_code == 200
+        assert resp.json()["reranker_mode"] == "live_quality"
+
+    def test_reranker_mode_echoes_default_when_not_passed_and_no_env_var(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """DEF-03: no RERANKER_MODE query param and no env var -- must echo
+        DEFAULT_MODE, not null."""
+        monkeypatch.delenv("RERANKER_MODE", raising=False)
+        client = _make_client([], [], [_c("r1", 1)])
+
+        resp = client.post("/search", json={"query": "q"})
+
+        assert resp.status_code == 200
+        assert resp.json()["reranker_mode"] == DEFAULT_MODE
+
     def test_top_k_truncates_results(self) -> None:
         reranked = [_c(f"r{i}", i) for i in range(1, 6)]
         client = _make_client([], [], reranked)
@@ -312,6 +339,35 @@ class TestAsk:
             resp = client.post("/ask?RERANKER_MODE=fallback", json={"query": "q"})
 
         assert resp.json()["reranker_mode"] == "fallback"
+
+    def test_reranker_mode_echoes_env_var_when_not_passed(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """DEF-03: no RERANKER_MODE query param -- must echo the mode
+        retrieval/reranker_router.py actually resolved to (the env var),
+        not null."""
+        monkeypatch.setenv("RERANKER_MODE", "live_quality")
+        client = _make_client([], [], [_c("r1", 1)])
+        mock_resp = _tool_response("ans", [])
+
+        with patch("agents.qa_agent.anthropic.Anthropic") as MockClient:
+            MockClient.return_value.messages.create.return_value = mock_resp
+            resp = client.post("/ask", json={"query": "q"})
+
+        assert resp.json()["reranker_mode"] == "live_quality"
+
+    def test_reranker_mode_echoes_default_when_not_passed_and_no_env_var(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """DEF-03: no RERANKER_MODE query param and no env var -- must echo
+        DEFAULT_MODE, not null."""
+        monkeypatch.delenv("RERANKER_MODE", raising=False)
+        client = _make_client([], [], [_c("r1", 1)])
+        mock_resp = _tool_response("ans", [])
+
+        with patch("agents.qa_agent.anthropic.Anthropic") as MockClient:
+            MockClient.return_value.messages.create.return_value = mock_resp
+            resp = client.post("/ask", json={"query": "q"})
+
+        assert resp.json()["reranker_mode"] == DEFAULT_MODE
 
     def test_fallback_mode_with_no_dense_index_or_reranker_still_returns_200(self) -> None:
         """Same real Render shape as TestSearch's equivalent test -- must not 500."""

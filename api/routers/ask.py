@@ -13,7 +13,7 @@ from api.schemas import AskRequest, AskResponse, CitationOut
 from retrieval.bm25_index import BM25Index
 from retrieval.dense_index import DenseIndex
 from retrieval.reranker_msmarco import MSMarcoReranker
-from retrieval.reranker_router import RerankerRouter
+from retrieval.reranker_router import RerankerRouter, resolve_mode
 
 log = structlog.get_logger()
 
@@ -30,10 +30,11 @@ def ask(
     msmarco: MSMarcoReranker | None = Depends(get_msmarco_reranker),
 ) -> AskResponse:
     query_id = str(uuid.uuid4())[:8]
+    resolved_mode = resolve_mode(reranker_mode)
     request.state.query_id = query_id
     request.state.reranker_config = reranker_mode
 
-    log.info("ask_request", query_id=query_id, stage="ask", reranker_mode=reranker_mode)
+    log.info("ask_request", query_id=query_id, stage="ask", reranker_mode=resolved_mode)
 
     # msmarco is None when RERANKER_MODE=fallback skipped loading it (see
     # api/dependencies.py) -- RerankerRouter already degrades gracefully to
@@ -53,7 +54,7 @@ def ask(
     return AskResponse(
         query_id=query_id,
         query=body.query,
-        reranker_mode=reranker_mode,
+        reranker_mode=resolved_mode,
         answer=state.answer,
         citations=[CitationOut(claim=c.claim, chunk_ids=c.chunk_ids) for c in state.citations],
         error=state.error,

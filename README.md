@@ -56,7 +56,8 @@ nothing, and the UI says so.
 |---|---|
 | [`nvidia-ir-rag-agent.onrender.com/health`](https://nvidia-ir-rag-agent.onrender.com/health) | ✅ `200 OK` — `{"status": "ok", "service": "nvidia-ir-rag-agent"}`, confirmed live. Note: earlier checks the same day returned `503 Service Unavailable` on every route for ~7 minutes straight before recovering — consistent with a Render free/starter-tier spin-down rather than a code defect, but it means the service isn't guaranteed to be warm on first click. |
 | [`nvidia-ir-rag-agent.onrender.com/evaluation`](https://nvidia-ir-rag-agent.onrender.com/evaluation) | ✅ Confirmed live — loads `api/static/evaluation.html`, "Retrieval Evaluation" heading, NDCG@10 0.5333/0.5280 figures present. |
-| `POST /search`, `POST /ask` | Not directly verified in this check (`WebFetch` is GET-only) — expected to return BM25-only results per `render.yaml`'s `RERANKER_MODE=fallback` and `api/dependencies.py`'s fallback-mode skip logic, both confirmed by reading the code, not by an actual request. |
+| `POST /search` | ✅ Confirmed live — `{"query": "cudaMalloc function parameters", "top_k": 3}` returned three ranked results, rank 1 the `cudaMalloc(void**, size_t)` signature chunk, with scores `1/61`, `1/62`, `1/63` — the single-ranker RRF signature confirming BM25-only fallback per `render.yaml`'s `RERANKER_MODE=fallback`. |
+| `POST /ask` | Not verified — requires `ANTHROPIC_API_KEY`, which is not configured on the deployed instance. |
 
 **For working `/search` and `/ask` with real results verified locally**,
 run it yourself — see [Setup & run](#setup--run). `docker compose up -d`
@@ -141,6 +142,14 @@ curl http://localhost:8001/health
 curl -X POST http://localhost:8001/search -H 'content-type: application/json' -d '{"query": "cudaMemcpyAsync"}'
 ```
 
+Windows PowerShell mangles that inline-JSON `-d` payload (you'll get a
+`json_invalid` error, not a broken API) — write the body to a file first:
+
+```powershell
+'{"query":"cudaMalloc function parameters","top_k":3}' | Out-File -Encoding ascii body.json
+curl.exe -s -X POST http://localhost:8001/search -H "content-type: application/json" -d "@body.json"
+```
+
 `data/indexes/bm25_index.pkl` is committed to git, so `/search` returns
 real BM25 results immediately after `docker compose up -d` — no data
 download or embedding step required. Dense/hybrid retrieval needs Qdrant's
@@ -152,7 +161,7 @@ collection populated first, a one-time ~86-minute local step; see
 **Tests:**
 
 ```bash
-pytest          # 508 tests, all mock embedding/LLM/DB/MLflow calls — no live services needed
+pytest          # 520 tests, all mock embedding/LLM/DB/MLflow calls — no live services needed
 ruff check .
 mypy .           # strict on agents/, api/, retrieval/, monitoring/, evaluation/, schema/, mcp/, slackbot/, streamlit_app/
 ```
