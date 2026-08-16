@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from retrieval.candidates import Candidate
@@ -59,3 +61,14 @@ class AskResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     service: str
+
+
+class FeedbackRequest(BaseModel):
+    query_id: str | None = None
+    chunk_id: str | None = None
+    reaction: Literal["up", "down"]
+    user_id: str | None = None
+
+
+class FeedbackResponse(BaseModel):
+    feedback_id: str

@@ -1,4 +1,4 @@
-"""FastAPI app: /, /evaluation, /search, /ask, /health.
+"""FastAPI app: /, /evaluation, /search, /ask, /feedback, /health.
 
 `create_app` is a factory (rather than only a module-level singleton) so
 tests can inject a fake `session_factory` into RequestLatencyMiddleware —
@@ -34,7 +34,7 @@ from api.telemetry import DEFAULT_OTLP_ENDPOINT, configure_tracing
 from monitoring.phoenix_config import DEFAULT_PHOENIX_ENDPOINT, configure_phoenix
 
 from api.middleware import RequestLatencyMiddleware
-from api.routers import ask, evaluation, health, search, ui
+from api.routers import ask, evaluation, feedback, health, search, ui
 
 load_dotenv()
 
@@ -54,6 +54,7 @@ def create_app(session_factory: Callable[[], Any] | None = None) -> FastAPI:
     app.include_router(evaluation.router)
     app.include_router(search.router)
     app.include_router(ask.router)
+    app.include_router(feedback.router)
     app.include_router(health.router)
     return app
 

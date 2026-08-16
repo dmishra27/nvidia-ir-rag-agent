@@ -345,6 +345,49 @@
     border-radius: 6px;
   }
 
+  /* ---------- Per-result feedback ---------- */
+  .feedback-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .feedback-label {
+    font-size: 0.75rem;
+    color: var(--ink-faint);
+  }
+
+  .feedback-btn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-muted);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .feedback-btn:hover:not(:disabled),
+  .feedback-btn:focus-visible {
+    border-color: var(--nv-green);
+    background: #f4faec;
+  }
+
+  .feedback-btn.selected { border-color: var(--nv-green); background: #f4faec; }
+
+  .feedback-btn:disabled { cursor: default; opacity: 0.6; }
+
+  .feedback-thanks {
+    font-size: 0.75rem;
+    color: var(--nv-green-dark);
+    font-weight: 600;
+  }
+
   /* ---------- Status states ---------- */
   .status-box {
     text-align: center;
@@ -563,7 +606,7 @@
       </div>`;
   }
 
-  function renderResults(results, mode) {
+  function renderResults(results, mode, queryId) {
     showModeBadge(mode);
 
     if (!results || results.length === 0) {
@@ -612,6 +655,12 @@
               ${docLabel}
               <p class="passage-text">${escapeHtml(passageText)}</p>
               ${sourceTag}
+              <div class="feedback-row" data-query-id="${escapeHtml(queryId || "")}" data-chunk-id="${escapeHtml(r.chunk_id || "")}">
+                <span class="feedback-label">Helpful?</span>
+                <button class="feedback-btn" type="button" data-reaction="up" aria-label="Mark this result helpful">👍</button>
+                <button class="feedback-btn" type="button" data-reaction="down" aria-label="Mark this result not helpful">👎</button>
+                <span class="feedback-thanks" hidden>Thanks for the feedback</span>
+              </div>
             </div>
           </div>`;
       })
@@ -642,13 +691,43 @@
       }
 
       const data = await resp.json();
-      renderResults(data.results, data.reranker_mode);
+      renderResults(data.results, data.reranker_mode, data.query_id);
     } catch (err) {
       showError();
     } finally {
       searchBtn.disabled = false;
     }
   }
+
+  resultsEl.addEventListener("click", async (evt) => {
+    const btn = evt.target.closest(".feedback-btn");
+    if (!btn) return;
+
+    const row = btn.closest(".feedback-row");
+    const buttons = row.querySelectorAll(".feedback-btn");
+    const thanks = row.querySelector(".feedback-thanks");
+    buttons.forEach((b) => (b.disabled = true));
+
+    try {
+      const resp = await fetch("/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query_id: row.dataset.queryId || null,
+          chunk_id: row.dataset.chunkId || null,
+          reaction: btn.dataset.reaction,
+        }),
+      });
+      if (resp.ok) {
+        btn.classList.add("selected");
+        thanks.hidden = false;
+      } else {
+        buttons.forEach((b) => (b.disabled = false));
+      }
+    } catch (err) {
+      buttons.forEach((b) => (b.disabled = false));
+    }
+  });
 </script>
 </body>
 </html>

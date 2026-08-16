@@ -192,6 +192,16 @@ class TestUI:
         for out_of_scope_topic in ["NVLink", "H100", "TensorRT"]:
             assert out_of_scope_topic in html
 
+    def test_page_has_per_result_feedback_controls(self) -> None:
+        client = TestClient(create_app(session_factory=MagicMock()))
+
+        html = client.get("/").text
+
+        assert 'class="feedback-row"' in html
+        assert 'data-reaction="up"' in html
+        assert 'data-reaction="down"' in html
+        assert "/feedback" in html  # the fetch() target the click handler posts to
+
 
 # ---------------------------------------------------------------------------
 # /search
