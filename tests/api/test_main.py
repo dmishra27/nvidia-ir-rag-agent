@@ -144,6 +144,16 @@ class TestUI:
         assert "MSc Data Science, University of Glasgow" in html
         assert "Greenock, Scotland" in html
 
+    def test_footer_tagline_explains_fallback_mode_and_links_to_evaluation(self) -> None:
+        client = TestClient(create_app(session_factory=MagicMock()))
+
+        html = client.get("/").text
+
+        assert 'class="tagline"' in html
+        assert "BM25 keyword search only" in html
+        assert "512" in html and "MB" in html
+        assert 'href="/evaluation"' in html
+
     def test_ui_route_is_excluded_from_the_openapi_schema(self) -> None:
         client = TestClient(create_app(session_factory=MagicMock()))
 
