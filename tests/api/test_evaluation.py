@@ -42,6 +42,24 @@ class TestEvaluation:
         assert "0.7616" in html
         assert "faithfulness" in html.lower()
 
+    def test_architectural_findings_reflect_live_q1_measurement(self) -> None:
+        client = TestClient(create_app(session_factory=MagicMock()))
+
+        html = client.get("/evaluation").text
+
+        # RRF corroboration bias, measured figures
+        assert "0.0235" in html  # target chunk's fused RRF score
+        assert "0.0317" in html  # fused rank-1 chunk's RRF score
+        # Cross-encoder result: independent scoring, but same wrong chunk won
+        assert "6.0145" in html  # CE rank-1 score (cudaFreeArray chunk)
+        assert "5.4647" in html  # CE rank-2 score (actual cudaMalloc signature)
+        assert "Both retrieval strategies failed on" in html
+        # The corrected claim no longer asserts immunity to the bias
+        assert "should not be subject to this failure mode" not in html
+        # New root-cause finding
+        assert "corpus-quality" in html.lower()
+        assert "cudaStreamAddCallback" in html
+
     def test_page_links_back_to_search_ui(self) -> None:
         client = TestClient(create_app(session_factory=MagicMock()))
 

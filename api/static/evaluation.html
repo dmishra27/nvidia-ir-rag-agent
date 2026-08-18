@@ -467,30 +467,70 @@
     <h3>RRF's corroboration bias</h3>
     <p>
       Reciprocal rank fusion rewards candidates two signals agree on, even
-      moderately, over a candidate either signal ranks highly alone. This
-      cost RRF the best available chunk on Q1 and Q10 above: a single
-      strong hit (BM25's <code>cudaMalloc</code> match on Q1, dense's
-      latency-hiding match on Q10) was crowded out by two mediocre chunks
-      both lists happened to rank moderately. A cross-encoder re-ranker
-      that scores each candidate independently — rather than by rank
-      position — should not be subject to this failure mode, which makes
-      Q1 and Q10 good regression-test candidates once full re-ranking
-      coverage lands.
+      moderately, over a candidate either signal ranks highly alone.
+      Measured directly on Q1 (<code>BM25 + dense, top_k=100 each, RRF
+      k=60</code>): the chunk containing the actual
+      <code>cudaMalloc(void **devPtr, size_t size)</code> signature with
+      both parameters named ranked <strong>BM25 #2</strong> (score 11.99)
+      and <strong>dense #75</strong> (cosine 0.872) — strong on one signal,
+      weak on the other — yet fused to only <strong>rank 4</strong> (RRF
+      0.0235). Fused rank 1 went instead to <code>81b9c458…</code>, a
+      chunk about <code>cudaFreeArray</code> that mentions
+      <code>cudaMalloc</code> only in a "see also" list (RRF 0.0317) — it
+      sat at rank 3 in <em>both</em> input lists. Two-list moderate
+      agreement outscored one-list strong confidence, the same pattern
+      already documented on Q10 above.
+    </p>
+    <p>
+      A cross-encoder that scores each candidate independently — rather
+      than by rank position — was expected not to be subject to this
+      mechanism. Re-ranking the fused top-10 with the ms-marco
+      cross-encoder confirms the independence claim on its own terms:
+      chunks with weak fused support (fused ranks 8 and 10) rose to CE
+      ranks 3 and 4, while chunks with strong two-list fused support
+      (fused ranks 2 and 3) fell to CE ranks 5 and 7 — rank agreement
+      clearly isn't what the cross-encoder is scoring. But it does
+      <strong>not</strong> confirm the expected outcome: the cross-encoder
+      still placed the <code>cudaFreeArray</code> chunk first (CE rank 1,
+      score 6.0145), ahead of the actual signature chunk (CE rank 2, score
+      5.4647). Corroboration bias isn't the mechanism — the cross-encoder
+      never saw rank positions, only text — yet the same wrong chunk won
+      under both mechanisms. <strong>Both retrieval strategies failed on
+      this input, for different reasons.</strong>
     </p>
 
-    <h3>Cross-encoder trade-off: discursive text over API signatures</h3>
+    <h3>Root cause: chunk boundaries straddle API entries</h3>
     <p>
-      The Day 6 ms-marco regression check (<code>docs/uat/uat_day6_regression.md</code>)
-      showed the same pattern on a narrow, 2-query sample: reranking a
-      cached RRF pool tends to confirm or promote fluent, explanatory prose
-      passages (definitions, "returns an error if..." style text) rather
-      than terse, structurally-formatted API reference entries — even when
-      a signature-style chunk is the more directly useful answer for a
-      lookup query. This is consistent with the corroboration-bias finding
-      above (Q1's actual <code>cudaMalloc()</code> signature entry never
-      reached the candidate pool the cross-encoder saw at all), and has
-      not yet been checked against a full 15-query, 3-way re-ranker
-      regression.
+      Inspecting the text of the chunks that dominate Q1's pool explains
+      why. All four come from the same source, the CUDA Runtime API
+      Reference, and three of them — the CE rank 1 chunk
+      (<code>cudaFreeArray</code>), the CE rank 3 chunk
+      (<code>cudaGraphMemAllocNodeGetParams</code>), and the CE rank 8
+      chunk (<code>cudaLaunchKernelEx</code>) — open with the identical
+      verbatim sentence "Note that as specified by
+      <code>cudaStreamAddCallback</code> no CUDA function may be called
+      from callback," followed by a "Parameters" block belonging to a
+      different function entirely. The chunker is producing chunks shaped
+      like <em>trailing boilerplate from one API entry + header of the
+      next</em>, and that boilerplate happens to contain "CUDA",
+      "function", and "Parameters" — the exact vocabulary shape of the
+      query. Every retrieval method scores these chunks highly because
+      those tokens are genuinely present in the text, not because of a bug
+      in any ranking strategy. This is a <strong>corpus-quality
+      defect</strong>, not a ranking defect: no fusion method or reranker
+      can fix it by scoring better, because the offending chunks really
+      are lexically and semantically similar to the query. The remedy is
+      chunk-boundary alignment to function-entry boundaries at ingestion
+      time, not filtering or re-ranking after the fact.
+    </p>
+    <p class="source-note">
+      Source: live measurement against the running <code>bm25_index.pkl</code>
+      and <code>nvidia_ir_chunks</code> Qdrant collection this session
+      (<code>retrieval/bm25_index.py</code>, <code>retrieval/dense_index.py</code>,
+      <code>retrieval/rrf_fusion.py</code>, <code>retrieval/reranker_msmarco.py</code>),
+      chunk text and section headings read from <code>chunks</code> /
+      <code>doc_metadata</code> in Postgres — not yet snapshotted to a
+      committed artifact file.
     </p>
   </section>
 
