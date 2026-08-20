@@ -1,0 +1,92 @@
+[
+  {
+    "query_id": "Q1",
+    "case": "case1_bm25_lexical_superiority",
+    "spearman_full100": 0.20970897089708967,
+    "rbo_p90": 0.34504077048822634
+  },
+  {
+    "query_id": "Q10",
+    "case": "case4_bm25_failure_dense_advantage",
+    "spearman_full100": 0.5083588358835882,
+    "rbo_p90": 0.8178718610405192
+  },
+  {
+    "query_id": "Q11",
+    "case": "case4_bm25_failure_dense_advantage",
+    "spearman_full100": 0.5782178217821782,
+    "rbo_p90": 0.7651217957784521
+  },
+  {
+    "query_id": "Q12",
+    "case": "case5_dense_failure_bm25_advantage",
+    "spearman_full100": 0.5777017701770176,
+    "rbo_p90": 0.4583280644403515
+  },
+  {
+    "query_id": "Q13",
+    "case": "case5_dense_failure_bm25_advantage",
+    "spearman_full100": 0.5497749774977496,
+    "rbo_p90": 0.3138120231232476
+  },
+  {
+    "query_id": "Q14",
+    "case": "case6_rrf_hybrid_advantage_mixed",
+    "spearman_full100": 0.8105970597059705,
+    "rbo_p90": 0.5184184908674405
+  },
+  {
+    "query_id": "Q15",
+    "case": "case6_rrf_hybrid_advantage_mixed",
+    "spearman_full100": 0.595079507950795,
+    "rbo_p90": 0.7206651170628043
+  },
+  {
+    "query_id": "Q2",
+    "case": "case1_bm25_lexical_superiority",
+    "spearman_full100": 0.8656705670567055,
+    "rbo_p90": 0.6104656130837677
+  },
+  {
+    "query_id": "Q3",
+    "case": "case1_bm25_lexical_superiority",
+    "spearman_full100": 0.7374377437743774,
+    "rbo_p90": 0.48261806533468266
+  },
+  {
+    "query_id": "Q4",
+    "case": "case2_dense_semantic_superiority",
+    "spearman_full100": 0.6894569456945694,
+    "rbo_p90": 0.6775128673735812
+  },
+  {
+    "query_id": "Q5",
+    "case": "case2_dense_semantic_superiority",
+    "spearman_full100": 0.38006600660066003,
+    "rbo_p90": 0.2294517846309277
+  },
+  {
+    "query_id": "Q6",
+    "case": "case2_dense_semantic_superiority",
+    "spearman_full100": 0.48997299729972993,
+    "rbo_p90": 0.613016393352305
+  },
+  {
+    "query_id": "Q7",
+    "case": "case3_rrf_hybrid_superiority",
+    "spearman_full100": 0.707002700270027,
+    "rbo_p90": 0.5830422784670438
+  },
+  {
+    "query_id": "Q8",
+    "case": "case3_rrf_hybrid_superiority",
+    "spearman_full100": 0.6993579357935793,
+    "rbo_p90": 0.6190316845145675
+  },
+  {
+    "query_id": "Q9",
+    "case": "case3_rrf_hybrid_superiority",
+    "spearman_full100": 0.6676747674767476,
+    "rbo_p90": 0.5902997389812203
+  }
+]

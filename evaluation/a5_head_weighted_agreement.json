@@ -1,0 +1,152 @@
+[
+  {
+    "query_id": "Q1",
+    "case": "case1_bm25_lexical_superiority",
+    "query": "CUDA cudaMalloc function parameters",
+    "spearman_top10": -0.23956043956043957,
+    "overlap_at_10": 6,
+    "overlap_at_5": 2,
+    "top1_match": false,
+    "rbo_p90": 0.34504077048822634
+  },
+  {
+    "query_id": "Q10",
+    "case": "case4_bm25_failure_dense_advantage",
+    "query": "latency hiding through instruction level parallelism",
+    "spearman_top10": 0.8181818181818182,
+    "overlap_at_10": 9,
+    "overlap_at_5": 4,
+    "top1_match": true,
+    "rbo_p90": 0.8178718610405192
+  },
+  {
+    "query_id": "Q11",
+    "case": "case4_bm25_failure_dense_advantage",
+    "query": "occupancy versus performance tradeoffs",
+    "spearman_top10": 0.43736263736263736,
+    "overlap_at_10": 6,
+    "overlap_at_5": 4,
+    "top1_match": true,
+    "rbo_p90": 0.7651217957784521
+  },
+  {
+    "query_id": "Q12",
+    "case": "case5_dense_failure_bm25_advantage",
+    "query": "cudaDeviceSynchronize return value",
+    "spearman_top10": -0.17892156862745098,
+    "overlap_at_10": 3,
+    "overlap_at_5": 1,
+    "top1_match": true,
+    "rbo_p90": 0.4583280644403515
+  },
+  {
+    "query_id": "Q13",
+    "case": "case5_dense_failure_bm25_advantage",
+    "query": "dim3 struct constructor syntax",
+    "spearman_top10": -0.3,
+    "overlap_at_10": 4,
+    "overlap_at_5": 2,
+    "top1_match": false,
+    "rbo_p90": 0.3138120231232476
+  },
+  {
+    "query_id": "Q14",
+    "case": "case6_rrf_hybrid_advantage_mixed",
+    "query": "pinned memory cudaMallocHost benefits and when to use",
+    "spearman_top10": 0.2785714285714285,
+    "overlap_at_10": 5,
+    "overlap_at_5": 2,
+    "top1_match": false,
+    "rbo_p90": 0.5184184908674405
+  },
+  {
+    "query_id": "Q15",
+    "case": "case6_rrf_hybrid_advantage_mixed",
+    "query": "register pressure and its effect on occupancy",
+    "spearman_top10": 0.5120879120879122,
+    "overlap_at_10": 6,
+    "overlap_at_5": 3,
+    "top1_match": true,
+    "rbo_p90": 0.7206651170628043
+  },
+  {
+    "query_id": "Q2",
+    "case": "case1_bm25_lexical_superiority",
+    "query": "cudaMemcpyAsync stream parameter",
+    "spearman_top10": 0.1032967032967033,
+    "overlap_at_10": 6,
+    "overlap_at_5": 2,
+    "top1_match": true,
+    "rbo_p90": 0.6104656130837677
+  },
+  {
+    "query_id": "Q3",
+    "case": "case1_bm25_lexical_superiority",
+    "query": "CUDA error cudaErrorInvalidValue description",
+    "spearman_top10": 0.2928571428571428,
+    "overlap_at_10": 5,
+    "overlap_at_5": 3,
+    "top1_match": false,
+    "rbo_p90": 0.48261806533468266
+  },
+  {
+    "query_id": "Q4",
+    "case": "case2_dense_semantic_superiority",
+    "query": "shader processor count per streaming multiprocessor",
+    "spearman_top10": 0.25,
+    "overlap_at_10": 5,
+    "overlap_at_5": 4,
+    "top1_match": true,
+    "rbo_p90": 0.6775128673735812
+  },
+  {
+    "query_id": "Q5",
+    "case": "case2_dense_semantic_superiority",
+    "query": "how to make GPU programs run faster",
+    "spearman_top10": -0.4176470588235294,
+    "overlap_at_10": 4,
+    "overlap_at_5": 0,
+    "top1_match": false,
+    "rbo_p90": 0.2294517846309277
+  },
+  {
+    "query_id": "Q6",
+    "case": "case2_dense_semantic_superiority",
+    "query": "problems with threads executing different code paths",
+    "spearman_top10": 0.1464285714285714,
+    "overlap_at_10": 5,
+    "overlap_at_5": 3,
+    "top1_match": true,
+    "rbo_p90": 0.613016393352305
+  },
+  {
+    "query_id": "Q7",
+    "case": "case3_rrf_hybrid_superiority",
+    "query": "CUDA thread synchronization performance overhead",
+    "spearman_top10": 0.13214285714285715,
+    "overlap_at_10": 5,
+    "overlap_at_5": 2,
+    "top1_match": true,
+    "rbo_p90": 0.5830422784670438
+  },
+  {
+    "query_id": "Q8",
+    "case": "case3_rrf_hybrid_superiority",
+    "query": "shared memory bank conflicts and how to avoid them",
+    "spearman_top10": 0.3802197802197802,
+    "overlap_at_10": 6,
+    "overlap_at_5": 4,
+    "top1_match": false,
+    "rbo_p90": 0.6190316845145675
+  },
+  {
+    "query_id": "Q9",
+    "case": "case3_rrf_hybrid_superiority",
+    "query": "memory coalescing rules for global memory access patterns",
+    "spearman_top10": 0.4461538461538462,
+    "overlap_at_10": 6,
+    "overlap_at_5": 4,
+    "top1_match": false,
+    "rbo_p90": 0.5902997389812203
+  }
+]
