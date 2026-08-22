@@ -1,0 +1,4 @@
+# Every blob in this branch is a raw, content-addressed DVC cache object.
+# Windows git autocrlf must never touch them, or the bytes served by
+# raw.githubusercontent.com stop matching the md5 the .dvc files expect.
+* -text
