@@ -1,0 +1,5 @@
+outs:
+- md5: 9b38a9094de68b56bc8c53fb12393efc
+  size: 2335789
+  hash: md5
+  path: cuda_c_best_practices_guide.pdf

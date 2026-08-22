@@ -1,0 +1,5 @@
+outs:
+- md5: 28cb83528d7c061fbda187508df90bf2
+  size: 7979890
+  hash: md5
+  path: ampere_architecture_whitepaper.pdf

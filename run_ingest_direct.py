@@ -3,7 +3,11 @@
 Runs the full pipeline without the Airflow scheduler:
   download_pdfs -> parse_pdfs -> chunk_docs -> score_chunks -> write_to_postgres -> log_coverage
 
-Exit codes: 0 = at least one doc written, 1 = nothing written.
+Exit codes: 0 = every manifest doc wrote or upserted cleanly (a re-run
+against an unchanged corpus legitimately writes zero *new* rows — that is
+success, not failure); 1 = a doc failed to write, or download coverage
+fell short of the manifest (DEF-20 — the run aborts rather than silently
+ingesting a partial corpus).
 """
 from __future__ import annotations
 
@@ -26,6 +30,8 @@ _PROJECT_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(_PROJECT_ROOT))
 load_dotenv(_PROJECT_ROOT / ".env")
 
+DATA_RAW_DIR = _PROJECT_ROOT / "data" / "raw"
+
 from schema.models import (
     Chunk,
     ChunkQuality,
@@ -45,56 +51,62 @@ DOWNLOAD_TIMEOUT = 120
 STAGING_BASE = Path(tempfile.gettempdir()) / "nvidia_ir_ingest"
 _TOKENIZER = tiktoken.get_encoding("cl100k_base")
 
+# DEF-20: three of the original eight manifest entries have 404'd since at
+# least Oct 2025 (NVIDIA serves an identical 78,745-byte HTML error page for
+# all three, same ETag) and were dropped rather than left to fail silently:
+#   cuDNN Developer Guide    – https://docs.nvidia.com/deeplearning/cudnn/pdf/cuDNN-Developer-Guide.pdf
+#   TensorRT Developer Guide – https://docs.nvidia.com/deeplearning/tensorrt/pdf/TensorRT-Developer-Guide.pdf
+#   Thrust Quick Start Guide – https://docs.nvidia.com/cuda/pdf/Thrust_Quick_Start_Guide.pdf
+# See docs/uat/correction_notice_a1.md §6 (DEF-20).
+#
+# "local_filename" pins each entry to its DVC-tracked copy under data/raw/,
+# fetched from CUDA Runtime API v13.3.1-era NVIDIA docs. download_pdfs()
+# reads that file when present and only falls back to the live URL when it
+# is absent — see DEF-19/DEF-20.
 MANIFEST: list[dict[str, str]] = [
     {
         "url": "https://docs.nvidia.com/cuda/pdf/CUDA_C_Programming_Guide.pdf",
         "title": "CUDA C++ Programming Guide",
         "gpu_family": "CUDA",
         "doc_type": "programming_guide",
+        "local_filename": "cuda_c_programming_guide.pdf",
     },
     {
         "url": "https://docs.nvidia.com/cuda/pdf/CUDA_C_Best_Practices_Guide.pdf",
         "title": "CUDA C++ Best Practices Guide",
         "gpu_family": "CUDA",
         "doc_type": "best_practices",
+        "local_filename": "cuda_c_best_practices_guide.pdf",
     },
     {
         "url": "https://docs.nvidia.com/cuda/pdf/CUDA_Math_API.pdf",
         "title": "CUDA Math API Reference",
         "gpu_family": "CUDA",
         "doc_type": "api_reference",
+        "local_filename": "cuda_math_api.pdf",
     },
     {
         "url": "https://docs.nvidia.com/cuda/pdf/CUDA_Runtime_API.pdf",
         "title": "CUDA Runtime API Reference",
         "gpu_family": "CUDA",
         "doc_type": "api_reference",
-    },
-    {
-        "url": "https://docs.nvidia.com/deeplearning/cudnn/pdf/cuDNN-Developer-Guide.pdf",
-        "title": "cuDNN Developer Guide",
-        "gpu_family": "cuDNN",
-        "doc_type": "developer_guide",
-    },
-    {
-        "url": "https://docs.nvidia.com/deeplearning/tensorrt/pdf/TensorRT-Developer-Guide.pdf",
-        "title": "TensorRT Developer Guide",
-        "gpu_family": "TensorRT",
-        "doc_type": "developer_guide",
-    },
-    {
-        "url": "https://docs.nvidia.com/cuda/pdf/Thrust_Quick_Start_Guide.pdf",
-        "title": "Thrust Quick Start Guide",
-        "gpu_family": "CUDA",
-        "doc_type": "quick_start",
+        "local_filename": "cuda_runtime_api.pdf",
     },
     {
         "url": "https://docs.nvidia.com/nsight-systems/pdf/UserGuide.pdf",
         "title": "Nsight Systems User Guide",
         "gpu_family": "Nsight",
         "doc_type": "user_guide",
+        "local_filename": "nsight_systems_user_guide.pdf",
     },
 ]
+
+EXPECTED_DOC_COUNT = len(MANIFEST)
+
+
+class IngestCoverageError(RuntimeError):
+    """Raised when fewer documents were ingested than the manifest declares."""
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -132,19 +144,32 @@ def download_pdfs(run_id: str) -> list[dict[str, Any]]:
         url = entry["url"]
         doc_id = _doc_id(url)
         dest = staging_dir / f"{doc_id}.pdf"
+        pinned_path = DATA_RAW_DIR / entry["local_filename"]
         log.info("download_start", stage="download", query_id=run_id, doc_id=doc_id, title=entry["title"])
         try:
-            resp = requests.get(url, headers=headers, timeout=DOWNLOAD_TIMEOUT, stream=True)
-            resp.raise_for_status()
-            raw = b"".join(resp.iter_content(chunk_size=65_536))
+            if pinned_path.exists():
+                raw = pinned_path.read_bytes()
+                source = "local"
+            else:
+                resp = requests.get(url, headers=headers, timeout=DOWNLOAD_TIMEOUT, stream=True)
+                resp.raise_for_status()
+                raw = b"".join(resp.iter_content(chunk_size=65_536))
+                source = "download"
+            # Deliberate guard (DEF-20): NVIDIA serves an identical HTML 404
+            # page (same bytes/ETag) for dead doc URLs instead of a proper
+            # error status on some paths. Without this check, that page's
+            # HTML would be ingested as if it were the document's content.
             if raw[:5] != b"%PDF-":
                 raise ValueError(f"Not a PDF (starts with {raw[:8]!r})")
+            content_sha256 = hashlib.sha256(raw).hexdigest()
             dest.write_bytes(raw)
-            log.info("download_ok", stage="download", query_id=run_id, doc_id=doc_id, bytes=len(raw))
+            log.info("download_ok", stage="download", query_id=run_id, doc_id=doc_id,
+                     bytes=len(raw), source=source, content_sha256=content_sha256)
             results.append({
                 "doc_id": doc_id, "local_path": str(dest),
                 "title": entry["title"], "source_url": url,
                 "gpu_family": entry["gpu_family"], "doc_type": entry["doc_type"],
+                "content_sha256": content_sha256, "source": source,
                 "status": "downloaded",
             })
         except Exception as exc:
@@ -153,8 +178,19 @@ def download_pdfs(run_id: str) -> list[dict[str, Any]]:
                 "doc_id": doc_id, "local_path": "",
                 "title": entry["title"], "source_url": url,
                 "gpu_family": entry["gpu_family"], "doc_type": entry["doc_type"],
+                "content_sha256": "", "source": "",
                 "status": "download_failed",
             })
+
+    ok_count = sum(1 for r in results if r["status"] == "downloaded")
+    if ok_count < EXPECTED_DOC_COUNT:
+        missing = [r["title"] for r in results if r["status"] != "downloaded"]
+        # DEF-20: fail the run rather than silently continuing with a
+        # partial corpus — a shortfall here invalidates any benchmark
+        # figure computed downstream.
+        raise IngestCoverageError(
+            f"Expected {EXPECTED_DOC_COUNT} documents, got {ok_count}. Missing: {missing}"
+        )
     return results
 
 
@@ -313,12 +349,21 @@ def write_to_postgres(scored: list[dict[str, Any]], run_id: str) -> dict[str, An
                         doc_id=doc_id, title=doc["title"], source_url=doc["source_url"],
                         gpu_family=doc.get("gpu_family"), doc_type=doc.get("doc_type"),
                         page_count=doc.get("page_count", 0),
+                        content_sha256=doc.get("content_sha256") or None,
                         last_ingested=datetime.now(timezone.utc), ingestion_run=run_id,
                     ))
                     docs_written += 1
                 else:
                     existing.last_ingested = datetime.now(timezone.utc)
                     existing.ingestion_run = run_id
+                    # DEF-20: hash drift here means the pinned PDF or a
+                    # re-downloaded one differs from what was ingested
+                    # before — surface it rather than overwrite silently.
+                    new_hash = doc.get("content_sha256") or None
+                    if new_hash and existing.content_sha256 and new_hash != existing.content_sha256:
+                        log.warning("content_hash_drift", stage="write_postgres", query_id=run_id,
+                                    doc_id=doc_id, old_hash=existing.content_sha256, new_hash=new_hash)
+                    existing.content_sha256 = new_hash or existing.content_sha256
 
                 chunks: list[dict[str, Any]] = json.loads(Path(chunks_path).read_text(encoding="utf-8"))
                 for c in chunks:
@@ -397,12 +442,14 @@ def main() -> int:
     print(f"          {len(MANIFEST)} documents in manifest")
 
     print("\nStep 2/6  download_pdfs")
-    downloaded = download_pdfs(run_id)
+    try:
+        downloaded = download_pdfs(run_id)
+    except IngestCoverageError as exc:
+        # DEF-20: stop the run rather than continuing with a partial corpus.
+        print(f"          FAILED  {exc}")
+        return 1
     ok = [d for d in downloaded if d["status"] == "downloaded"]
-    fail = [d for d in downloaded if d["status"] != "downloaded"]
-    print(f"          downloaded={len(ok)}  failed={len(fail)}")
-    for d in fail:
-        print(f"          SKIP  {d['title']}")
+    print(f"          downloaded={len(ok)}  failed=0")
 
     print("\nStep 3/6  parse_pdfs")
     parsed = parse_pdfs(downloaded, run_id)
@@ -432,7 +479,11 @@ def main() -> int:
 
     print(f"\n=== Ingestion complete: run_id={run_id} ===")
     print(f"    docs={summary['docs_written']}  chunks={summary['chunks_written']}")
-    return 0 if summary["docs_written"] > 0 else 1
+    # Success = every doc in the manifest wrote or upserted cleanly. A
+    # re-run against an already-ingested, content-identical corpus is
+    # expected to insert zero *new* rows (chunk_id is content-addressed) —
+    # that is not a failure, so docs_written==0 alone must not fail the run.
+    return 0 if not summary["failed_doc_ids"] else 1
 
 
 if __name__ == "__main__":

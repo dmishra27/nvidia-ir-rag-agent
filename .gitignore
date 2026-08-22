@@ -12,9 +12,14 @@ __pycache__/
 dist/
 build/
 
-# Data (DVC-tracked)
-data/raw/
+# Data (DVC-tracked). Do NOT blanket-ignore data/raw/ here — `dvc add`
+# writes precise per-file entries into data/raw/.gitignore itself, and a
+# blanket rule at this level also swallows the *.dvc pointer files that
+# must be committed for `dvc pull` to work for anyone else. (This is what
+# broke: commit 4ebf3af's `data/` blanket rule below silently orphaned
+# data/raw.dvc for months — see docs/uat/correction_notice_a1.md DEF-19.)
 data/chunks/
+data/indexes/*.npy
 
 # ML tracking
 mlruns/
@@ -36,8 +41,6 @@ Thumbs.db
 *.log
 
 verify_phase_c*.py
-
-data/
 
 ask.json
 body.json

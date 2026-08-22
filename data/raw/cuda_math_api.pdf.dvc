@@ -1,0 +1,5 @@
+outs:
+- md5: 82c44e0f61fbb5adcb045b82d7d55d2c
+  size: 1302456
+  hash: md5
+  path: cuda_math_api.pdf

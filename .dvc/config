@@ -1,0 +1,4 @@
+[core]
+    remote = storage
+['remote "storage"']
+    url = https://raw.githubusercontent.com/dmishra27/nvidia-ir-rag-agent/dvc-storage/

@@ -1,0 +1,5 @@
+outs:
+- md5: 8eaa2afc31aca9eda6e6102f97fe3440
+  size: 10948440
+  hash: md5
+  path: nsight_systems_user_guide.pdf

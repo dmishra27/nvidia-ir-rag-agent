@@ -1,0 +1,5 @@
+outs:
+- md5: a48fb080956bf2e7d0d31ab8ddd9b8e7
+  size: 4660484
+  hash: md5
+  path: cuda_c_programming_guide.pdf

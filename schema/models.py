@@ -25,6 +25,10 @@ class DocMetadata(Base):
     last_ingested = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
     ingestion_run = Column(String)
     created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
+    # SHA-256 of the source PDF's bytes. _doc_id (see ingest scripts) only
+    # hashes the URL, so without this a document revision at the same URL
+    # is invisible. See DEF-20.
+    content_sha256 = Column(String)
 
 
 class Chunk(Base):

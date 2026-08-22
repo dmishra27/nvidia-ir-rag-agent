@@ -1,0 +1,5 @@
+outs:
+- md5: 577cecb2cd4dfe25ccb2bc3b7d9afa6e
+  size: 750590
+  hash: md5
+  path: hopper_architecture_whitepaper.pdf

@@ -11,7 +11,11 @@ CREATE TABLE IF NOT EXISTS doc_metadata (
     page_count      INTEGER,
     last_ingested   TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     ingestion_run   TEXT,
-    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    content_sha256  TEXT  -- SHA-256 of the source PDF's bytes; _doc_id only
+                          -- hashes the URL, so this is what makes a silent
+                          -- document revision (same URL, different content)
+                          -- detectable. See DEF-20.
 );
 
 -- 2. Chunks
