@@ -194,32 +194,57 @@ That is A1-R, in §5.
 
 Not part of the A1 correction, recorded here because they were surfaced by it.
 
-### DEF-19 · `data/raw/` is orphaned — Round 1 coverage gaps are ingestion defects
+### DEF-19 · `data/raw/` is orphaned — Round 1 coverage gaps are ingestion defects — **FIXED at `7bc6730`**
 
-Six PDFs are DVC-tracked in `data/raw/` (`921281c`, 10 July): the A100 datasheet, Ampere and Hopper architecture whitepapers, and three CUDA guides. **The ingestion pipeline never reads this directory** — both `run_ingest_direct.py` and `airflow/dags/ingest_nvidia_docs.py` download from a hardcoded URL list into a temp staging directory.
+Six PDFs were DVC-tracked in `data/raw/` back on 10 July (`921281c`): the A100 datasheet, Ampere and Hopper architecture whitepapers, and three CUDA guides. **The ingestion pipeline never read this directory** — both `run_ingest_direct.py` and `airflow/dags/ingest_nvidia_docs.py` downloaded from a hardcoded URL list into a temp staging directory instead.
 
-Consequently, Round 1's two "coverage gap" conclusions are wrong about their cause:
+**Root cause — deeper than first recorded.** The original diagnosis (Round 1 of this investigation) was that the ingest code simply never looked at `data/raw/`. That is true but not the defect's origin. The actual cause: **the `data/raw.dvc` pointer file was never committed to any branch, at any point.** `921281c` ran a directory-level `dvc add data/raw`, which writes the pointer to the working tree — but it was never `git add`ed. The same evening, commit `4ebf3af` ("chore: exclude data/ directory from git — DVC-tracked") added a single blanket line to `.gitignore`:
+
+```diff
++data/
+```
+
+That line's glob matches `data/raw.dvc` as well as the PDF bytes it was meant to hide, so the untracked pointer file became permanently invisible to `git status` and `git add .` alike. **The DVC layer was inert from 10 July onward** — not disconnected from ingest by choice, but never actually present in git history for anyone who cloned the repository. `.dvc/config` also had no remote configured, so even a reader who noticed the missing pointer had nothing to pull from.
+
+**Verification command and result:**
+
+```
+$ git log --all --oneline -- data/raw.dvc
+(empty)
+```
+
+No commit, on any branch, ever touched that path. This is the direct evidence that the ingest-code diagnosis, while accurate about symptom, was incomplete about cause: there was no working pointer file to read in the first place, on any branch, at any commit — the pipeline's silence and the pointer's absence were the same defect wearing two faces.
+
+Consequently, Round 1's two "coverage gap" conclusions were wrong about their cause:
 
 | Round 1 query | Recorded as | Actually |
 |---|---|---|
-| `NVLink 4.0 bandwidth specifications` | *"the corpus has no GPU-architecture whitepaper"* | Two whitepapers are in `data/raw/`, never ingested |
+| `NVLink 4.0 bandwidth specifications` | *"the corpus has no GPU-architecture whitepaper"* | Two whitepapers were sitting in `data/raw/`, tracked by DVC on disk, but invisible to git and never ingested |
 | `best practices for optimising neural network training` | *"the corpus is CUDA systems documentation, not ML-framework documentation"* | The cuDNN Developer Guide was declared in the ingest list; its URL 404s |
 
-Round 1 was right that these were not retrieval-algorithm defects. It was wrong that they were scope decisions. **Both are ingestion failures recorded as design boundaries.**
+Round 1 was right that these were not retrieval-algorithm defects. It was wrong that they were scope decisions. **Both are ingestion failures that a broken DVC layer recorded as design boundaries.**
 
-### DEF-20 · Silent partial-corpus ingestion
+**Fix and closure, `7bc6730` (22 August):**
+- Replaced the single directory-level `dvc add data/raw` with a per-file `dvc add` — one `.dvc` pointer per PDF (5 corpus documents + 3 hardware PDFs kept tracked but deliberately out of the ingest manifest), so no single opaque hash covers unrelated files again.
+- Removed the blanket `data/` line from `.gitignore`. Ignoring the PDF bytes is now owned by `data/raw/.gitignore`, DVC-managed with precise per-file entries — the failure mode that swallowed the pointer in `4ebf3af` cannot recur, because the ignore rule DVC itself writes never matches its own `.dvc` files.
+- Wired both ingest paths (`run_ingest_direct.py`, `airflow/dags/ingest_nvidia_docs.py`) to check `data/raw/<file>` first and fall back to the live URL only when it's absent — the directory is now actually read, closing the original symptom as well as the root cause.
+- Stood up a real DVC remote (orphan branch `dvc-storage` on `raw.githubusercontent.com`, content-addressed cache layout) so the pointers resolve to something pullable. See the verification subsection below and DEF-24.
 
-Both ingest paths declare **eight** source documents. Three return HTTP 404 and have done since at least October 2025 (`Last-Modified` on the error page):
+**Consequence retained.** The Round 1 misdiagnosis stands as originally recorded above: it correctly identified *that* two whitepapers went unused and one guide was missing, and incorrectly framed both as intentional scope rather than pipeline failure. That misdiagnosis is now understood to trace to a pointer file that had never existed in git history, not merely to ingest code that chose not to look.
+
+### DEF-20 · Silent partial-corpus ingestion — **FIXED at `7bc6730`**
+
+Both ingest paths declared **eight** source documents. Three returned HTTP 404 and had done since at least October 2025 (`Last-Modified` on the error page):
 
 - `cuDNN-Developer-Guide.pdf`
 - `TensorRT-Developer-Guide.pdf`
 - `Thrust_Quick_Start_Guide.pdf`
 
-`download_pdfs()` catches the failure, logs a warning, and continues. Parsing skips anything not `downloaded`. **The pipeline reports success with five documents.** Database confirms five `doc_id` values summing to exactly 5,389 chunks.
+`download_pdfs()` caught the failure, logged a warning, and continued. Parsing skipped anything not `downloaded`. **The pipeline reported success with five documents.** Database confirmed five `doc_id` values summing to exactly 5,389 chunks.
 
-NVIDIA serves an identical 78,745-byte HTML error page for all three (same ETag). The pipeline's `raw[:5] != b"%PDF-"` check is the only thing preventing three copies of an error page entering the corpus as content. **That check should be documented as deliberate.**
+NVIDIA serves an identical 78,745-byte HTML error page for all three (same ETag). The pipeline's `raw[:5] != b"%PDF-"` check was the only thing preventing three copies of an error page entering the corpus as content.
 
-*Fix:* assert the expected document count and fail the run on shortfall; hash downloaded content and log it so corpus drift is detectable (`_doc_id` hashes the URL, not the content, so revisions are currently invisible).
+**Fix and closure, `7bc6730`:** the three dead URLs were dropped from the ingest manifest entirely, with a comment recording the 404s and the date they were confirmed. `download_pdfs()` now asserts the expected document count and raises `IngestCoverageError` — aborting the run (Airflow: task fails; direct runner: exits 1) — on any shortfall, instead of logging a warning and continuing. The `raw[:5] != b"%PDF-"` guard is retained and is now commented as deliberate, since NVIDIA's identical error-page bytes make it the only line stopping HTML from entering the corpus as content. Content hashing (`doc_metadata.content_sha256`) was added alongside so a document revision at an unchanged URL is no longer invisible.
 
 ### DEF-21 · A test encodes an ingestion defect as intended scope
 
@@ -236,6 +261,48 @@ All three are absent for defect reasons — NVLink and H100 via DEF-19, TensorRT
 `evaluation/relevance_labeller.py:153` includes `"cuDNN convolution algorithm selection"` and `"NCCL all-reduce collective communication pattern"` in its query set. cuDNN was declared but 404'd; **NCCL was never in the source list at all.** Neither can have a relevant chunk in the index.
 
 Whether these produced zero labels or something worse should be checked, as it bears on the label-sparsity findings in A2 and A3.
+
+### DEF-23 · The memory gate is advisory, not enforcing — **OPEN**
+
+`docs/uat/clean_clone_test_protocol.md` §2.1 documents `< 200 MB free` as a hard stop for this host. During the `7bc6730` verification run, a pre-flight check passed — free memory was above the threshold at the moment it was taken — and the run was then killed mid-flight when Windows free memory dipped to **17 MB**, more than an order of magnitude below the documented figure.
+
+**The check is single-shot.** It samples free memory once, before the parse begins, and never again. A multi-hundred-page PyMuPDF parse allocates progressively as it walks the document; nothing re-checks memory once the pre-flight sample has passed, so a page-heavy document can drive free memory from a comfortable margin to single-digit megabytes entirely within one stage, invisible to a gate that already reported green.
+
+This means the 200 MB figure in `clean_clone_test_protocol.md` §2.1 is not currently meaningful as a safety threshold for any parse-heavy stage — a run can clear the gate and still exhaust memory before the gate is checked again. (In this instance the run was recoverable: three of five documents' hashes had already been written cleanly with no corruption, and the completed re-run confirmed nothing was lost. That outcome was fortunate timing, not a property of the check.)
+
+**Proposed, not implemented:**
+- A mid-run check invoked between documents (or between pages, for the largest single documents) rather than only before the stage starts, so the gate can actually observe the state it claims to guard.
+- Alternatively, a page-batch cap — parsing in bounded chunks of pages with a memory check between batches — which would also bound peak allocation directly rather than relying on catching a low reading after the fact.
+
+Either requires deciding an acceptable performance cost for the added checks/batching before implementation; that trade-off is not resolved here.
+
+### DEF-24 · Line-ending corruption risk on binary DVC blobs — **FIXED at `7bc6730`**
+
+The DVC remote (DEF-19) stores its 8 content-addressed cache objects on the orphan branch `dvc-storage`. Windows `autocrlf` normalizes line endings on commit by default, and was about to do so to a binary DVC cache blob being committed to that branch — a content-addressed object whose bytes must match the md5 embedded in its path exactly, with no tolerance for any transformation.
+
+**The failure mode is silent.** `autocrlf` mangling a binary blob produces no error at commit time, at push time, or at `dvc pull` time on the consuming end — `dvc pull` would have reported success and handed back a file whose bytes differ from what the `.dvc` pointer's hash promises. Nothing downstream (parsing, chunking, hashing against `content_sha256`) is guaranteed to detect a corrupted PDF header or truncated stream cleanly; the corruption would surface, if at all, as a mysterious parse failure or silently wrong page count far from its actual cause.
+
+**Fix:** a `.gitattributes` on the `dvc-storage` branch —
+
+```
+* -text
+```
+
+— forcing every blob on that branch to be treated as binary regardless of Windows line-ending settings. All 8 cache objects were byte-verified (sha256) against source before pushing, and again after `dvc pull` in the CC-ACQ-02 verification run below.
+
+### DEF-25 · Ingest exit code inverted on a correct no-op re-run — **FIXED at `7bc6730`**
+
+`run_ingest_direct.py`'s `main()` keyed its process exit status off `docs_written > 0`. A re-run against an already-ingested corpus is expected to write zero new documents by design (content-addressed `doc_id`s make re-ingestion a no-op) — and that correct, intended behaviour was reported as a **failure**, because `docs_written` was legitimately `0`.
+
+**Fix:** exit status now keys off `failed_doc_ids` instead. A run that writes nothing because everything is already present now exits 0; a run that fails to ingest one or more documents exits 1, regardless of how many documents were newly written. Found and fixed while verifying DEF-19/DEF-20 during the same session's re-ingestion re-run (5 docs, 5,389 chunks, `docs_written=0 chunks_written=0 failed_docs=[] coverage=100%`).
+
+### Verification — CC-ACQ-02 · Dataset acquisition — **PASSED**
+
+Run against `clean_clone_test_protocol.md`'s CC-ACQ-02 (the highest-risk test case in that protocol): a fresh clone, no pre-existing DVC cache on the machine performing the check, `dvc pull` against the `dvc-storage` remote.
+
+**Result:** all 8 blobs retrieved and sha256-verified against the hashes embedded in their respective `.dvc` pointer files. `dvc status` reported clean. This confirms the DEF-19 fix end-to-end, as an unauthenticated third party cloning the repository would experience it — not just that the pointer files now exist in git history, but that what they point to is actually fetchable and correct.
+
+**Honest caveat.** Two of the five ingested PDFs — the CUDA C Best Practices Guide and the Nsight Systems User Guide — were re-downloaded during this work rather than recovered from the original 10 July acquisition, and their bytes differ from the July originals (different NVIDIA-side regeneration of the same published document). They match the originals on page count (118 and 344 pages respectively, exact match against `doc_metadata`) and produce an unchanged 5,389 chunks across the corpus. **The pin is faithful in content — same page counts, same chunk count, same downstream corpus shape — but is not byte-identical to the specific files ingested in July, which no longer exist anywhere to compare against.** Anyone treating the DVC pin as a guarantee of byte-for-byte provenance back to the original ingestion should read this caveat first; it guarantees content stability from this pin forward, not retroactively.
 
 ---
 
