@@ -15,6 +15,13 @@ for LLM nodes, the Anthropic client is instantiated directly inside the
 node (not constructor-injected) and unit tests patch
 `agents.qa_agent.anthropic.Anthropic` — per AGENTS.md's rule to mock all
 LLM calls in tests.
+
+`make_generate_node`'s `prompt_variant` selects between `PROMPT_VARIANTS`
+("baseline", the original single instruction this project ran through Day
+9; "cite_verify", a self-verification pass before the tool call). Compared
+head-to-head in docs/uat/prompt_variant_comparison.md over the same 10
+saved Config A contexts run_day9_ragas.py/run_day9_citation_judge.py used —
+`DEFAULT_PROMPT_VARIANT` is that comparison's outcome, not an assumption.
 """
 
 from __future__ import annotations
@@ -155,9 +162,46 @@ def _build_context(passages: list[Candidate]) -> str:
     return "\n\n".join(f"[{c.chunk_id}] {c.text}" for c in passages)
 
 
-def make_generate_node(model: str = MODEL) -> Callable[[QAState], QAState]:
+# Prompt variants for the `generate` node, per docs/uat/prompt_variant_comparison.md.
+# "baseline" is the original, unmodified instruction that shipped through Day 9 —
+# kept verbatim so the comparison is against what actually ran in production, not
+# a reworded version of it. "cite_verify" is a genuinely different generation
+# strategy (not a reworded instruction): it asks the model to check each claim
+# against its cited passage before finalizing the tool call, rather than
+# citing and answering in one pass. Evaluated head-to-head in
+# docs/uat/prompt_variant_comparison.md; DEFAULT_PROMPT_VARIANT below reflects
+# that evaluation's outcome, not an assumption.
+PROMPT_VARIANTS: dict[str, str] = {
+    "baseline": (
+        "Answer the question using only the passages below. Each "
+        "passage is prefixed with its chunk_id in brackets. Every "
+        "claim in your answer must cite the chunk_id(s) that "
+        "support it.\n\n"
+        "Question: {query}\n\nPassages:\n{context}"
+    ),
+    "cite_verify": (
+        "Answer the question using only the passages below. Each "
+        "passage is prefixed with its chunk_id in brackets.\n\n"
+        "Before calling the tool, work through this privately: draft "
+        "each claim your answer needs, then for each claim re-read its "
+        "candidate chunk_id(s) and confirm the passage actually states "
+        "what the claim asserts — not merely that it mentions the same "
+        "topic. Drop or re-cite any claim whose passage doesn't "
+        "substantiate it once you check. Only the final, verified "
+        "answer and citations go into the tool call.\n\n"
+        "Question: {query}\n\nPassages:\n{context}"
+    ),
+}
+DEFAULT_PROMPT_VARIANT = "baseline"
+
+
+def make_generate_node(
+    model: str = MODEL, prompt_variant: str = DEFAULT_PROMPT_VARIANT
+) -> Callable[[QAState], QAState]:
+    prompt_template = PROMPT_VARIANTS[prompt_variant]
+
     def generate(state: QAState) -> QAState:
-        log.info("generate", query_id=state.query_id, stage="generate")
+        log.info("generate", query_id=state.query_id, stage="generate", prompt_variant=prompt_variant)
         if state.error:
             return state
 
@@ -170,13 +214,7 @@ def make_generate_node(model: str = MODEL) -> Callable[[QAState], QAState]:
         messages: list[MessageParam] = [
             {
                 "role": "user",
-                "content": (
-                    "Answer the question using only the passages below. Each "
-                    "passage is prefixed with its chunk_id in brackets. Every "
-                    "claim in your answer must cite the chunk_id(s) that "
-                    "support it.\n\n"
-                    f"Question: {state.query}\n\nPassages:\n{_build_context(passages)}"
-                ),
+                "content": prompt_template.format(query=state.query, context=_build_context(passages)),
             }
         ]
         try:
@@ -248,7 +286,11 @@ def make_generate_node(model: str = MODEL) -> Callable[[QAState], QAState]:
 # ── Graph ─────────────────────────────────────────────────────────────────────
 
 def build_graph(
-    bm25_index: BM25Index, dense_index: DenseIndex | None, router: RerankerRouter, model: str = MODEL
+    bm25_index: BM25Index,
+    dense_index: DenseIndex | None,
+    router: RerankerRouter,
+    model: str = MODEL,
+    prompt_variant: str = DEFAULT_PROMPT_VARIANT,
 ) -> Any:
     graph = StateGraph(QAState)
     # mypy strict can't unify NodeInputT through add_node's StateNode Union-of-Protocols
@@ -257,7 +299,7 @@ def build_graph(
     # ignore because the reported error code flips between call-overload/arg-type.
     graph.add_node("retrieve", make_retrieve_node(bm25_index, dense_index))  # type: ignore
     graph.add_node("rerank", make_rerank_node(router))  # type: ignore
-    graph.add_node("generate", make_generate_node(model))  # type: ignore
+    graph.add_node("generate", make_generate_node(model, prompt_variant))  # type: ignore
     graph.set_entry_point("retrieve")
     graph.add_edge("retrieve", "rerank")
     graph.add_edge("rerank", "generate")
@@ -280,11 +322,12 @@ def run(
     dense_index: DenseIndex | None = _UNSET_DENSE_INDEX,
     router: RerankerRouter | None = None,
     model: str = MODEL,
+    prompt_variant: str = DEFAULT_PROMPT_VARIANT,
 ) -> QAState:
     bm25_index = bm25_index or BM25Index.load()
     dense_index = DenseIndex.connect() if dense_index is _UNSET_DENSE_INDEX else dense_index
     router = router or build_default_router()
-    graph = build_graph(bm25_index, dense_index, router, model)
+    graph = build_graph(bm25_index, dense_index, router, model, prompt_variant)
     initial = QAState(
         query=query,
         top_k=top_k,

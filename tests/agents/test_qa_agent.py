@@ -11,7 +11,11 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from agents.qa_agent import (
+    DEFAULT_PROMPT_VARIANT,
+    PROMPT_VARIANTS,
     Citation,
     QAState,
     build_graph,
@@ -374,6 +378,81 @@ class TestGenerateNode:
             result = node(state)
 
         assert result.query_id == "fixed0001"
+
+
+# ---------------------------------------------------------------------------
+# generate node — prompt variants (docs/uat/prompt_variant_comparison.md)
+# ---------------------------------------------------------------------------
+
+
+class TestPromptVariants:
+    def test_default_prompt_variant_is_baseline_unless_evaluation_changes_it(self) -> None:
+        # Guards against silently flipping the shipped default without updating
+        # docs/uat/prompt_variant_comparison.md's stated winner to match.
+        assert DEFAULT_PROMPT_VARIANT in PROMPT_VARIANTS
+
+    def test_baseline_matches_the_original_unmodified_instruction(self) -> None:
+        node = make_generate_node(prompt_variant="baseline")
+        state = QAState(query="q", reranked_results=[_c("r1", 1)])
+        mock_resp = _tool_response("ans", [])
+
+        with patch("agents.qa_agent.anthropic.Anthropic") as MockClient:
+            MockClient.return_value.messages.create.return_value = mock_resp
+            node(state)
+            _, kwargs = MockClient.return_value.messages.create.call_args
+            content = kwargs["messages"][0]["content"]
+
+        assert "Every claim in your answer must cite the chunk_id(s)" in content
+        assert "verify" not in content.lower()
+
+    def test_cite_verify_asks_the_model_to_check_claims_before_answering(self) -> None:
+        node = make_generate_node(prompt_variant="cite_verify")
+        state = QAState(query="q", reranked_results=[_c("r1", 1)])
+        mock_resp = _tool_response("ans", [])
+
+        with patch("agents.qa_agent.anthropic.Anthropic") as MockClient:
+            MockClient.return_value.messages.create.return_value = mock_resp
+            node(state)
+            _, kwargs = MockClient.return_value.messages.create.call_args
+            content = kwargs["messages"][0]["content"]
+
+        assert "confirm the passage actually states" in content
+
+    def test_both_variants_still_interpolate_query_and_context(self) -> None:
+        state = QAState(query="a very specific question", reranked_results=[_c("r1", 1)])
+        mock_resp = _tool_response("ans", [])
+
+        for variant in PROMPT_VARIANTS:
+            node = make_generate_node(prompt_variant=variant)
+            with patch("agents.qa_agent.anthropic.Anthropic") as MockClient:
+                MockClient.return_value.messages.create.return_value = mock_resp
+                node(state)
+                _, kwargs = MockClient.return_value.messages.create.call_args
+                content = kwargs["messages"][0]["content"]
+
+            assert "a very specific question" in content, variant
+            assert "r1" in content, variant
+
+    def test_unknown_prompt_variant_raises_at_construction_not_at_call_time(self) -> None:
+        with pytest.raises(KeyError):
+            make_generate_node(prompt_variant="does-not-exist")
+
+    def test_build_graph_accepts_prompt_variant(self) -> None:
+        # Regression guard: build_graph must thread prompt_variant through to
+        # make_generate_node rather than always using the default.
+        mock_resp = _tool_response("ans", [])
+        graph = build_graph(
+            _FakeBM25([], []), _FakeDense([], []), _FakeRouter([_c("r1", 1)], []), prompt_variant="cite_verify"
+        )
+        state = QAState(query="q")
+
+        with patch("agents.qa_agent.anthropic.Anthropic") as MockClient:
+            MockClient.return_value.messages.create.return_value = mock_resp
+            graph.invoke(state)
+            _, kwargs = MockClient.return_value.messages.create.call_args
+            content = kwargs["messages"][0]["content"]
+
+        assert "confirm the passage actually states" in content
 
 
 # ---------------------------------------------------------------------------
