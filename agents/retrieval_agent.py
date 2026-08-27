@@ -9,7 +9,10 @@ loading a real index, connecting to Qdrant, or loading a cross-encoder —
 per AGENTS.md's rule to mock all embedding/LLM calls in unit tests and to
 write contract tests on LangGraph state schema, not content.
 
-- retrieve: BM25 top-100 + dense top-100 -> RRF fusion (Day 5 hybrid pipeline)
+- retrieve: BM25 top-100 + dense top-100 -> RRF fusion (Day 5 hybrid pipeline).
+  A dense-search failure (e.g. Qdrant collection not yet populated) degrades to
+  BM25-only rather than failing the whole retrieval; only a BM25 or fusion
+  failure sets state.error.
 - rerank: reranker_router.rerank() over the fused pool (Day 6)
 - return_results: selects the final ranked list, falling back to the fused
   pool if reranking produced nothing (e.g. an unrecoverable router error)
@@ -73,12 +76,33 @@ def make_retrieve_node(
                 # RERANKER_MODE=fallback deliberately skipped loading DenseIndex
                 # (api/dependencies.py, to fit Render's free-tier 512MB) -- that's
                 # a configuration choice, not a failure, so BM25 results still get
-                # fused/returned below instead of being discarded into state.error
-                # the way an actual dense-search exception is (except clause below).
+                # fused/returned below.
                 dense_results: list[Candidate] = []
             else:
-                with traced_stage("dense", state.query_id, top_k=state.candidate_pool_size):
-                    dense_results = dense_index.search(state.query, top_k=state.candidate_pool_size)
+                try:
+                    with traced_stage("dense", state.query_id, top_k=state.candidate_pool_size):
+                        dense_results = dense_index.search(
+                            state.query, top_k=state.candidate_pool_size
+                        )
+                except Exception as exc:
+                    # A dense-search failure must NOT discard the BM25 half, which
+                    # has its committed index (data/indexes/bm25_index.pkl) and
+                    # 5,389 chunks and answers correctly. On a clean clone
+                    # Qdrant's nvidia_ir_chunks collection doesn't exist until
+                    # populate_qdrant.py runs (~86 min), so live_fast would
+                    # otherwise return an empty list for every query. Degrade to
+                    # BM25-only: log the degradation loudly, carry on with an
+                    # empty dense pool. Render is unaffected -- it runs
+                    # RERANKER_MODE=fallback and takes the dense_index is None
+                    # branch above, never reaching here.
+                    log.warning(
+                        "dense_retrieval_degraded",
+                        query_id=state.query_id,
+                        stage="retrieve",
+                        exc=str(exc),
+                        degraded_to="bm25_only",
+                    )
+                    dense_results = []
             with traced_stage("rrf", state.query_id, pool_size=state.candidate_pool_size):
                 fused_results = fuse(bm25_results, dense_results, top_k=state.candidate_pool_size)
         except Exception as exc:
@@ -150,7 +174,7 @@ def build_default_router(mode: str | None = None) -> RerankerRouter:
     return RerankerRouter(live_fast=msmarco.rerank, live_frontier=cohere_reranker.rerank, mode=mode)
 
 
-def run(
+def run_state(
     query: str,
     top_k: int = 10,
     candidate_pool_size: int = 100,
@@ -158,7 +182,12 @@ def run(
     bm25_index: BM25Index | None = None,
     dense_index: DenseIndex | None = _UNSET_DENSE_INDEX,
     router: RerankerRouter | None = None,
-) -> list[Candidate]:
+) -> AgentState:
+    """Like run() but returns the full final AgentState instead of just the
+    ranked list. Callers that need to tell "retrieval failed" (state.error
+    set) apart from "no matches found" (empty results, error None) use this --
+    e.g. api/routers/search.py surfaces state.error as an error field and a
+    503 rather than a bare HTTP 200 {"results": []}."""
     bm25_index = bm25_index or BM25Index.load()
     dense_index = DenseIndex.connect() if dense_index is _UNSET_DENSE_INDEX else dense_index
     router = router or build_default_router()
@@ -170,5 +199,24 @@ def run(
         query_id=query_id or str(uuid.uuid4())[:8],
     )
     result = graph.invoke(initial)
-    final_state = AgentState(**result) if isinstance(result, dict) else result
-    return final_state.results
+    return AgentState(**result) if isinstance(result, dict) else result
+
+
+def run(
+    query: str,
+    top_k: int = 10,
+    candidate_pool_size: int = 100,
+    query_id: str | None = None,
+    bm25_index: BM25Index | None = None,
+    dense_index: DenseIndex | None = _UNSET_DENSE_INDEX,
+    router: RerankerRouter | None = None,
+) -> list[Candidate]:
+    return run_state(
+        query,
+        top_k=top_k,
+        candidate_pool_size=candidate_pool_size,
+        query_id=query_id,
+        bm25_index=bm25_index,
+        dense_index=dense_index,
+        router=router,
+    ).results

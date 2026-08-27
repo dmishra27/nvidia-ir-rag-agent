@@ -41,6 +41,16 @@ class _FakeDense:
         return self._results
 
 
+class _RaisingBM25:
+    def search(self, query: str, top_k: int) -> list[Candidate]:
+        raise RuntimeError("bm25 index unavailable")
+
+
+class _RaisingDense:
+    def search(self, query: str, top_k: int) -> list[Candidate]:
+        raise RuntimeError("404 Collection 'nvidia_ir_chunks' doesn't exist!")
+
+
 class _FakeMSMarco:
     def __init__(self, results: list[Candidate]) -> None:
         self._results = results
@@ -284,6 +294,40 @@ class TestSearch:
 
         assert resp.status_code == 200
         assert [r["chunk_id"] for r in resp.json()["results"]] == ["b1"]
+
+    def test_dense_unavailable_degrades_to_bm25_and_still_returns_200(self) -> None:
+        """F-14: default RERANKER_MODE=live_fast wires both signals, but on a
+        clean clone Qdrant's nvidia_ir_chunks collection doesn't exist. /search
+        must return the committed BM25 results, not a bare empty list."""
+        app = create_app(session_factory=MagicMock())
+        app.dependency_overrides[get_bm25_index] = lambda: _FakeBM25([_c("b1", 1), _c("b2", 2)])
+        app.dependency_overrides[get_dense_index] = lambda: _RaisingDense()
+        app.dependency_overrides[get_msmarco_reranker] = lambda: _FakeMSMarco([])
+        client = TestClient(app)
+
+        resp = client.post("/search", json={"query": "cudaMalloc parameters"})
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert [r["chunk_id"] for r in data["results"]] == ["b1", "b2"]
+        assert data["error"] is None
+
+    def test_total_retrieval_failure_returns_503_with_error_field(self) -> None:
+        """F-15: when retrieval fails outright (not just dense), the response
+        must be distinguishable from 'no matches' -- 503 and a populated
+        error field, not HTTP 200 {"results": []}."""
+        app = create_app(session_factory=MagicMock())
+        app.dependency_overrides[get_bm25_index] = lambda: _RaisingBM25()
+        app.dependency_overrides[get_dense_index] = lambda: _RaisingDense()
+        app.dependency_overrides[get_msmarco_reranker] = lambda: _FakeMSMarco([])
+        client = TestClient(app)
+
+        resp = client.post("/search", json={"query": "cudaMalloc parameters"})
+
+        assert resp.status_code == 503
+        data = resp.json()
+        assert data["results"] == []
+        assert data["error"] == "bm25 index unavailable"
 
 
 # ---------------------------------------------------------------------------

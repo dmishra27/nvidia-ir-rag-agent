@@ -11,7 +11,7 @@ from __future__ import annotations
 import uuid
 
 import structlog
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Response
 
 from agents import retrieval_agent
 from api.dependencies import get_bm25_index, get_dense_index, get_msmarco_reranker
@@ -30,6 +30,7 @@ router = APIRouter()
 def search(
     body: SearchRequest,
     request: Request,
+    response: Response,
     reranker_mode: str | None = Query(default=None, alias="RERANKER_MODE"),
     bm25_index: BM25Index = Depends(get_bm25_index),
     dense_index: DenseIndex | None = Depends(get_dense_index),
@@ -48,7 +49,7 @@ def search(
     reranker_router = RerankerRouter(
         live_fast=msmarco.rerank if msmarco is not None else None, mode=reranker_mode
     )
-    results = retrieval_agent.run(
+    state = retrieval_agent.run_state(
         body.query,
         top_k=body.top_k,
         candidate_pool_size=body.candidate_pool_size,
@@ -57,9 +58,17 @@ def search(
         dense_index=dense_index,
         router=reranker_router,
     )
+    if state.error is not None:
+        # Retrieval failed outright (BM25 or fusion raised -- a dense-only
+        # failure degrades to BM25 upstream and never lands here). Return the
+        # error in the body AND a 503 so a caller can't mistake it for an
+        # empty result set the way a bare HTTP 200 {"results": []} invites.
+        log.error("search_failed", query_id=query_id, stage="search", error=state.error)
+        response.status_code = 503
     return SearchResponse(
         query_id=query_id,
         query=body.query,
         reranker_mode=resolved_mode,
-        results=[CandidateOut.from_candidate(c) for c in results],
+        results=[CandidateOut.from_candidate(c) for c in state.results],
+        error=state.error,
     )

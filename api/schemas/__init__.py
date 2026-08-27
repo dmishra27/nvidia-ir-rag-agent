@@ -36,6 +36,7 @@ class SearchResponse(BaseModel):
     query: str
     reranker_mode: str | None = None
     results: list[CandidateOut]
+    error: str | None = None
 
 
 class AskRequest(BaseModel):

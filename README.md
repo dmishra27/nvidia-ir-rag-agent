@@ -151,12 +151,18 @@ curl.exe -s -X POST http://localhost:8001/search -H "content-type: application/j
 ```
 
 `data/indexes/bm25_index.pkl` is committed to git, so `/search` returns
-real BM25 results immediately after `docker compose up -d` — no data
-download or embedding step required. Dense/hybrid retrieval needs Qdrant's
-collection populated first, a one-time ~86-minute local step; see
-[`setup.md`](setup.md#4-populate-the-corpus) for exact commands. An
-`ANTHROPIC_API_KEY` is needed for `/ask` to generate answers (not for
-`/search`).
+real BM25 results after `docker compose up -d` — no data download or
+embedding step required. The default `RERANKER_MODE=live_fast` also queries
+the dense index, but on a fresh clone Qdrant's `nvidia_ir_chunks`
+collection doesn't exist yet (it's created by the one-time ~86-minute
+`populate_qdrant.py` step — see
+[`setup.md`](setup.md#4-populate-the-corpus)). When the dense query fails,
+retrieval **degrades to BM25-only** and logs a `dense_retrieval_degraded`
+warning; you still get real ranked results, just without the dense/RRF
+half until you populate Qdrant. If retrieval fails outright (BM25 index
+missing too), `/search` returns HTTP 503 with an `error` field rather than
+an empty `200`. An `ANTHROPIC_API_KEY` is needed for `/ask` to generate
+answers (not for `/search`).
 
 **Tests:**
 
@@ -230,9 +236,16 @@ above rather than repeating it:
   automated LLM-judged proxy, not a human review.
 - ColBERT retrieval — not started.
 - Quality-regression and drift DAGs are unit-tested but not run against a
-  live Airflow scheduler; `agents/retrieval_agent.py`'s combined BM25+dense
-  error handling means a dense failure currently discards already-succeeded
-  BM25 results too, rather than degrading to BM25-only.
+  live Airflow scheduler.
+- **Dense retrieval on a fresh clone is unavailable until Qdrant is
+  populated** (`populate_qdrant.py`, ~86 min). `agents/retrieval_agent.py`
+  now degrades to BM25-only when the dense query fails — logging
+  `dense_retrieval_degraded` — instead of discarding the BM25 half, so
+  `/search` returns real results on the default `RERANKER_MODE=live_fast`
+  config out of the box. Earlier versions of this section warned that a
+  dense failure took the BM25 results down with it (clean-clone test
+  CCT-NVIR-2026-001, F-14); that was correct against the then-current code
+  and is fixed as of this commit.
 
 ## Project docs
 

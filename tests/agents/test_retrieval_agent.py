@@ -19,6 +19,7 @@ from agents.retrieval_agent import (
     make_retrieve_node,
     return_results,
     run,
+    run_state,
 )
 from retrieval.candidates import Candidate
 
@@ -145,13 +146,33 @@ class TestRetrieveNode:
         assert result.bm25_results == []
         assert result.fused_results == []
 
-    def test_sets_error_when_dense_raises(self) -> None:
-        node = make_retrieve_node(_FakeBM25([], []), _RaisingDense())
+    def test_dense_failure_degrades_to_bm25_only_instead_of_discarding_results(self) -> None:
+        """F-14: a dense-search failure (e.g. Qdrant's nvidia_ir_chunks
+        collection not yet populated on a clean clone) must NOT discard the
+        already-succeeded BM25 half. retrieve degrades to BM25-only: no error,
+        BM25 results preserved, dense pool empty, fusion runs over BM25 alone."""
+        calls: list = []
+        bm25_results = [_c("b1", 1), _c("b2", 2)]
+        node = make_retrieve_node(_FakeBM25(bm25_results, calls), _RaisingDense())
         state = AgentState(query="q")
 
         result = node(state)
 
-        assert result.error == "qdrant unreachable"
+        assert result.error is None
+        assert result.bm25_results == bm25_results
+        assert result.dense_results == []
+        assert [c.chunk_id for c in result.fused_results] == ["b1", "b2"]
+
+    def test_sets_error_when_bm25_raises_even_if_dense_would_succeed(self) -> None:
+        """The degradation is one-directional: BM25 is the floor. If BM25
+        itself raises there is nothing to degrade to, so error is set."""
+        node = make_retrieve_node(_RaisingBM25(), _FakeDense([_c("d1", 1)], []))
+        state = AgentState(query="q")
+
+        result = node(state)
+
+        assert result.error == "bm25 index unavailable"
+        assert result.fused_results == []
 
     def test_error_path_preserves_query_id(self) -> None:
         node = make_retrieve_node(_RaisingBM25(), _FakeDense([], []))
@@ -335,6 +356,42 @@ class TestRunEndToEnd:
         )
 
         assert [r.chunk_id for r in result] == ["b1"]
+
+    def test_run_returns_bm25_results_when_dense_is_unavailable(self) -> None:
+        """F-14 end to end: with live_fast (both signals wired) but Qdrant
+        down, run() still returns the BM25-ranked list instead of []."""
+        result = run(
+            "cudaMalloc parameters",
+            bm25_index=_FakeBM25([_c("b1", 1), _c("b2", 2)], []),
+            dense_index=_RaisingDense(),
+            router=_FakeRouter([], []),  # router returns nothing -> fused fallback
+        )
+
+        assert [r.chunk_id for r in result] == ["b1", "b2"]
+
+    def test_run_state_reports_no_error_on_dense_degradation(self) -> None:
+        state = run_state(
+            "q",
+            bm25_index=_FakeBM25([_c("b1", 1)], []),
+            dense_index=_RaisingDense(),
+            router=_FakeRouter([_c("b1", 1)], []),
+        )
+
+        assert state.error is None
+        assert [r.chunk_id for r in state.results] == ["b1"]
+
+    def test_run_state_reports_error_when_retrieval_fails_entirely(self) -> None:
+        """F-15: run_state surfaces the failure so /search can return an
+        error field + 503 rather than an ambiguous empty 200."""
+        state = run_state(
+            "q",
+            bm25_index=_RaisingBM25(),
+            dense_index=_FakeDense([_c("d1", 1)], []),
+            router=_FakeRouter([], []),
+        )
+
+        assert state.error == "bm25 index unavailable"
+        assert state.results == []
 
     def test_build_graph_compiles_with_fakes(self) -> None:
         graph = build_graph(_FakeBM25([], []), _FakeDense([], []), _FakeRouter([], []))
