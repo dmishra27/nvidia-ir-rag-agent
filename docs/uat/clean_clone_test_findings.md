@@ -28,6 +28,8 @@ Six of nine cases executed. Three blocked by hardware constraints that are thems
 | UNDOCUMENTED PREREQUISITE | 5 |
 | Retracted during testing | 4 |
 
+> **Status as of 27 Aug 2026:** F-14 and F-15 are fixed. Three of the twelve §4 documentation changes are closed (D3, D4, D5); remaining work is D1, D2, and D6–D12.
+
 ---
 
 ## 1 · Findings register
@@ -40,7 +42,7 @@ README is unusually strong: problem statement leads, criteria-to-evidence mappin
 |---|---|---|
 | **F-01** | README states topics outside the five documents are *"out of scope **by construction**"*, naming NVLink, H100, TensorRT. Per DEF-19/DEF-20 these are ingestion gaps, not scope decisions — the Ampere and Hopper whitepapers are DVC-tracked but never ingested; TensorRT's URL 404s. Presents a plumbing defect as a design choice. | **MAJOR** |
 | **F-02** | No mention of DVC anywhere. Reproducibility row cites pinned dependencies and the committed BM25 index but omits `dvc pull` entirely. A reviewer has no idea the corpus is version-controlled or how to fetch it. | **MAJOR** |
-| **F-03** | Test count disagrees across three documents: README 520, `setup.md` 508, functional sign-off 501. | **MINOR** |
+| **F-03** | Test count disagrees across three documents: README 520, `setup.md` 508, functional sign-off 501. <br>*(27 Aug: suite now 550 tests, was 533 at time of test; README still 520, `setup.md` still 508 — D11 open.)* | **MINOR** |
 
 ---
 
@@ -121,6 +123,8 @@ BM25 path verified end to end (see CC-EXE-01). Dense path untested — `populate
 | **F-16** | `/health` returned `{"status":"ok"}` while Postgres was unreachable (every request logging `request_log_write_failed`) and while retrieval was failing. The endpoint asserts nothing about dependencies. Same class as DEF-01/DEF-16 — instrumentation present, not wired to what it claims. | **MAJOR** |
 | **F-17** | First `/search` took **281 s** on a healthy stack (cold model loads under memory pressure); 101 s on the earlier broken-network attempt. No warning of first-request cost. | **UNDOC PREREQ** |
 
+> **F-14 · CLOSED** and **F-15 · CLOSED** (27 Aug 2026). `/search` degrades to BM25-only when dense fails — `7f3107d`; `/ask` does the same — `f832dcc`; total retrieval failure now returns HTTP 503 with an error body instead of 200 + `[]`. The shared `agents/hybrid_retrieve.py` extraction — `1c958a1` — removed the `retrieval_agent` / `qa_agent` duplication that had let F-14 survive its first fix.
+
 **Credit:** DEF-03's `reranker_mode` echo works correctly and was decisive in diagnosing F-14.
 
 ---
@@ -171,9 +175,9 @@ Derived from observation, not estimate. None of this is currently documented.
 |---|---|---|
 | **D1** | Add a **Requirements** section: Python 3.11 exactly, 4 GB free RAM, 6 GB disk, ~50 min setup | F-04, F-05, F-06, F-11 |
 | **D2** | Add a runtime guard to `run_ingest_direct.py` and `populate_qdrant.py` — fail fast with *"requires Python 3.11, found X"*. Would have prevented four false findings in this test | F-04, F-07 |
-| **D3** | State that `/search` needs **either** `populate_qdrant.py` **or** `RERANKER_MODE=fallback`. Remove or qualify the "works immediately" claim | F-14 |
-| **D4** | Fix `agents/retrieval_agent.py` to degrade to BM25-only on dense failure — the actual bug behind F-14 | F-14 |
-| **D5** | Return 5xx or an error field when retrieval fails, rather than 200 with an empty list | F-15 |
+| **D3** | State that `/search` needs **either** `populate_qdrant.py` **or** `RERANKER_MODE=fallback`. Remove or qualify the "works immediately" claim | F-14 — **DONE** `7f3107d` |
+| **D4** | Fix `agents/retrieval_agent.py` to degrade to BM25-only on dense failure — the actual bug behind F-14 | F-14 — **DONE** `7f3107d`, refactored `1c958a1` |
+| **D5** | Return 5xx or an error field when retrieval fails, rather than 200 with an empty list | F-15 — **DONE** `7f3107d` (/search), `f832dcc` (/ask) |
 | **D6** | Make `/health` assert its dependencies, or add `/health/ready` that does | F-16 |
 | **D7** | Add to §3: run `docker compose ps` after `up`; use `down` before retrying a failed start | F-09, F-10 |
 | **D8** | Note that only one instance can run at a time, and which ports collide | F-08 |
