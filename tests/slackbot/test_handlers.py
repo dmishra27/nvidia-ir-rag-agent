@@ -1,17 +1,28 @@
 """Contract tests for slackbot/handlers.py.
 
 Per AGENTS.md's mock-everything-external convention, AskClient.ask is faked
-here (no real httpx call, no real slack_bolt App) -- these test the parse ->
-call -> Slack-blocks pipeline in isolation.
+in most tests here (no real httpx call, no real slack_bolt App) -- these
+test the parse -> call -> Slack-blocks pipeline in isolation.
+
+The TestAskClientHttpHandling tests are the exception: they drive the real
+AskClient over an in-process transport (a real httpx.Response, real status
+handling) so that AskClient's own logic -- specifically how it treats a
+503 from /ask -- is actually exercised. The fake client cannot catch a
+regression there because it never runs that code.
 """
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 import httpx
 import pytest
+from fastapi.testclient import TestClient
 
+from api.dependencies import get_bm25_index, get_dense_index, get_msmarco_reranker
+from api.main import create_app
 from api.schemas import AskResponse, CitationOut
-from slackbot.handlers import format_answer_blocks, handle_search_text
+from slackbot.handlers import AskClient, format_answer_blocks, handle_search_text
 
 
 class _FakeAskClient:
@@ -83,6 +94,71 @@ def test_format_answer_blocks_caps_citations_at_three() -> None:
     joined = str(blocks)
     assert "claim 0" in joined and "claim 2" in joined
     assert "claim 3" not in joined and "claim 4" not in joined
+
+
+class _RaisingBM25:
+    def search(self, query: str, top_k: int) -> list:
+        raise RuntimeError("bm25 index unavailable")
+
+
+class TestAskClientHttpHandling:
+    """Drive the real AskClient over an in-process transport, not the fake."""
+
+    def test_503_from_ask_surfaces_the_error_body_not_a_generic_outage(self) -> None:
+        """Regression: api/routers/ask.py returns HTTP 503 with
+        {"error": ...} when retrieval fails outright. AskClient must parse
+        that body so Slack shows the real reason; before this fix
+        raise_for_status() turned every 503 into "Couldn't reach the search
+        service", hiding it. The fake client can't cover this -- it never
+        makes an HTTP call."""
+        app = create_app(session_factory=MagicMock())
+        app.dependency_overrides[get_bm25_index] = lambda: _RaisingBM25()
+        app.dependency_overrides[get_dense_index] = lambda: None
+        app.dependency_overrides[get_msmarco_reranker] = lambda: None
+
+        ask_client = AskClient(base_url="http://testserver", client=TestClient(app))
+        blocks = handle_search_text("How does cudaMalloc work?", ask_client)
+
+        joined = str(blocks)
+        assert "bm25 index unavailable" in joined
+        assert "Couldn't reach the search service" not in joined
+
+    def test_5xx_without_an_error_field_still_raises_and_is_handled_as_outage(self) -> None:
+        """A 5xx whose body is not a valid AskResponse (a bare 500, a proxy
+        error page) has no `error` to show -- it must still raise so
+        handle_search_text reports an outage rather than crashing on
+        model_validate."""
+
+        def _bare_500(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(500, json={"detail": "Internal Server Error"})
+
+        http = httpx.Client(transport=httpx.MockTransport(_bare_500), base_url="http://testserver")
+        ask_client = AskClient(base_url="http://testserver", client=http)
+
+        blocks = handle_search_text("q", ask_client)
+
+        assert "Couldn't reach the search service" in str(blocks)
+
+    def test_200_success_over_real_transport_still_parses(self) -> None:
+        def _ok(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={
+                    "query_id": "abc12345",
+                    "query": "q",
+                    "reranker_mode": "live_fast",
+                    "answer": "real answer [c_1]",
+                    "citations": [{"claim": "real answer.", "chunk_ids": ["c_1"]}],
+                    "error": None,
+                },
+            )
+
+        http = httpx.Client(transport=httpx.MockTransport(_ok), base_url="http://testserver")
+        ask_client = AskClient(base_url="http://testserver", client=http)
+
+        blocks = handle_search_text("q", ask_client)
+
+        assert "real answer" in str(blocks)
 
 
 def test_format_answer_blocks_footer_carries_query_id_for_feedback_lookup() -> None:

@@ -42,6 +42,22 @@ class AskClient:
 
     def ask(self, query: str, top_k: int = 10) -> AskResponse:
         response = self._client.post(f"{self.base_url}/ask", json={"query": query, "top_k": top_k})
+        if response.is_server_error:
+            # /ask returns HTTP 503 with a populated `error` field when
+            # retrieval or generation fails outright (api/routers/ask.py,
+            # mirroring /search). That's a structured, actionable error --
+            # surface `error` to the user via format_answer_blocks rather than
+            # letting raise_for_status() collapse it into the generic
+            # "couldn't reach the search service". A 5xx whose body isn't a
+            # valid AskResponse (a proxy error page, a bare 500) has no
+            # `error` field, so it still raises below and is handled as an
+            # outage.
+            try:
+                payload = response.json()
+            except ValueError:
+                payload = None
+            if isinstance(payload, dict) and payload.get("error"):
+                return AskResponse.model_validate(payload)
         response.raise_for_status()
         return AskResponse.model_validate(response.json())
 
