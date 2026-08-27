@@ -44,3 +44,5 @@ verify_phase_c*.py
 
 ask.json
 body.json
+
+commit_history.txt
