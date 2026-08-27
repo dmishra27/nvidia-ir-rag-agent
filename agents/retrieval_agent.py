@@ -9,10 +9,10 @@ loading a real index, connecting to Qdrant, or loading a cross-encoder —
 per AGENTS.md's rule to mock all embedding/LLM calls in unit tests and to
 write contract tests on LangGraph state schema, not content.
 
-- retrieve: BM25 top-100 + dense top-100 -> RRF fusion (Day 5 hybrid pipeline).
-  A dense-search failure (e.g. Qdrant collection not yet populated) degrades to
-  BM25-only rather than failing the whole retrieval; only a BM25 or fusion
-  failure sets state.error.
+- retrieve: BM25 top-100 + dense top-100 -> RRF fusion (Day 5 hybrid pipeline),
+  via agents/hybrid_retrieve.py (shared with qa_agent). A dense-search failure
+  (e.g. Qdrant collection not yet populated) degrades to BM25-only rather than
+  failing the whole retrieval; only a BM25 or fusion failure sets state.error.
 - rerank: reranker_router.rerank() over the fused pool (Day 6)
 - return_results: selects the final ranked list, falling back to the fused
   pool if reranking produced nothing (e.g. an unrecoverable router error)
@@ -27,6 +27,7 @@ import structlog
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 
+from agents.hybrid_retrieve import hybrid_retrieve
 from api.telemetry import traced_stage
 from retrieval.bm25_index import BM25Index
 from retrieval.candidates import Candidate
@@ -34,7 +35,6 @@ from retrieval.dense_index import DenseIndex
 from retrieval.reranker_cohere import CohereReranker
 from retrieval.reranker_msmarco import MSMarcoReranker
 from retrieval.reranker_router import RerankerRouter
-from retrieval.rrf_fusion import fuse
 
 log = structlog.get_logger()
 
@@ -69,50 +69,20 @@ def make_retrieve_node(
 ) -> Callable[[AgentState], AgentState]:
     def retrieve(state: AgentState) -> AgentState:
         log.info("retrieve", query_id=state.query_id, stage="retrieve")
-        try:
-            with traced_stage("bm25", state.query_id, top_k=state.candidate_pool_size):
-                bm25_results = bm25_index.search(state.query, top_k=state.candidate_pool_size)
-            if dense_index is None:
-                # RERANKER_MODE=fallback deliberately skipped loading DenseIndex
-                # (api/dependencies.py, to fit Render's free-tier 512MB) -- that's
-                # a configuration choice, not a failure, so BM25 results still get
-                # fused/returned below.
-                dense_results: list[Candidate] = []
-            else:
-                try:
-                    with traced_stage("dense", state.query_id, top_k=state.candidate_pool_size):
-                        dense_results = dense_index.search(
-                            state.query, top_k=state.candidate_pool_size
-                        )
-                except Exception as exc:
-                    # A dense-search failure must NOT discard the BM25 half, which
-                    # has its committed index (data/indexes/bm25_index.pkl) and
-                    # 5,389 chunks and answers correctly. On a clean clone
-                    # Qdrant's nvidia_ir_chunks collection doesn't exist until
-                    # populate_qdrant.py runs (~86 min), so live_fast would
-                    # otherwise return an empty list for every query. Degrade to
-                    # BM25-only: log the degradation loudly, carry on with an
-                    # empty dense pool. Render is unaffected -- it runs
-                    # RERANKER_MODE=fallback and takes the dense_index is None
-                    # branch above, never reaching here.
-                    log.warning(
-                        "dense_retrieval_degraded",
-                        query_id=state.query_id,
-                        stage="retrieve",
-                        exc=str(exc),
-                        degraded_to="bm25_only",
-                    )
-                    dense_results = []
-            with traced_stage("rrf", state.query_id, pool_size=state.candidate_pool_size):
-                fused_results = fuse(bm25_results, dense_results, top_k=state.candidate_pool_size)
-        except Exception as exc:
-            log.error("retrieve_failed", query_id=state.query_id, stage="retrieve", exc=str(exc))
-            return state.model_copy(update={"error": str(exc)})
+        result = hybrid_retrieve(
+            state.query,
+            state.query_id,
+            bm25_index=bm25_index,
+            dense_index=dense_index,
+            pool_size=state.candidate_pool_size,
+        )
+        if result.error is not None:
+            return state.model_copy(update={"error": result.error})
         return state.model_copy(
             update={
-                "bm25_results": bm25_results,
-                "dense_results": dense_results,
-                "fused_results": fused_results,
+                "bm25_results": result.bm25_results,
+                "dense_results": result.dense_results,
+                "fused_results": result.fused_results,
             }
         )
 
