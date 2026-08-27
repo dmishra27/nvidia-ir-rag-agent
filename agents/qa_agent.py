@@ -5,7 +5,12 @@ returns a new QAState via model_copy(update=...), preserving every existing
 field. Retrieve/rerank mirror agents/retrieval_agent.py's constructor-injected
 BM25/dense/router pattern so unit tests can contract-test the state schema
 without loading a real index, connecting to Qdrant, or loading a
-cross-encoder.
+cross-encoder. As in retrieval_agent (commit 7f3107d), a dense-search
+failure degrades to BM25-only (logged as `dense_retrieval_degraded`)
+rather than failing the whole retrieve node; only a BM25 or fusion failure
+sets QAState.error. run() returns the full QAState, so api/routers/ask.py
+can tell "retrieval failed" (state.error set) from "no matches found"
+(empty passages, error None) and return 503 vs a bare 200 accordingly.
 
 The generate node grounds Claude Sonnet in the top-`top_k` re-ranked
 passages and forces a tool call (`answer_with_citations`) so citations come
@@ -128,8 +133,30 @@ def make_retrieve_node(
                 # still get fused/returned instead of being discarded.
                 dense_results: list[Candidate] = []
             else:
-                with traced_stage("dense", state.query_id, top_k=state.candidate_pool_size):
-                    dense_results = dense_index.search(state.query, top_k=state.candidate_pool_size)
+                try:
+                    with traced_stage("dense", state.query_id, top_k=state.candidate_pool_size):
+                        dense_results = dense_index.search(
+                            state.query, top_k=state.candidate_pool_size
+                        )
+                except Exception as exc:
+                    # Mirrors agents/retrieval_agent.py (commit 7f3107d): a dense-
+                    # search failure must NOT discard the BM25 half, which has its
+                    # committed index and answers correctly. On a clean clone
+                    # Qdrant's nvidia_ir_chunks collection doesn't exist until
+                    # populate_qdrant.py runs (~86 min), so live_fast would
+                    # otherwise feed `generate` an empty context and bill the
+                    # Anthropic call for an answer grounded in nothing. Degrade to
+                    # BM25-only: log the degradation loudly, carry on with an
+                    # empty dense pool. Render is unaffected -- RERANKER_MODE=
+                    # fallback takes the dense_index is None branch above.
+                    log.warning(
+                        "dense_retrieval_degraded",
+                        query_id=state.query_id,
+                        stage="retrieve",
+                        exc=str(exc),
+                        degraded_to="bm25_only",
+                    )
+                    dense_results = []
             with traced_stage("rrf", state.query_id, pool_size=state.candidate_pool_size):
                 fused_results = fuse(bm25_results, dense_results, top_k=state.candidate_pool_size)
         except Exception as exc:

@@ -362,17 +362,60 @@ class TestAsk:
         assert resp.status_code == 200
         assert resp.json()["answer"] == ""
 
-    def test_surfaces_agent_error(self) -> None:
+    def test_surfaces_agent_error_as_503(self) -> None:
+        """F-15 on /ask: any populated state.error -- here a generation failure
+        -- returns 503 with the error in the body, mirroring /search, so a
+        failed call can't read as HTTP 200 'the model had nothing to say'."""
         client = _make_client([], [], [_c("r1", 1)])
 
         with patch("agents.qa_agent.anthropic.Anthropic") as MockClient:
             MockClient.return_value.messages.create.side_effect = RuntimeError("api down")
             resp = client.post("/ask", json={"query": "q"})
 
-        assert resp.status_code == 200
+        assert resp.status_code == 503
         data = resp.json()
         assert data["error"] == "api down"
         assert data["answer"] is None
+
+    def test_dense_unavailable_degrades_to_bm25_and_still_answers(self) -> None:
+        """F-14 on /ask: default RERANKER_MODE=live_fast wires both signals, but
+        on a clean clone Qdrant's collection doesn't exist. /ask must answer
+        from the committed BM25 context, HTTP 200, no error."""
+        app = create_app(session_factory=MagicMock())
+        app.dependency_overrides[get_bm25_index] = lambda: _FakeBM25([_c("b1", 1), _c("b2", 2)])
+        app.dependency_overrides[get_dense_index] = lambda: _RaisingDense()
+        app.dependency_overrides[get_msmarco_reranker] = lambda: _FakeMSMarco([_c("b1", 1)])
+        client = TestClient(app)
+
+        mock_resp = _tool_response("From BM25.", [{"claim": "From BM25.", "chunk_ids": ["b1"]}])
+        with patch("agents.qa_agent.anthropic.Anthropic") as MockClient:
+            MockClient.return_value.messages.create.return_value = mock_resp
+            resp = client.post("/ask", json={"query": "cudaMalloc parameters"})
+            MockClient.return_value.messages.create.assert_called_once()
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["answer"] == "From BM25."
+        assert data["error"] is None
+
+    def test_total_retrieval_failure_returns_503_and_skips_llm(self) -> None:
+        """F-15 on /ask: when retrieval fails outright the paid Anthropic call
+        must not fire, and the response must be 503 with a populated error
+        field -- not HTTP 200 with a null answer."""
+        app = create_app(session_factory=MagicMock())
+        app.dependency_overrides[get_bm25_index] = lambda: _RaisingBM25()
+        app.dependency_overrides[get_dense_index] = lambda: _RaisingDense()
+        app.dependency_overrides[get_msmarco_reranker] = lambda: _FakeMSMarco([])
+        client = TestClient(app)
+
+        with patch("agents.qa_agent.anthropic.Anthropic") as MockClient:
+            resp = client.post("/ask", json={"query": "cudaMalloc parameters"})
+            MockClient.return_value.messages.create.assert_not_called()
+
+        assert resp.status_code == 503
+        data = resp.json()
+        assert data["answer"] is None
+        assert data["error"] == "bm25 index unavailable"
 
     def test_reranker_mode_query_param_echoed_in_response(self) -> None:
         client = _make_client([], [], [_c("r1", 1)])

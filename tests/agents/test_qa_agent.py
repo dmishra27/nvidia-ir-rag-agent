@@ -56,6 +56,11 @@ class _FakeDense:
         return self._results
 
 
+class _RaisingDense:
+    def search(self, query: str, top_k: int) -> list[Candidate]:
+        raise RuntimeError("404 Collection 'nvidia_ir_chunks' doesn't exist!")
+
+
 class _FakeRouter:
     def __init__(self, results: list[Candidate], calls: list) -> None:
         self._results = results
@@ -162,6 +167,33 @@ class TestRetrieveNode:
 
         assert result.error is None
         assert [c.chunk_id for c in result.fused_results] == ["b1"]
+
+    def test_dense_failure_degrades_to_bm25_only_instead_of_discarding_results(self) -> None:
+        """F-14 on the /ask path: a dense-search failure (Qdrant collection not
+        yet populated on a clean clone) must NOT discard the BM25 half.
+        retrieve degrades to BM25-only -- no error, BM25 results still fused --
+        so `generate` gets real context instead of billing an Anthropic call
+        for an answer grounded in nothing."""
+        calls: list = []
+        bm25_results = [_c("b1", 1), _c("b2", 2)]
+        node = make_retrieve_node(_FakeBM25(bm25_results, calls), _RaisingDense())
+        state = QAState(query="q")
+
+        result = node(state)
+
+        assert result.error is None
+        assert [c.chunk_id for c in result.fused_results] == ["b1", "b2"]
+
+    def test_sets_error_when_bm25_raises_even_if_dense_would_succeed(self) -> None:
+        """The degradation is one-directional: BM25 is the floor. If BM25 itself
+        raises there is nothing to degrade to, so error is set."""
+        node = make_retrieve_node(_RaisingBM25(), _FakeDense([_c("d1", 1)], []))
+        state = QAState(query="q")
+
+        result = node(state)
+
+        assert result.error == "bm25 index unavailable"
+        assert result.fused_results == []
 
 
 # ---------------------------------------------------------------------------
@@ -524,6 +556,28 @@ class TestRunEndToEnd:
 
         assert result.error == "bm25 index unavailable"
         assert result.answer is None
+
+    def test_run_answers_from_bm25_context_when_dense_unavailable(self) -> None:
+        """F-14 end to end on /ask: with live_fast (both signals wired) but
+        Qdrant down, run() still hands `generate` the BM25 context and returns
+        a real answer instead of the empty-context path."""
+        calls: list = []
+        reranked = [_c("b1", 1)]
+        mock_resp = _tool_response("Grounded in BM25.", [{"claim": "Grounded in BM25.", "chunk_ids": ["b1"]}])
+
+        with patch("agents.qa_agent.anthropic.Anthropic") as MockClient:
+            MockClient.return_value.messages.create.return_value = mock_resp
+            result = run(
+                "cudaMalloc parameters",
+                bm25_index=_FakeBM25([_c("b1", 1), _c("b2", 2)], calls),
+                dense_index=_RaisingDense(),
+                router=_FakeRouter(reranked, calls),
+            )
+            MockClient.return_value.messages.create.assert_called_once()
+
+        assert result.error is None
+        assert result.answer == "Grounded in BM25."
+        assert result.citations == [Citation(claim="Grounded in BM25.", chunk_ids=["b1"])]
 
     def test_build_graph_compiles_with_fakes(self) -> None:
         graph = build_graph(_FakeBM25([], []), _FakeDense([], []), _FakeRouter([], []))

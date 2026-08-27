@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 
 import structlog
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Response
 
 from agents import qa_agent
 from api.dependencies import get_bm25_index, get_dense_index, get_msmarco_reranker
@@ -24,6 +24,7 @@ router = APIRouter()
 def ask(
     body: AskRequest,
     request: Request,
+    response: Response,
     reranker_mode: str | None = Query(default=None, alias="RERANKER_MODE"),
     bm25_index: BM25Index = Depends(get_bm25_index),
     dense_index: DenseIndex | None = Depends(get_dense_index),
@@ -51,6 +52,14 @@ def ask(
         dense_index=dense_index,
         router=reranker_router,
     )
+    if state.error is not None:
+        # Retrieval or generation failed outright (a dense-only failure degrades
+        # to BM25 upstream and never lands here -- see agents/qa_agent.py). Return
+        # the error in the body AND a 503, mirroring api/routers/search.py: a
+        # caller must be able to tell this from an empty-but-successful answer,
+        # and a failed retrieval must not read as "the model had nothing to say".
+        log.error("ask_failed", query_id=query_id, stage="ask", error=state.error)
+        response.status_code = 503
     return AskResponse(
         query_id=query_id,
         query=body.query,
