@@ -15,7 +15,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from api.dependencies import get_bm25_index, get_dense_index, get_msmarco_reranker
+from api.dependencies import (
+    check_bm25,
+    check_postgres,
+    get_bm25_index,
+    get_dense_index,
+    get_msmarco_reranker,
+)
 from api.main import create_app
 from retrieval.candidates import Candidate
 from retrieval.reranker_router import DEFAULT_MODE
@@ -91,6 +97,66 @@ class TestHealth:
 
         assert resp.status_code == 200
         assert resp.json() == {"status": "ok", "service": "nvidia-ir-rag-agent"}
+
+    def test_liveness_stays_ok_even_when_dependencies_are_down(self) -> None:
+        """F-16: /health is a pure liveness probe -- it must NOT start failing
+        when Postgres/BM25 are down, or it would wedge compose startup
+        ordering (streamlit depends_on api: service_healthy)."""
+        app = create_app(session_factory=MagicMock())
+        app.dependency_overrides[check_postgres] = lambda: "error: connection refused"
+        app.dependency_overrides[check_bm25] = lambda: "error: index missing"
+        client = TestClient(app)
+
+        resp = client.get("/health")
+
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "ok"
+
+
+class TestReadiness:
+    def test_ready_when_all_dependencies_answer(self) -> None:
+        app = create_app(session_factory=MagicMock())
+        app.dependency_overrides[check_postgres] = lambda: "ok"
+        app.dependency_overrides[check_bm25] = lambda: "ok"
+        client = TestClient(app)
+
+        resp = client.get("/health/ready")
+
+        assert resp.status_code == 200
+        assert resp.json() == {
+            "status": "ready",
+            "service": "nvidia-ir-rag-agent",
+            "checks": {"postgres": "ok", "bm25": "ok"},
+        }
+
+    def test_postgres_unreachable_returns_503_and_names_it(self) -> None:
+        """F-16: /health returned 200 while Postgres was unreachable. The
+        readiness probe must report 503 and say which dependency is down."""
+        app = create_app(session_factory=MagicMock())
+        app.dependency_overrides[check_postgres] = lambda: "error: could not connect to server"
+        app.dependency_overrides[check_bm25] = lambda: "ok"
+        client = TestClient(app)
+
+        resp = client.get("/health/ready")
+
+        assert resp.status_code == 503
+        data = resp.json()
+        assert data["status"] == "not ready"
+        assert data["checks"]["postgres"].startswith("error:")
+        assert data["checks"]["bm25"] == "ok"
+
+    def test_bm25_unavailable_returns_503(self) -> None:
+        """F-16: /health returned 200 while retrieval was failing. BM25 is the
+        retrieval floor -- if it won't load, the service is not ready."""
+        app = create_app(session_factory=MagicMock())
+        app.dependency_overrides[check_postgres] = lambda: "ok"
+        app.dependency_overrides[check_bm25] = lambda: "error: BM25 index not found"
+        client = TestClient(app)
+
+        resp = client.get("/health/ready")
+
+        assert resp.status_code == 503
+        assert resp.json()["status"] == "not ready"
 
 
 # ---------------------------------------------------------------------------

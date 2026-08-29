@@ -23,10 +23,15 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 
+from fastapi import Depends
+from sqlalchemy import text
+from sqlalchemy.orm import Session, sessionmaker
+
 from retrieval.bm25_index import BM25Index
 from retrieval.dense_index import DenseIndex
 from retrieval.reranker_msmarco import MSMarcoReranker
 from retrieval.reranker_router import RERANKER_MODE_ENV_VAR, DEFAULT_MODE
+from schema.models import get_engine, get_session_factory
 
 
 def _reranker_mode() -> str:
@@ -60,3 +65,43 @@ def get_msmarco_reranker() -> MSMarcoReranker | None:
     if _reranker_mode() == "fallback":
         return None
     return MSMarcoReranker.load()
+
+
+# ── Readiness checks (api/routers/health.py's /health/ready — F-16) ──────────
+#
+# Each check returns "ok" or "error: <detail>" and never raises, so the
+# readiness endpoint can report *which* dependency is down instead of a bare
+# 500. Exposed as Depends()-ables (not called inline) so tests can override
+# them via app.dependency_overrides without a live Postgres/index.
+
+
+@lru_cache
+def get_db_session_factory() -> sessionmaker[Session]:
+    return get_session_factory(get_engine())
+
+
+def check_postgres(
+    session_factory: sessionmaker[Session] = Depends(get_db_session_factory),
+) -> str:
+    """`SELECT 1` against Postgres — the store behind request_log/query_log/feedback."""
+    try:
+        with session_factory() as session:
+            session.execute(text("SELECT 1"))
+        return "ok"
+    except Exception as exc:
+        return f"error: {exc}"
+
+
+def check_bm25() -> str:
+    """Load the committed BM25 index — the retrieval floor.
+
+    /search and /ask degrade to BM25-only when dense is unavailable (F-14),
+    so BM25 failing to load means the service cannot answer at all. Qdrant/
+    dense is deliberately *not* checked here: a dense failure is a served,
+    degraded state, not an unready one, and probing it would load torch.
+    """
+    try:
+        get_bm25_index()
+        return "ok"
+    except Exception as exc:
+        return f"error: {exc}"

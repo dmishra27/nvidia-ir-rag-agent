@@ -170,6 +170,12 @@
       postgres:
         condition: service_healthy
     healthcheck:
+      # Liveness only, on purpose: /health never asserts Postgres/Qdrant, so
+      # streamlit's `depends_on: api: service_healthy` still keys off "the
+      # process is up", not "every dependency answered". /health/ready (F-16)
+      # is the endpoint that asserts dependencies -- use it from an external
+      # orchestrator or by hand, not here, or a degraded-but-serving stack
+      # would wedge container startup.
       test: ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://localhost:8000/health")']
       interval: 10s
       timeout: 5s

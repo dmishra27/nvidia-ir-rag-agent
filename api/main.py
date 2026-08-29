@@ -1,4 +1,4 @@
-"""FastAPI app: /, /evaluation, /search, /ask, /feedback, /health.
+"""FastAPI app: /, /evaluation, /search, /ask, /feedback, /health, /health/ready.
 
 `create_app` is a factory (rather than only a module-level singleton) so
 tests can inject a fake `session_factory` into RequestLatencyMiddleware —

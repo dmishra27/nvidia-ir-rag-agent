@@ -64,6 +64,20 @@ class HealthResponse(BaseModel):
     service: str
 
 
+class ReadinessResponse(BaseModel):
+    """GET /health/ready — dependency assertion (F-16).
+
+    `status` is "ready" only when every required dependency answers;
+    "not ready" (HTTP 503) otherwise. `checks` carries the per-dependency
+    result ("ok" or "error: <detail>") so a 503 says *which* dependency is
+    down rather than just that one is.
+    """
+
+    status: Literal["ready", "not ready"]
+    service: str
+    checks: dict[str, str]
+
+
 class FeedbackRequest(BaseModel):
     query_id: str | None = None
     chunk_id: str | None = None

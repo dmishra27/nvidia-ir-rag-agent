@@ -13,11 +13,11 @@ unit test.
 from __future__ import annotations
 
 import os
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from api.dependencies import get_dense_index, get_msmarco_reranker
+from api.dependencies import check_bm25, check_postgres, get_dense_index, get_msmarco_reranker
 
 
 @pytest.fixture(autouse=True)
@@ -84,3 +84,42 @@ class TestGetMsmarcoReranker:
 
         assert result == "a-real-reranker"
         mock_load.assert_called_once()
+
+
+class _RaisingSession:
+    def __enter__(self) -> "_RaisingSession":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def execute(self, *args: object, **kwargs: object) -> None:
+        raise RuntimeError("could not connect to server: Connection refused")
+
+
+class TestCheckPostgres:
+    """F-16: the readiness check must report a Postgres outage as a string,
+    never propagate it as a 500."""
+
+    def test_ok_when_select_1_succeeds(self) -> None:
+        assert check_postgres(session_factory=lambda: MagicMock()) == "ok"
+
+    def test_returns_error_string_when_connection_fails(self) -> None:
+        result = check_postgres(session_factory=lambda: _RaisingSession())
+
+        assert result.startswith("error:")
+        assert "Connection refused" in result
+
+
+class TestCheckBm25:
+    def test_ok_when_index_loads(self) -> None:
+        with patch("api.dependencies.get_bm25_index") as mock_load:
+            mock_load.return_value = object()
+            assert check_bm25() == "ok"
+
+    def test_returns_error_string_when_index_missing(self) -> None:
+        with patch("api.dependencies.get_bm25_index", side_effect=FileNotFoundError("bm25.pkl")):
+            result = check_bm25()
+
+        assert result.startswith("error:")
+        assert "bm25.pkl" in result
