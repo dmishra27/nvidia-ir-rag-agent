@@ -317,6 +317,8 @@ Follows from C3. If title-overlapping queries attract boilerplate, then the same
 
 *Added 29 August 2026. Criterion 10's third best-practice point (query rewriting). Tested as a hypothesis, not shipped as a feature — this entry and its falsify branch decide whether the rewriting path is wired into retrieval at all.*
 
+> **Resolved 29 August 2026 — weakly confirmed / inconclusive.** The identifier gate is provably zero-harm (Case 1 & 5 deltas exactly 0). But rewriting fired on only 3 of 16 queries, improved 1 (Q4, +3 fused ranks, still to rank 36), slightly regressed 1 (Q5, −1), and — decisively — Round 1's motivating `shader processor count` gap **does not reproduce** against e5-base-v2 (dense rank 1, no rewrite). Recommendation: do **not** wire `retrieval/query_rewrite.py` into retrieval; keep it as the record; re-test with authored vocab-gap queries (D3) + graded labels (ENH-11). Full write-up: `docs/uat/round3_dqr_findings.md`.
+
 | Field | Detail |
 |---|---|
 | Claim | A rewriting step ahead of retrieval — legacy-terminology expansion plus camelCase identifier splitting, applied to the **dense** query only while BM25 keeps the literal string — improves the fused rank of the correct chunk on vocabulary-gap queries (Case 4), and, **when gated to skip exact-identifier queries**, leaves Case 1 and Case 5 unchanged. Applied ungated (identifier queries rewritten too) it is neutral-to-harmful on Case 1 and Case 5. The gate, not the rewrite, is what makes it safe. |
