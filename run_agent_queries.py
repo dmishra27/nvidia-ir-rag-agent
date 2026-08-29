@@ -1,6 +1,13 @@
 """Run the 4 benchmark questions through text_to_sql_agent.run() against the live DB."""
 from __future__ import annotations
 
+# F-04 / F-07: fail fast on the wrong interpreter before any third-party
+# import does so with an error that never names the version. See
+# utils/require_python.py and docs/uat/clean_clone_test_findings.md.
+from utils.require_python import require_python
+
+require_python()
+
 import json
 import sys
 from pathlib import Path

@@ -13,6 +13,10 @@ target-version = "py311"
 # set sys.path/stdout encoding before their imports. Not held to the same
 # import-order bar as the actual package under agents/, retrieval/, etc.
 "run_*.py" = ["E402"]
+# retrieval/populate_qdrant.py is host-run and calls require_python() (F-04 /
+# F-07) before its imports so the guard fires under the wrong interpreter
+# rather than a torch/sentence-transformers import stall. Deliberate.
+"retrieval/populate_qdrant.py" = ["E402"]
 
 [tool.mypy]
 python_version = "3.11"
