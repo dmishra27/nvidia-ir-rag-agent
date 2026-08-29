@@ -29,6 +29,8 @@ Six of nine cases executed. Three blocked by hardware constraints that are thems
 | Retracted during testing | 4 |
 
 > **Status as of 27 Aug 2026:** F-14 and F-15 are fixed. Three of the twelve §4 documentation changes are closed (D3, D4, D5); remaining work is D1, D2, and D6–D12.
+>
+> **Status as of 29 Aug 2026:** all twelve §4 changes are closed — D1/D7–D12 in `3eec8cd`, D2 (Python-version guard) in `46e990d`, D6 (`/health/ready`) in `7a615a0`. See the per-row commit tags in §4. CC-VER-01 (test suite) was run this session and reconciled at **561** — but in the working repo, not a fresh clone (see the CC-VER-01 note below).
 
 ---
 
@@ -133,6 +135,15 @@ BM25 path verified end to end (see CC-EXE-01). Dense path untested — `populate
 
 Not executed. Remaining cases need the full stack, which OOM-killed the API (F-12). Per §2.1, recorded as a finding rather than worked around.
 
+> **CC-VER-01 partial follow-up (29 Aug 2026):** the test suite was run to
+> resolve the D11 count discrepancy — **561 passed, 0 failed, 0 skipped**
+> in 102 s, no external services (postgres/qdrant were up but unused by the
+> suite; every DB/LLM/MLflow/index call is mocked). This was run **in the
+> working repo, not a clean clone** — it settles the documented-vs-actual
+> count (README/`setup.md` now say 561) but does not close CC-VER-01's
+> clean-clone requirement. The 550→561 delta is the 11 tests added for D2
+> and D6.
+
 ---
 
 ## 2 · Undocumented prerequisites
@@ -173,18 +184,18 @@ Derived from observation, not estimate. None of this is currently documented.
 
 | # | Change | Closes |
 |---|---|---|
-| **D1** | Add a **Requirements** section: Python 3.11 exactly, 4 GB free RAM, 6 GB disk, ~50 min setup | F-04, F-05, F-06, F-11 |
-| **D2** | Add a runtime guard to `run_ingest_direct.py` and `populate_qdrant.py` — fail fast with *"requires Python 3.11, found X"*. Would have prevented four false findings in this test | F-04, F-07 |
+| **D1** | Add a **Requirements** section: Python 3.11 exactly, 4 GB free RAM, 6 GB disk, ~50 min setup | F-04, F-05, F-06, F-11 — **DONE** `3eec8cd` (README + `setup.md` §0, measured figures) |
+| **D2** | Add a runtime guard to `run_ingest_direct.py` and `populate_qdrant.py` — fail fast with *"requires Python 3.11, found X"*. Would have prevented four false findings in this test | F-04, F-07 — **DONE** `46e990d` (all root `run_*.py` + `retrieval/populate_qdrant.py` via `utils/require_python.py`; `.python-version` added) |
 | **D3** | State that `/search` needs **either** `populate_qdrant.py` **or** `RERANKER_MODE=fallback`. Remove or qualify the "works immediately" claim | F-14 — **DONE** `7f3107d` |
 | **D4** | Fix `agents/retrieval_agent.py` to degrade to BM25-only on dense failure — the actual bug behind F-14 | F-14 — **DONE** `7f3107d`, refactored `1c958a1` |
 | **D5** | Return 5xx or an error field when retrieval fails, rather than 200 with an empty list | F-15 — **DONE** `7f3107d` (/search), `f832dcc` (/ask) |
-| **D6** | Make `/health` assert its dependencies, or add `/health/ready` that does | F-16 |
-| **D7** | Add to §3: run `docker compose ps` after `up`; use `down` before retrying a failed start | F-09, F-10 |
-| **D8** | Note that only one instance can run at a time, and which ports collide | F-08 |
-| **D9** | Add a **Data versioning** section — corpus DVC-pinned, `dvc pull`, no credentials; note blobs live on the `dvc-storage` orphan branch | F-02 |
-| **D10** | Reword the corpus scope claim — NVLink/H100/TensorRT are ingestion gaps (DEF-19/20), not scope decisions | F-01 |
-| **D11** | Reconcile the test count across README, `setup.md`, and the sign-off | F-03 |
-| **D12** | Warn that the first `/search` takes minutes | F-17 |
+| **D6** | Make `/health` assert its dependencies, or add `/health/ready` that does | F-16 — **DONE** `7a615a0` (added `/health/ready`; `/health` kept as liveness so compose startup ordering is unaffected; verified live with postgres stopped) |
+| **D7** | Add to §3: run `docker compose ps` after `up`; use `down` before retrying a failed start | F-09, F-10 — **DONE** `3eec8cd` (`setup.md` §3, "After `up`: check, don't assume") |
+| **D8** | Note that only one instance can run at a time, and which ports collide | F-08 — **DONE** `3eec8cd` (`setup.md` §3, "Only one instance of this project at a time") |
+| **D9** | Add a **Data versioning** section — corpus DVC-pinned, `dvc pull`, no credentials; note blobs live on the `dvc-storage` orphan branch | F-02 — **DONE** `3eec8cd` (README "Data versioning"; `setup.md` §1b) |
+| **D10** | Reword the corpus scope claim — NVLink/H100/TensorRT are ingestion gaps (DEF-19/20), not scope decisions | F-01 — **DONE** `3eec8cd` (README "Problem statement" — split into deliberate scope vs. DEF-19/DEF-20 ingestion debt) |
+| **D11** | Reconcile the test count across README, `setup.md`, and the sign-off | F-03 — **DONE** `3eec8cd` (README + `setup.md` now say **561**, run live this session; see CC-VER-01 note in §1) |
+| **D12** | Warn that the first `/search` takes minutes | F-17 — **DONE** `3eec8cd` (README "Setup & run"; `setup.md` §0 + §5) |
 
 ---
 
