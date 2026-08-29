@@ -4,7 +4,10 @@
 
 > Converted from `Retrieval_Hypothesis_Test_Plan_nvidia_ir_rag_agent.docx` for repository readability.
 > The plan's status line reads "Version 1.0 — planned, none executed". Family A has since been
-> executed; see `docs/uat/round3_family_a_findings.md`. Families B–F remain open.
+> executed; see `docs/uat/round3_family_a_findings.md`. Families B–F remain open. Hypothesis
+> **D-QR** (conditional query rewriting, §6) was added on 29 August 2026; implementation is
+> `retrieval/query_rewrite.py`, evaluation is `run_dqr_eval.py` →
+> `docs/uat/round3_dqr_findings.md`.
 
 ---
 
@@ -52,7 +55,7 @@ So the headline experiment of this round is not "does re-ranking help" but "can 
 
 ## 2.  Hypothesis Families
 
-Thirty-one hypotheses across six families. Each states what would confirm it and what would falsify it, because a hypothesis that cannot fail is not a hypothesis. Families A and C are the ones worth doing first; F is mostly deferred.
+Thirty-two hypotheses across six families (D-QR added 29 August 2026). Each states what would confirm it and what would falsify it, because a hypothesis that cannot fail is not a hypothesis. Families A and C are the ones worth doing first; F is mostly deferred.
 
 
 | Family | Theme | Count | Priority |
@@ -60,7 +63,7 @@ Thirty-one hypotheses across six families. Each states what would confirm it and
 | A | Re-ranker isolation — the untested arm | 7 | P1 — the gap this round exists to close |
 | B | RRF parameter sensitivity | 6 | P2 — cheap, and directly tests the corroboration mechanism |
 | C | Chunk quality and boilerplate | 6 | P2 — closes DEF-10 with evidence rather than assertion |
-| D | Query characteristics as predictors | 5 | P3 — the most publishable, the least operationally urgent |
+| D | Query characteristics as predictors | 5 + D-QR | P3 — the most publishable, the least operationally urgent |
 | E | Corpus and index scale | 4 | P3 — expensive, invalidates existing baselines |
 | F | Generation-side ranking effects | 3 | P4 — blocked on API credit |
 
@@ -308,6 +311,31 @@ This is the minimum viable version of ENH-09 and the honest one: if two hand-com
 ### D5  Query type predicts boilerplate exposure
 
 Follows from C3. If title-overlapping queries attract boilerplate, then the same routing features that pick a retriever could also trigger a boilerplate filter selectively, rather than applying it globally at ingest.
+
+
+### D-QR  Conditional query rewriting helps vocabulary-gap queries and is neutral-to-harmful on exact-identifier queries
+
+*Added 29 August 2026. Criterion 10's third best-practice point (query rewriting). Tested as a hypothesis, not shipped as a feature — this entry and its falsify branch decide whether the rewriting path is wired into retrieval at all.*
+
+| Field | Detail |
+|---|---|
+| Claim | A rewriting step ahead of retrieval — legacy-terminology expansion plus camelCase identifier splitting, applied to the **dense** query only while BM25 keeps the literal string — improves the fused rank of the correct chunk on vocabulary-gap queries (Case 4), and, **when gated to skip exact-identifier queries**, leaves Case 1 and Case 5 unchanged. Applied ungated (identifier queries rewritten too) it is neutral-to-harmful on Case 1 and Case 5. The gate, not the rewrite, is what makes it safe. |
+| Why it should hold | Round 1's documented failure: `shader processor count` retrieves nothing because the corpus only ever says "CUDA cores"; dense found "An SM consists of: 128 CUDA cores" (`35b73f33…`) and RRF discarded it — "the most important finding of the UAT" (`uat_day5_retrieval.md`). A4 found indirect evidence that identifier lookups and conceptual queries need opposite handling: the cross-encoder helps the latter and demotes terse signature blocks on the former (Sign-Off §8.2, Q2's +2 delta). Rewriting rests on the same split — a paraphrase closes a gap where query and target share no tokens, and destroys the decisive token where they share it. |
+| Why it might not | (a) Only Q4 among the 15 Round 2 queries carries a genuine terminology mismatch — Q10 (`latency hiding through instruction level parallelism`) and Q11 (`occupancy versus performance tradeoffs`) already share vocabulary with their targets, so a rewriter correctly no-ops and Case 4 shows no aggregate movement. (b) e5-base-v2 may already bridge "shader processor" → "CUDA core" semantically, making the expansion redundant. (c) camelCase splitting of `cudaDeviceSynchronize` may be neutral for e5 (subword tokenisation already handles it), so the ungated arm fails to harm Case 5 and the gate earns nothing. (d) The identifier regex may misfire on mixed queries (Q14, `pinned memory cudaMallocHost benefits`) — gating a query that also has conceptual content. |
+| Confirms | (1) On Case 4, the target chunk's fused rank improves under gated rewriting on a majority of the case's queries (n=2: Q10, Q11; Q4 counted as the case's motivating query, plus R1-Q7 as supplementary). **and** (2) gated rewriting holds every Case 1 and Case 5 target within ±1 fused rank of baseline (the gate declines to rewrite them). Rewriting that helps Case 4 while the *ungated* arm harms Case 1/5 is the **expected confirming shape** — the response is to keep the gate, not to abandon rewriting or apply it everywhere. |
+| Falsifies | Gated rewriting produces no Case 4 improvement on any query including Q4 and R1-Q7 (the gap is already closed, or the expansion is noise) — **or** the ungated arm is also neutral-to-positive on Case 1 and Case 5, making the gate pointless and unconditional rewriting the correct call — **or** gated rewriting moves a Case 1 / Case 5 target by more than ±1 rank despite the gate firing (the identifier regex is unreliable). Any of these retires conditional rewriting for this corpus as specified. |
+
+**Protocol**
+
+1. Classify each of the 15 Round 2 queries (`uat_superiority_cases_raw.json`) plus R1-Q7 (`shader processor count`, supplementary) as `exact_identifier` if it contains a CUDA API symbol / error code / struct token (`cuda[A-Z]…`, `cudaError…`, `dim3`, `__host__`-style), else `conceptual`.
+2. Fix a retriever-independent target chunk per query from the Round 2 / Round 1 write-ups (e.g. Q1 → `cc6c8e53…`, Q4 → `35b73f33…`, Q10 → `f2730f1e…`). Record the list in the script.
+3. Two rewrite strategies, dense-query only, BM25 always literal: (a) **legacy expansion** — a static map of terminology-era mismatches (`shader processor` / `streaming processor` / `shading unit` → `CUDA core`; `GPU program` → `kernel`; `video memory` / `VRAM` → `global memory`); (b) **identifier split** — camelCase CUDA identifiers split into words and appended.
+4. Three modes per query: **baseline** (no rewrite), **gated** (both strategies, skipped entirely when `exact_identifier`), **ungated** (both strategies always).
+5. Retrieve BM25 top-100 (literal) and dense top-100 (mode query) live, RRF-fuse (`k=60`). Record the target's rank in BM25, dense, and fused lists for every query × mode. Persist the full per-query table as JSON before any analysis.
+6. Group by the six case types. Report per-query rank and per-query delta (baseline − mode; positive = improvement), then case means. State n per case — most are 2–3, Case 4 is 2 (Q10, Q11) plus Q4/R1-Q7 — and read case rollups as directional only, per the A3 standard.
+7. NDCG is not used: `run_day9_relevance_labelling.py`'s qrels are circular (A2, A3) and no retriever-independent graded labels exist yet (ENH-11). Target-chunk rank is the metric.
+
+**Persist** — script and per-query JSON committed before the findings write-up, per `0149ca4`.
 
 
 ## 7.  Family E — Corpus and Index Scale
