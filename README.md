@@ -14,6 +14,53 @@ into a production-shaped RAG system.
 **→ [Criteria-to-evidence mapping](#criteria-to-evidence-mapping)** — the
 fastest way for a reviewer to check any single rubric line against the code.
 
+## Quickstart
+
+The rest of this README and [`setup.md`](setup.md) are thorough by design;
+this block is the whole happy path in one place. **BM25 search only — no
+API keys, no data download, no embedding step.**
+
+```bash
+git clone https://github.com/dmishra27/nvidia-ir-rag-agent.git
+cd nvidia-ir-rag-agent
+cp .env.example .env                 # every value already has a working local default
+docker compose up -d                 # ~10 min first build; pulls + builds 9 services
+docker compose ps                    # wait for `api` to read `healthy` (not just `up`)
+
+curl -X POST http://localhost:8001/search \
+  -H 'content-type: application/json' \
+  -d '{"query": "cudaMalloc function parameters", "top_k": 3}'
+```
+
+**Expect:** three ranked results, rank 1 the `cudaMalloc(void**, size_t)`
+signature chunk (`cc6c8e53936d04e9b192a7d5`), RRF scores `1/61`, `1/62`,
+`1/63`. **The first call takes a few minutes** (cold model/index load under
+memory pressure); subsequent calls are fast. Then open
+`http://localhost:8001/` for the guided UI, `http://localhost:8001/evaluation`
+for the retrieval-quality report, `http://localhost:8501` for the 5-tab
+Streamlit dashboard.
+
+`/ask` (LLM-generated cited answers) additionally needs `ANTHROPIC_API_KEY`
+in `.env`. Dense/hybrid retrieval additionally needs the one-time
+`populate_qdrant.py` embedding pass (§4 of [`setup.md`](setup.md)) — until
+then retrieval degrades to BM25-only and logs `dense_retrieval_degraded`.
+
+## Requirements
+
+Measured on the 8 GB CPU-only dev machine during a clean-clone
+reproducibility test (`docs/uat/clean_clone_test_findings.md`), not
+estimated.
+
+| | Requirement | Notes |
+|---|---|---|
+| **Python** | 3.11 **exactly** | Host-run scripts (`run_*.py`, `retrieval/populate_qdrant.py`) hard-fail on any other version; `.python-version` pins it. The install breaks on 3.14 (`pandasai==3.0.0` has no wheel) with an error that never names the version. Not needed for the containers — only for host-run tooling, tests, and ingestion. |
+| **Free RAM** | 4 GB min; 8 GB total is marginal | The full 9-service stack leaves ~0.5 GB free on an 8 GB host. Don't run the ingestion/embedding pass with the whole stack up, and don't `docker restart` a single service with the stack up — either OOM-kills the `api` container. |
+| **Disk** | ~6 GB | ~2.5 GB venv + ~3 GB Docker images. |
+| **Time to first BM25 query** | ~50 min | 34 min `pip install` + ~10 min image build + ~5 min `run_ingest_direct.py`. |
+| **Time to full hybrid pipeline** | ~2 h 20 min | above + ~86 min `populate_qdrant.py` embedding pass. |
+| **Ports** | 8001, 8501, 5432, 5050, 6333, 6334, 5001, 8080, 16686, 4317, 4318, 6006 | All must be free. Only **one instance of this project can run at a time** — see [`setup.md` §3](setup.md#3-bring-up-the-stack). |
+| **External accounts** | None for BM25 `/search` | `ANTHROPIC_API_KEY` for `/ask`; `COHERE_API_KEY` for the Config C benchmark only. `dvc pull` needs **no** credentials. |
+
 ## Problem statement
 
 NVIDIA's CUDA documentation is fragmented across several separate,
@@ -45,10 +92,23 @@ quality actually measured, not just demoed:
 **Corpus** (5,389 chunks, 5 documents — see `api/static/index.html`'s
 corpus panel, served at `/`):
 CUDA C++ Programming Guide · CUDA C++ Best Practices Guide · CUDA Math API
-Reference · CUDA Runtime API · Nsight Systems User Guide. Topics outside
-these five documents (NVLink, H100, TensorRT, etc.) are out of scope by
-construction — queries about them return low-relevance results, not
-nothing, and the UI says so.
+Reference · CUDA Runtime API · Nsight Systems User Guide. Queries about
+topics these five documents don't cover (NVLink, H100, TensorRT, etc.)
+return low-relevance results, not nothing, and the UI says so.
+
+These gaps are a mix of deliberate scoping and known ingestion debt, not
+one clean design line:
+
+- **NVLink / H100** — the Ampere and Hopper architecture whitepapers and
+  the A100 datasheet *are* DVC-tracked (`data/raw/*.dvc`) but were never
+  wired into the ingestion manifest (`run_ingest_direct.py`), so nothing
+  from them is in the index. Tracked-but-not-ingested (DEF-19).
+- **TensorRT / cuDNN / Thrust** — dropped from the manifest because their
+  NVIDIA PDF URLs now 404 (NVIDIA serves an identical HTML error page for
+  all three); ingesting them would need re-sourced PDFs (DEF-20).
+
+See `run_ingest_direct.py`'s `MANIFEST` comment and
+`docs/uat/correction_notice_a1.md` §6.
 
 ## Live deployment
 
@@ -105,6 +165,52 @@ produces and evaluates the data the request path uses):
 
 Full 8-layer detail and folder structure: [`AGENTS.md`](AGENTS.md).
 
+## Beyond the core rubric
+
+Work that sits outside the required criteria and is easy to miss on a
+first pass. Each is real and runnable, not a stub.
+
+### ☁️ Cloud deployment — `render.yaml`
+
+`POST /search` · `/ask` · `/health` deployed to Render, configured for the
+free-tier 512 MB cap (`RERANKER_MODE=fallback`, BM25-only — the memory
+math is in `render.yaml`'s own comments). Live endpoints and the
+spin-down caveat are in [Live deployment](#live-deployment).
+[`render.yaml`](render.yaml)
+
+### ✅ CI/CD quality gate — `.github/workflows/ci.yml`
+
+Every push runs: checkout → CPU-only-torch install → `patch_ragas.py` →
+`ruff check` → `mypy` (strict on all production packages) → `pytest` →
+an **NDCG@10 regression gate** that fails the build if retrieval quality
+drops below `evaluation/benchmark_baseline.json`'s threshold.
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+
+### 🔭 Observability stack
+
+- **OpenTelemetry → Jaeger** — `api/telemetry.py`, `traced_stage` spans
+  through `agents/retrieval_agent.py` + `agents/qa_agent.py`; UI at
+  `:16686` (`ENABLE_TRACING=true`).
+- **Arize Phoenix** — `monitoring/phoenix_config.py`, LLM-call tracing at
+  `:6006` (`ENABLE_PHOENIX=true`).
+- **MLflow** — `reranker_benchmark`, `ragas_eval`, `citation_judge`
+  experiments at `:5001`; the Streamlit benchmark tab reads from it live.
+- **structlog** — single-line JSON logs, one `query_id` correlated across
+  every stage and both endpoints.
+- **LangSmith** — optional, `LANGCHAIN_TRACING_V2` (verified in Day 9).
+
+### 🤖 Slack bot + 4 MCP servers
+
+- **Slack bot** — `slackbot/app.py`, Socket Mode: `/nvidia-search` slash
+  command, `/ask` answers with top-3 citations, 👍/👎 reactions write to
+  `feedback_log` (`source="slackbot"`).
+- **MCP servers** — `mcp/mcp_postgres`, `mcp/mcp_qdrant`, `mcp/mcp_mlflow`,
+  `mcp/mcp_airflow`: query the corpus DB, the dense index, experiment
+  history, and DAG status from any MCP-compatible client (`.mcp.json`).
+
+Both run on the host, not in `docker compose` — see
+[`setup.md` §7](setup.md#7-things-that-still-run-on-the-host).
+
 ## Criteria-to-evidence mapping
 
 Self-assessed against the published rubric. Where a criterion is only
@@ -117,11 +223,11 @@ the linked file/endpoint directly.
 | **Retrieval flow** (2) | Met | Knowledge base (BM25 + dense over Postgres/Qdrant) + LLM generation, both real: `agents/qa_agent.py`, `POST /ask` |
 | **Retrieval evaluation** (2) | Met, scope-caveated | `docs/uat/uat_superiority_cases_executed.md` — BM25 vs dense vs RRF, 15 queries / 6 designed cases, live-run. `evaluation/benchmark_runner.py` + `/evaluation` — re-ranker Config A (ms-marco) beats Config C (Cohere) on NDCG@10 (0.5333 vs 0.5280) and **A is the default `RERANKER_MODE`** actually served. Caveat: `benchmark_baseline.json`'s own `_note` field says this is a 15-query smoke-scope run at top-3, not the full 50-query × top-100 run `benchmark_runner.py` is designed for. |
 | **LLM evaluation** (2) | ⚠️ Partial | `evaluation/ragas_suite.py` (faithfulness 0.7616, answer relevancy 0.2497, real RAGAS run) and `evaluation/citation_judge.py` (LLM-as-judge citation accuracy, 0.7037 over 27 claims) are both real, live-measured evaluations of generation quality. **What's missing**: only one generation model/prompt (`claude-sonnet-5`, hardcoded in `agents/qa_agent.py`) was ever used — no comparison across multiple LLMs or prompts with a "best one" selected. If the rubric requires that comparison specifically, treat this as not met. |
-| **Interface** (2) | Met | FastAPI (`/search`, `/ask`, `/health`, `/docs`), guided search UI (`/`), evaluation report (`/evaluation`), Streamlit (`streamlit_app/app.py`, 5 tabs), Slack bot (`slackbot/app.py`) |
+| **Interface** (2) | Met | FastAPI (`/search`, `/ask`, `/health` liveness + `/health/ready` dependency-assertion, `/docs`), guided search UI (`/`), evaluation report (`/evaluation`), Streamlit (`streamlit_app/app.py`, 5 tabs), Slack bot (`slackbot/app.py`) |
 | **Ingestion pipeline** (2) | Met, caveated | `airflow/dags/ingest_nvidia_docs.py` — real Airflow 3 TaskFlow DAG (fetch → parse → chunk → score → write → log coverage), runs inside `docker-compose.yml`'s `airflow` service. Caveat: the 5,389-chunk corpus actually in this repo was loaded via `run_ingest_direct.py`, a direct-Python mirror of the same pipeline — the DAG itself has not been run against a live Airflow scheduler in this project. |
 | **Monitoring** (2) | Met | Feedback, two input paths into the same `feedback_log` table: (1) Slack 👍/👎 via `slackbot/feedback_handler.py` (`source="slackbot"`), and (2) a thumbs up/down control on each result card at `/` via `POST /feedback` (`api/routers/feedback.py`, `source="web"`) — both write the real `FeedbackLog` ORM model, no schema change; `monitoring/feedback_aggregator.py` aggregates weekly. Dashboard: `streamlit_app/benchmark_tab.py`, `eval_dashboard.py`, `monitoring_tab.py`, `drift_tab.py` — 5+ charts (ranking-quality bar, latency bar, per-query NDCG box-plot, NDCG-vs-gate, per-query citation accuracy, quality-regression trend, per-stage latency, request/error rate, PSI drift, term shift) |
 | **Containerization** (2) | Met, not literally everything | `docker-compose.yml` — 9 services: `api`, `streamlit`, `postgres`, `qdrant`, `mlflow`, `pgadmin`, `airflow`, `jaeger`, `phoenix`. Caveat: the Slack bot and the 4 MCP servers run on the host, not in `docker-compose.yml` — see [Setup & run](#setup--run). |
-| **Reproducibility** (2) | Met | All 384 pinned dependencies in `requirements.txt` (`==`, verified directly — the file is UTF-16, which breaks naive `grep` but not `pip`); `.env.example` covers every variable with working local defaults; `data/indexes/bm25_index.pkl` committed to git so `/search` works with zero setup. Full dense/hybrid reproduction needs a documented ~86-minute local embedding pass — see [Setup & run](#setup--run). |
+| **Reproducibility** (2) | Met | All 384 pinned dependencies in `requirements.txt` (`==`, verified directly — the file is UTF-16, which breaks naive `grep` but not `pip`); `.env.example` covers every variable with working local defaults; `data/indexes/bm25_index.pkl` committed to git so `/search` works with zero setup; the 8-PDF source corpus is DVC-pinned and `dvc pull`s with no credentials — see [Data versioning](#data-versioning). Full dense/hybrid reproduction needs a documented ~86-minute local embedding pass — see [Setup & run](#setup--run). |
 | **Hybrid search** (1, best practice) | Met | `retrieval/rrf_fusion.py` fuses BM25 (`retrieval/bm25_index.py`) + dense (`retrieval/dense_index.py`) |
 | **Document re-ranking** (1, best practice) | Met | `retrieval/reranker_msmarco.py` (cross-encoder), wired as the default tier in `retrieval/reranker_router.py` |
 | **Query rewriting** (1, best practice) | ❌ Not evidenced | No query rewriting, expansion, or HyDE-style reformulation exists anywhere in the codebase (verified by grep — no matches) |
@@ -129,45 +235,36 @@ the linked file/endpoint directly.
 
 ## Setup & run
 
-Quick version below; **full step-by-step instructions, the complete
-environment-variable table, the port map, and host-run components are in
-[`setup.md`](setup.md).**
+The happy path is in [Quickstart](#quickstart) above; **full step-by-step
+instructions, the environment-variable table, the port map, data
+versioning, and host-run components are in [`setup.md`](setup.md).** A few
+things worth knowing before you start:
 
-```bash
-git clone https://github.com/dmishra27/nvidia-ir-rag-agent.git
-cd nvidia-ir-rag-agent
-cp .env.example .env        # every value already has a working local default
-docker compose up -d        # api, streamlit, postgres, qdrant, mlflow, pgadmin, airflow, jaeger, phoenix
-curl http://localhost:8001/health
-curl -X POST http://localhost:8001/search -H 'content-type: application/json' -d '{"query": "cudaMemcpyAsync"}'
-```
-
-Windows PowerShell mangles that inline-JSON `-d` payload (you'll get a
-`json_invalid` error, not a broken API) — write the body to a file first:
-
-```powershell
-'{"query":"cudaMalloc function parameters","top_k":3}' | Out-File -Encoding ascii body.json
-curl.exe -s -X POST http://localhost:8001/search -H "content-type: application/json" -d "@body.json"
-```
-
-`data/indexes/bm25_index.pkl` is committed to git, so `/search` returns
-real BM25 results after `docker compose up -d` — no data download or
-embedding step required. The default `RERANKER_MODE=live_fast` also queries
-the dense index, but on a fresh clone Qdrant's `nvidia_ir_chunks`
-collection doesn't exist yet (it's created by the one-time ~86-minute
-`populate_qdrant.py` step — see
-[`setup.md`](setup.md#4-populate-the-corpus)). When the dense query fails,
-retrieval **degrades to BM25-only** and logs a `dense_retrieval_degraded`
-warning; you still get real ranked results, just without the dense/RRF
-half until you populate Qdrant. If retrieval fails outright (BM25 index
-missing too), `/search` returns HTTP 503 with an `error` field rather than
-an empty `200`. An `ANTHROPIC_API_KEY` is needed for `/ask` to generate
-answers (not for `/search`).
+- **First `/search` after `up` takes a few minutes**, not seconds — cold
+  model and index loads under memory pressure (measured at 101–281 s on
+  the 8 GB dev host). It is not hung.
+- **Windows PowerShell mangles an inline-JSON `-d` payload** (you get a
+  `json_invalid` error, not a broken API) — write the body to a file:
+  ```powershell
+  '{"query":"cudaMalloc function parameters","top_k":3}' | Out-File -Encoding ascii body.json
+  curl.exe -s -X POST http://localhost:8001/search -H "content-type: application/json" -d "@body.json"
+  ```
+- **`data/indexes/bm25_index.pkl` is committed and baked into the image**,
+  so BM25 `/search` works with zero data setup. The default
+  `RERANKER_MODE=live_fast` also queries the dense index; on a fresh clone
+  Qdrant's `nvidia_ir_chunks` collection doesn't exist until the one-time
+  ~86-min `populate_qdrant.py` pass ([`setup.md` §4](setup.md#4-populate-the-corpus)),
+  so retrieval **degrades to BM25-only** and logs `dense_retrieval_degraded`.
+  If retrieval fails outright (BM25 missing too), `/search` returns HTTP
+  503 with an `error` field, never an empty `200`.
+- **`/health` is liveness only; `/health/ready` asserts dependencies**
+  (Postgres reachable, BM25 loadable) and returns 503 with a per-check
+  body when one is down.
 
 **Tests:**
 
 ```bash
-pytest          # 520 tests, all mock embedding/LLM/DB/MLflow calls — no live services needed
+pytest          # 561 tests, all mock embedding/LLM/DB/MLflow calls — no live services needed
 ruff check .
 mypy .           # strict on agents/, api/, retrieval/, monitoring/, evaluation/, schema/, mcp/, slackbot/, streamlit_app/
 ```
@@ -247,11 +344,41 @@ above rather than repeating it:
   CCT-NVIR-2026-001, F-14); that was correct against the then-current code
   and is fixed as of this commit.
 
+## Data versioning
+
+The source corpus is DVC-tracked, so a stranger with only the clone URL
+rebuilds the exact 5,389-chunk corpus every evaluation figure is anchored
+to (clean-clone test: `dvc pull` fetched all 8 blobs, sha256-verified
+identical).
+
+- **8 files** under `data/raw/*.dvc` — the 5 ingested CUDA PDFs plus 3
+  tracked-but-not-yet-ingested (`ampere_architecture_whitepaper`,
+  `hopper_architecture_whitepaper`, `a100_datasheet` — see
+  [Problem statement](#problem-statement)).
+- **No credentials.** The DVC remote (`.dvc/config`) is
+  `https://raw.githubusercontent.com/.../dvc-storage/` — the blobs live on
+  the **`dvc-storage` orphan branch** of this same public repo, so
+  `dvc pull` is an anonymous HTTPS GET.
+- **A shallow / single-branch clone still needs the remote reachable** —
+  the blobs are on that orphan branch, not on `main`, and are not in the
+  working tree until `dvc pull` runs.
+
+```bash
+pip install dvc            # or: pipx install dvc
+dvc pull                   # populates data/raw/*.pdf from the dvc-storage branch
+```
+
+Full history of what was broken and how it was fixed:
+[`docs/explainers/data_versioning_explained.md`](docs/explainers/data_versioning_explained.md),
+[`docs/explainers/dvc_chronology.md`](docs/explainers/dvc_chronology.md).
+
 ## Project docs
 
 - [`AGENTS.md`](AGENTS.md) — full 8-layer architecture, coding standards,
   MCP server list, folder structure.
 - [`SKILLS.md`](SKILLS.md) — reusable code patterns.
+- [`docs/explainers/data_versioning_explained.md`](docs/explainers/data_versioning_explained.md)
+  — how the DVC corpus pinning works and why.
 - [`reports/final_eval_report.md`](reports/final_eval_report.md) — the
   single most current, consolidated evaluation writeup (NDCG, RAGAS,
   citation judge, explicit known-gaps section, research context).

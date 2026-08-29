@@ -5,17 +5,37 @@ depends on state left over from a previous run. See the main
 [`README.md`](README.md) for the problem statement, architecture, and
 rubric-evidence mapping; this file is procedural only.
 
-## 0. Prerequisites
+## 0. Prerequisites & requirements
 
 - Docker + Docker Compose v2 (`docker compose version` — bundled with
   current Docker Desktop; the old standalone `docker-compose` binary works
   too, just substitute the hyphenated form below).
-- Python 3.11 + a virtualenv, **only** for the corpus-ingestion step below
-  and for anything else that runs on the host rather than in a container
-  (tests, the MCP servers, the Slack bot, one-off `run_*.py` scripts) —
-  the FastAPI app and Streamlit UI themselves don't need this.
+- **Python 3.11 exactly** + a virtualenv, **only** for the corpus-ingestion
+  step below and for anything else that runs on the host rather than in a
+  container (tests, the MCP servers, the Slack bot, one-off `run_*.py`
+  scripts) — the FastAPI app and Streamlit UI themselves don't need this.
+  Not 3.10, not 3.12+: `requirements.txt` resolves cleanly only on 3.11
+  (`pandasai==3.0.0` has no wheel for 3.14, and the resolver error never
+  names the version as the cause). `.python-version` pins it, and every
+  host-run `run_*.py` / `retrieval/populate_qdrant.py` script now aborts
+  immediately with `requires Python 3.11, found X.Y` rather than failing
+  deep in an import.
 - An `ANTHROPIC_API_KEY` if you want `/ask` or the Slack bot to actually
   generate answers — see the env var table below.
+
+### Measured resource requirements
+
+From a clean-clone reproducibility test on an 8 GB, CPU-only Windows host
+(`docs/uat/clean_clone_test_findings.md` §3) — observed, not estimated:
+
+| | Requirement | Evidence / notes |
+|---|---|---|
+| **Free RAM** | 4 GB minimum; 8 GB total is marginal | Full 9-service stack leaves ~0.5 GB free on 8 GB. Running `run_ingest_direct.py` / `populate_qdrant.py` with the whole stack up, or `docker restart`-ing one service with the stack up, OOM-kills the `api` container (exit 137). Stop `airflow`, `phoenix`, `jaeger`, `streamlit` before the embedding pass. |
+| **Disk** | ~6 GB | ~2.5 GB `.venv` + ~3 GB Docker images. |
+| **Time to first BM25 query** | ~50 min | 34 min `pip install` + ~10 min first image build + ~5 min `run_ingest_direct.py`. |
+| **Time to full hybrid pipeline** | ~2 h 20 min | above + ~86 min `populate_qdrant.py` (5,389 chunks, e5-base-v2, CPU). |
+| **First `/search` latency** | minutes, not seconds | 101–281 s cold, under memory pressure — model + index load on first request. Not hung. |
+| **External accounts** | none for BM25 `/search` | `ANTHROPIC_API_KEY` → `/ask`; `COHERE_API_KEY` → Config C benchmark only; `dvc pull` → none. |
 
 ## 1. Clone
 
@@ -23,6 +43,31 @@ rubric-evidence mapping; this file is procedural only.
 git clone https://github.com/dmishra27/nvidia-ir-rag-agent.git
 cd nvidia-ir-rag-agent
 ```
+
+### 1b. (Optional) Fetch the source PDFs with DVC
+
+`/search`, `/ask`, and the tests do **not** need this — the BM25 index is
+committed and the 5,389-chunk corpus is rebuilt by `run_ingest_direct.py`
+in §4 from PDFs it also pins. You only need `dvc pull` if you want the
+original source PDFs in `data/raw/` (e.g. to re-parse or extend the
+manifest).
+
+```bash
+pip install dvc            # standalone, or pipx install dvc
+dvc pull                   # 8 blobs, sha256-verified, no credentials
+```
+
+The DVC remote (`.dvc/config`) points at
+`https://raw.githubusercontent.com/dmishra27/nvidia-ir-rag-agent/dvc-storage/`
+— the blobs live on the **`dvc-storage` orphan branch** of this same
+public repo, so `dvc pull` is an anonymous HTTPS GET with no cloud account.
+Note that a shallow or single-branch clone still reaches that branch over
+the network; the blobs are never in the `main` working tree until you pull.
+8 files are tracked: the 5 ingested CUDA PDFs plus
+`ampere_architecture_whitepaper` / `hopper_architecture_whitepaper` /
+`a100_datasheet`, which are versioned but not in the ingestion manifest
+(see [README](README.md#problem-statement)). Background:
+[`docs/explainers/data_versioning_explained.md`](docs/explainers/data_versioning_explained.md).
 
 ## 2. Configure `.env`
 
@@ -39,7 +84,7 @@ for the features that need them.
 
 | Variable | Purpose | Required for | Works without it? |
 |---|---|---|---|
-| `ANTHROPIC_API_KEY` | Claude Sonnet 5 API key | `/ask` generation + citations, Slack bot, RAGAS eval, citation judge | No — `/ask` returns a 500 without it. `/search` and `/health` are unaffected. |
+| `ANTHROPIC_API_KEY` | Claude Sonnet 5 API key | `/ask` generation + citations, Slack bot, RAGAS eval, citation judge | No — `/ask` returns HTTP 503 with an `error` field without it. `/search` and `/health` are unaffected. |
 | `COHERE_API_KEY` | Cohere Rerank v3 API key | `RERANKER_MODE=live_frontier` / `benchmark` | Only needed for those two modes — default `RERANKER_MODE=live_fast` uses a local cross-encoder, no key. |
 | `POSTGRES_URL` | Full connection string, host-run tooling | MCP servers, `run_*.py` scripts, notebooks, `pytest` | Yes, already defaulted to match `docker-compose.yml`'s published port. |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Postgres container credentials | `docker-compose.yml`'s `postgres` service | Yes, already defaulted. |
@@ -99,7 +144,38 @@ changed.
 
 `api` won't report healthy until `postgres`/`qdrant` do (it `depends_on`
 them with `condition: service_healthy`); `streamlit` waits on `api` the
-same way. `docker compose ps` shows you where things are.
+same way.
+
+### After `up`: check, don't assume
+
+`docker compose up -d` prints a **launch** report, not a **health**
+assertion — during the clean-clone test it reported all nine services
+`Healthy` while two were actually off the network, and `pgadmin` sat dead
+(exit 255) for four hours unnoticed. So:
+
+```bash
+docker compose ps          # confirm every service is `running (healthy)`, not just `up`
+```
+
+If any service is missing, unhealthy, or restarting, **tear the whole
+stack down before retrying** — a re-run of `up` after a partial start
+reports success without repairing the network, and the API then can't
+resolve `postgres`:
+
+```bash
+docker compose down        # not just `up` again
+docker compose up -d
+```
+
+### Only one instance of this project at a time
+
+The compose ports are fixed defaults: `5432`, `6333`/`6334`, `5001`,
+`8501`, `5050`, `8080`, `16686`, `4317`/`4318`, `6006` (only `api` was
+moved off `8000` to `8001`). If another copy of this repo — or anything
+else on those ports — is already running, `docker compose up -d` fails
+**loudly** on `qdrant`/`6333` and **silently** on `postgres`/`5432` (the
+container just never starts and nothing names it). Stop the other stack
+first; a second instance cannot run alongside the first.
 
 ## 4. Populate the corpus
 
@@ -111,6 +187,7 @@ populated**, which is a host-run, one-time step (not part of
 `docker compose up` — it's a data load, not a service):
 
 ```bash
+python --version                                  # must be 3.11.x — see §0
 python -m venv .venv && .venv/Scripts/activate   # or source .venv/bin/activate on Linux/macOS
 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 python scripts/patch_ragas.py                     # see requirements_notes.txt
@@ -118,6 +195,13 @@ python scripts/patch_ragas.py                     # see requirements_notes.txt
 python run_ingest_direct.py           # PDFs -> parse -> chunk -> score -> Postgres (5,389 chunks)
 python retrieval/populate_qdrant.py   # embeds those chunks (e5-base-v2) -> upserts into Qdrant
 ```
+
+Both scripts (and every other `run_*.py`) call a Python-version guard
+first and exit with `requires Python 3.11, found X.Y` if the shell has
+fallen out of the venv — a real failure mode: during the clean-clone test
+the shell silently reverted to system Python three times, each producing a
+convincing but false "defect". If you see that message, re-activate
+`.venv` and re-run.
 
 Both read `.env`'s `localhost`-pointed `POSTGRES_URL`/`QDRANT_URL`, so they
 talk to the same `docker compose`-published ports from the host. The
@@ -138,9 +222,20 @@ limitations](README.md#known-limitations) for its current status.
 ## 5. Verify
 
 ```bash
-curl http://localhost:8001/health          # {"status": "ok", "service": "nvidia-ir-rag-agent"}
+curl http://localhost:8001/health          # {"status": "ok", "service": "nvidia-ir-rag-agent"} — liveness only
+curl http://localhost:8001/health/ready     # asserts Postgres + BM25; 200 {"status":"ready",...} or 503 with per-check detail
 curl -X POST http://localhost:8001/search -H 'content-type: application/json' -d '{"query": "cudaMemcpyAsync"}'
 ```
+
+**The first `/search` after `up` takes minutes, not seconds** (101–281 s
+measured on the 8 GB dev host — cold model/index loads under memory
+pressure). It is not hung; subsequent calls are fast.
+
+`/health` is a pure liveness probe — it stays `200 ok` even if Postgres or
+retrieval is down, on purpose, so it can't wedge container startup
+ordering. Use **`/health/ready`** for the dependency assertion: it returns
+`503` and names the failing dependency (`{"checks":{"postgres":"error:
+...","bm25":"ok"}}`) when the stack isn't actually able to serve.
 
 Then open `http://localhost:8501` for the Streamlit UI, `http://localhost:8001`
 for the guided search UI, `http://localhost:8001/evaluation` for the
@@ -150,7 +245,7 @@ retrieval-evaluation report, or `http://localhost:8001/docs` for Swagger.
 
 | Port | Service | What's there |
 |---|---|---|
-| `8001` | `api` | FastAPI — `/`, `/evaluation`, `/search`, `/ask`, `/health`, `/docs` (container listens on 8000 internally; 8001 on the host since 8000 is frequently already taken) |
+| `8001` | `api` | FastAPI — `/`, `/evaluation`, `/search`, `/ask`, `/health` (+ `/health/ready`), `/docs` (container listens on 8000 internally; 8001 on the host since 8000 is frequently already taken) |
 | `8501` | `streamlit` | 5-tab UI |
 | `5432` | `postgres` | `nvidia_ir_db` |
 | `5050` | `pgadmin` | `admin@nvidia-ir.local` / `admin` |
@@ -180,7 +275,7 @@ python -m slackbot.app
 ## 8. Tests / lint / typecheck
 
 ```bash
-pytest                 # 508 tests, all mocked (no live API/DB/MLflow calls — see AGENTS.md)
+pytest                 # 561 tests, all mocked (no live API/DB/MLflow calls — see AGENTS.md)
 ruff check .
 mypy .                  # strict on agents/, api/, retrieval/, monitoring/, evaluation/, schema/, mcp/, slackbot/, streamlit_app/
 ```
