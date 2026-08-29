@@ -33,6 +33,7 @@ require_python()
 
 import gc
 import json
+import sys
 from pathlib import Path
 
 from retrieval.bm25_index import DEFAULT_INDEX_PATH, BM25Index
@@ -71,17 +72,28 @@ CASE_LABELS = {
     "case1_bm25_lexical_superiority": "Case 1 — BM25 lexical",
     "case2_dense_semantic_superiority": "Case 2 — dense semantic",
     "case3_rrf_hybrid_superiority": "Case 3 — RRF hybrid",
-    "case4_bm25_failure_vocab_gap": "Case 4 — vocab gap",
-    "case5_dense_failure_exact_lookup": "Case 5 — exact lookup",
-    "case6_rrf_mixed_queries": "Case 6 — RRF mixed",
+    "case4_bm25_failure_dense_advantage": "Case 4 — BM25 failure / vocab gap",
+    "case5_dense_failure_bm25_advantage": "Case 5 — dense failure / exact lookup",
+    "case6_rrf_hybrid_advantage_mixed": "Case 6 — RRF mixed",
 }
 
 
 def load_queries() -> list[dict]:
     rows = json.loads(CASES_PATH.read_text(encoding="utf-8"))
-    queries = [{"query_id": r["query_id"], "query": r["query"], "case": r["case"]} for r in rows]
+    queries = [
+        {"query_id": r["query_id"], "query": r["query"], "case": r["case"], "supplementary": False}
+        for r in rows
+    ]
+    # R1-Q7 — the short "shader processor count" phrasing Round 1 nominated as
+    # the vocabulary-gap regression case. Grouped with Round 2's Case 4 but
+    # flagged so it is not counted among the official 15.
     queries.append(
-        {"query_id": "R1-Q7", "query": "shader processor count", "case": "case4_bm25_failure_vocab_gap"}
+        {
+            "query_id": "R1-Q7",
+            "query": "shader processor count",
+            "case": "case4_bm25_failure_dense_advantage",
+            "supplementary": True,
+        }
     )
     return queries
 
@@ -125,6 +137,7 @@ def evaluate(queries: list[dict], bm25: BM25Index, dense: DenseIndex) -> list[di
             "query": q["query"],
             "case": q["case"],
             "case_label": CASE_LABELS.get(q["case"], q["case"]),
+            "supplementary": q.get("supplementary", False),
             "target_chunk": target,
             "classify": classify(q["query"]),
             "gated_dense_query": gated.dense_query,
@@ -170,27 +183,71 @@ def _fmt(rank: int | None) -> str:
 
 
 def summarise(records: list[dict]) -> dict:
+    """Per-case gated/ungated RRF-rank movement. Supplementary queries
+    (R1-Q7) are excluded from the case rollup and reported on their own."""
+    official = [r for r in records if not r.get("supplementary")]
     by_case: dict[str, list[dict]] = {}
-    for r in records:
+    for r in official:
         by_case.setdefault(r["case_label"], []).append(r)
 
-    case_summary = {}
-    for case_label, recs in by_case.items():
-        for mode in ("gated", "ungated"):
-            deltas = [r["modes"][mode]["rrf_delta_vs_baseline"] for r in recs]
-            scored = [d for d in deltas if d is not None]
-            case_summary.setdefault(case_label, {})[mode] = {
-                "n": len(recs),
-                "n_scored": len(scored),
-                "improved": sum(1 for d in scored if d > 0),
-                "unchanged": sum(1 for d in scored if d == 0),
-                "worsened": sum(1 for d in scored if d < 0),
-                "mean_delta": round(sum(scored) / len(scored), 2) if scored else None,
-            }
-    return case_summary
+    def _roll(recs: list[dict], mode: str) -> dict:
+        scored = [
+            r["modes"][mode]["rrf_delta_vs_baseline"]
+            for r in recs
+            if r["modes"][mode]["rrf_delta_vs_baseline"] is not None
+        ]
+        return {
+            "n": len(recs),
+            "n_scored": len(scored),
+            "improved": sum(1 for d in scored if d > 0),
+            "unchanged": sum(1 for d in scored if d == 0),
+            "worsened": sum(1 for d in scored if d < 0),
+            "mean_delta": round(sum(scored) / len(scored), 2) if scored else None,
+        }
+
+    case_summary = {
+        case_label: {mode: _roll(recs, mode) for mode in ("gated", "ungated")}
+        for case_label, recs in by_case.items()
+    }
+    supplementary = {
+        r["query_id"]: {
+            mode: r["modes"][mode]["rrf_delta_vs_baseline"] for mode in ("gated", "ungated")
+        }
+        for r in records
+        if r.get("supplementary")
+    }
+    return {"by_case": case_summary, "supplementary": supplementary}
+
+
+def _print_case_summary(case_summary: dict) -> None:
+    print("\nPer-case RRF-rank movement vs baseline (official 15 only):")
+    for case_label, modes in case_summary["by_case"].items():
+        g, u = modes["gated"], modes["ungated"]
+        print(
+            f"  {case_label:38s} n={g['n']}  "
+            f"gated +{g['improved']}/={g['unchanged']}/-{g['worsened']} (mean {g['mean_delta']})   "
+            f"ungated +{u['improved']}/={u['unchanged']}/-{u['worsened']} (mean {u['mean_delta']})"
+        )
+    for qid, deltas in case_summary["supplementary"].items():
+        print(f"  {qid} (supplementary): gated delta {deltas['gated']}, ungated delta {deltas['ungated']}")
 
 
 def main() -> None:
+    resummarize = "--resummarize" in sys.argv
+
+    if resummarize:
+        # Memory-safe: recompute per_case from an existing per_query dump, no retrieval.
+        out = json.loads(OUT_PATH.read_text(encoding="utf-8"))
+        supp_ids = {q["query_id"] for q in load_queries() if q.get("supplementary")}
+        for r in out["per_query"]:
+            r["case_label"] = CASE_LABELS.get(r["case"], r["case"])
+            r["supplementary"] = r["query_id"] in supp_ids
+        out["per_case"] = summarise(out["per_query"])
+        OUT_PATH.write_text(json.dumps(out, indent=2), encoding="utf-8")
+        print(f"Re-summarised {OUT_PATH} from {len(out['per_query'])} retained per-query records.")
+        _print_case_summary(out["per_case"])
+        return
+
     queries = load_queries()
     print(f"Loaded {len(queries)} queries (15 Round 2 + R1-Q7 supplementary).\n")
 
@@ -205,7 +262,6 @@ def main() -> None:
     del dense
     gc.collect()
 
-    case_summary = summarise(records)
     out = {
         "hypothesis": "D-QR",
         "metric": "target-chunk rank in BM25 / dense / RRF top-100; delta = baseline_rrf - mode_rrf (positive = improved)",
@@ -213,20 +269,12 @@ def main() -> None:
         "rrf_k": RRF_K,
         "targets": TARGETS,
         "per_query": records,
-        "per_case": case_summary,
+        "per_case": summarise(records),
     }
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUT_PATH.write_text(json.dumps(out, indent=2), encoding="utf-8")
     print(f"\nSaved -> {OUT_PATH}")
-
-    print("\nPer-case RRF-rank movement vs baseline:")
-    for case_label, modes in case_summary.items():
-        g, u = modes["gated"], modes["ungated"]
-        print(
-            f"  {case_label:24s} n={g['n']}  "
-            f"gated: +{g['improved']}/={g['unchanged']}/-{g['worsened']} (mean {g['mean_delta']})   "
-            f"ungated: +{u['improved']}/={u['unchanged']}/-{u['worsened']} (mean {u['mean_delta']})"
-        )
+    _print_case_summary(out["per_case"])
 
 
 if __name__ == "__main__":

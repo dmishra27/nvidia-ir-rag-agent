@@ -1,0 +1,704 @@
+{
+  "hypothesis": "D-QR",
+  "metric": "target-chunk rank in BM25 / dense / RRF top-100; delta = baseline_rrf - mode_rrf (positive = improved)",
+  "pool_size": 100,
+  "rrf_k": 60,
+  "targets": {
+    "Q1": "cc6c8e53936d04e9b192a7d5",
+    "Q2": "242e353090d3f493c8ef64dc",
+    "Q3": "0904f18029b044943773fe74",
+    "Q4": "35b73f3371037bf5ba8fefc0",
+    "Q5": "8f2dbd94357e8ac31b8a595c",
+    "Q6": "3c9b5ecfb38e9ee9377cf4f6",
+    "Q7": "ccd7708bb87a3ea7259deb4c",
+    "Q8": "1fabb00b8793f603b648e7d1",
+    "Q9": "3c8573a7f22cd37a771b4816",
+    "Q10": "f2730f1e6b30f8901b027a33",
+    "Q11": "0a880bdf76e6612e502eb50a",
+    "Q12": "02bb6a205ba73aa9763b937c",
+    "Q13": "a612172bf233e826b41e390c",
+    "Q14": "5e38563157daf351863b54ec",
+    "Q15": "a1f985eaed4eb1f19e46d20a",
+    "R1-Q7": "35b73f3371037bf5ba8fefc0"
+  },
+  "per_query": [
+    {
+      "query_id": "Q1",
+      "query": "CUDA cudaMalloc function parameters",
+      "case": "case1_bm25_lexical_superiority",
+      "case_label": "Case 1 \u2014 BM25 lexical",
+      "target_chunk": "cc6c8e53936d04e9b192a7d5",
+      "classify": "exact_identifier",
+      "gated_dense_query": "CUDA cudaMalloc function parameters",
+      "gated_strategy": "gated-skip",
+      "gated_detail": "exact-identifier query left untouched",
+      "ungated_dense_query": "CUDA cudaMalloc function parameters cuda malloc",
+      "ungated_strategy": "identifier-split",
+      "ungated_detail": "split: cuda malloc",
+      "bm25_rank": 2,
+      "modes": {
+        "baseline": {
+          "dense_query": "CUDA cudaMalloc function parameters",
+          "dense_rank": 75,
+          "rrf_rank": 4
+        },
+        "gated": {
+          "dense_query": "CUDA cudaMalloc function parameters",
+          "dense_rank": 75,
+          "rrf_rank": 4,
+          "rrf_delta_vs_baseline": 0
+        },
+        "ungated": {
+          "dense_query": "CUDA cudaMalloc function parameters cuda malloc",
+          "dense_rank": 44,
+          "rrf_rank": 3,
+          "rrf_delta_vs_baseline": 1
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "Q2",
+      "query": "cudaMemcpyAsync stream parameter",
+      "case": "case1_bm25_lexical_superiority",
+      "case_label": "Case 1 \u2014 BM25 lexical",
+      "target_chunk": "242e353090d3f493c8ef64dc",
+      "classify": "exact_identifier",
+      "gated_dense_query": "cudaMemcpyAsync stream parameter",
+      "gated_strategy": "gated-skip",
+      "gated_detail": "exact-identifier query left untouched",
+      "ungated_dense_query": "cudaMemcpyAsync stream parameter cuda memcpy async",
+      "ungated_strategy": "identifier-split",
+      "ungated_detail": "split: cuda memcpy async",
+      "bm25_rank": 8,
+      "modes": {
+        "baseline": {
+          "dense_query": "cudaMemcpyAsync stream parameter",
+          "dense_rank": 18,
+          "rrf_rank": 3
+        },
+        "gated": {
+          "dense_query": "cudaMemcpyAsync stream parameter",
+          "dense_rank": 18,
+          "rrf_rank": 3,
+          "rrf_delta_vs_baseline": 0
+        },
+        "ungated": {
+          "dense_query": "cudaMemcpyAsync stream parameter cuda memcpy async",
+          "dense_rank": 20,
+          "rrf_rank": 4,
+          "rrf_delta_vs_baseline": -1
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "Q3",
+      "query": "CUDA error cudaErrorInvalidValue description",
+      "case": "case1_bm25_lexical_superiority",
+      "case_label": "Case 1 \u2014 BM25 lexical",
+      "target_chunk": "0904f18029b044943773fe74",
+      "classify": "exact_identifier",
+      "gated_dense_query": "CUDA error cudaErrorInvalidValue description",
+      "gated_strategy": "gated-skip",
+      "gated_detail": "exact-identifier query left untouched",
+      "ungated_dense_query": "CUDA error cudaErrorInvalidValue description cuda error invalid value",
+      "ungated_strategy": "identifier-split",
+      "ungated_detail": "split: cuda error invalid value",
+      "bm25_rank": 1,
+      "modes": {
+        "baseline": {
+          "dense_query": "CUDA error cudaErrorInvalidValue description",
+          "dense_rank": 49,
+          "rrf_rank": 2
+        },
+        "gated": {
+          "dense_query": "CUDA error cudaErrorInvalidValue description",
+          "dense_rank": 49,
+          "rrf_rank": 2,
+          "rrf_delta_vs_baseline": 0
+        },
+        "ungated": {
+          "dense_query": "CUDA error cudaErrorInvalidValue description cuda error invalid value",
+          "dense_rank": 25,
+          "rrf_rank": 2,
+          "rrf_delta_vs_baseline": 0
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "Q4",
+      "query": "shader processor count per streaming multiprocessor",
+      "case": "case2_dense_semantic_superiority",
+      "case_label": "Case 2 \u2014 dense semantic",
+      "target_chunk": "35b73f3371037bf5ba8fefc0",
+      "classify": "conceptual",
+      "gated_dense_query": "shader processor count per streaming multiprocessor CUDA core",
+      "gated_strategy": "legacy-expansion",
+      "gated_detail": "expand: CUDA core",
+      "ungated_dense_query": "shader processor count per streaming multiprocessor CUDA core",
+      "ungated_strategy": "legacy-expansion",
+      "ungated_detail": "expand: CUDA core",
+      "bm25_rank": null,
+      "modes": {
+        "baseline": {
+          "dense_query": "shader processor count per streaming multiprocessor",
+          "dense_rank": 16,
+          "rrf_rank": 39
+        },
+        "gated": {
+          "dense_query": "shader processor count per streaming multiprocessor CUDA core",
+          "dense_rank": 10,
+          "rrf_rank": 36,
+          "rrf_delta_vs_baseline": 3
+        },
+        "ungated": {
+          "dense_query": "shader processor count per streaming multiprocessor CUDA core",
+          "dense_rank": 10,
+          "rrf_rank": 36,
+          "rrf_delta_vs_baseline": 3
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "Q5",
+      "query": "how to make GPU programs run faster",
+      "case": "case2_dense_semantic_superiority",
+      "case_label": "Case 2 \u2014 dense semantic",
+      "target_chunk": "8f2dbd94357e8ac31b8a595c",
+      "classify": "conceptual",
+      "gated_dense_query": "how to make GPU programs run faster kernels",
+      "gated_strategy": "legacy-expansion",
+      "gated_detail": "expand: kernels",
+      "ungated_dense_query": "how to make GPU programs run faster kernels",
+      "ungated_strategy": "legacy-expansion",
+      "ungated_detail": "expand: kernels",
+      "bm25_rank": null,
+      "modes": {
+        "baseline": {
+          "dense_query": "how to make GPU programs run faster",
+          "dense_rank": 2,
+          "rrf_rank": 17
+        },
+        "gated": {
+          "dense_query": "how to make GPU programs run faster kernels",
+          "dense_rank": 2,
+          "rrf_rank": 18,
+          "rrf_delta_vs_baseline": -1
+        },
+        "ungated": {
+          "dense_query": "how to make GPU programs run faster kernels",
+          "dense_rank": 2,
+          "rrf_rank": 18,
+          "rrf_delta_vs_baseline": -1
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "Q6",
+      "query": "problems with threads executing different code paths",
+      "case": "case2_dense_semantic_superiority",
+      "case_label": "Case 2 \u2014 dense semantic",
+      "target_chunk": "3c9b5ecfb38e9ee9377cf4f6",
+      "classify": "conceptual",
+      "gated_dense_query": "problems with threads executing different code paths",
+      "gated_strategy": "no-op",
+      "gated_detail": "no legacy term or camelCase identifier",
+      "ungated_dense_query": "problems with threads executing different code paths",
+      "ungated_strategy": "no-op",
+      "ungated_detail": "no legacy term or camelCase identifier",
+      "bm25_rank": 2,
+      "modes": {
+        "baseline": {
+          "dense_query": "problems with threads executing different code paths",
+          "dense_rank": 1,
+          "rrf_rank": 1
+        },
+        "gated": {
+          "dense_query": "problems with threads executing different code paths",
+          "dense_rank": 1,
+          "rrf_rank": 1,
+          "rrf_delta_vs_baseline": 0
+        },
+        "ungated": {
+          "dense_query": "problems with threads executing different code paths",
+          "dense_rank": 1,
+          "rrf_rank": 1,
+          "rrf_delta_vs_baseline": 0
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "Q7",
+      "query": "CUDA thread synchronization performance overhead",
+      "case": "case3_rrf_hybrid_superiority",
+      "case_label": "Case 3 \u2014 RRF hybrid",
+      "target_chunk": "ccd7708bb87a3ea7259deb4c",
+      "classify": "conceptual",
+      "gated_dense_query": "CUDA thread synchronization performance overhead",
+      "gated_strategy": "no-op",
+      "gated_detail": "no legacy term or camelCase identifier",
+      "ungated_dense_query": "CUDA thread synchronization performance overhead",
+      "ungated_strategy": "no-op",
+      "ungated_detail": "no legacy term or camelCase identifier",
+      "bm25_rank": 2,
+      "modes": {
+        "baseline": {
+          "dense_query": "CUDA thread synchronization performance overhead",
+          "dense_rank": 6,
+          "rrf_rank": 1
+        },
+        "gated": {
+          "dense_query": "CUDA thread synchronization performance overhead",
+          "dense_rank": 6,
+          "rrf_rank": 1,
+          "rrf_delta_vs_baseline": 0
+        },
+        "ungated": {
+          "dense_query": "CUDA thread synchronization performance overhead",
+          "dense_rank": 6,
+          "rrf_rank": 1,
+          "rrf_delta_vs_baseline": 0
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "Q8",
+      "query": "shared memory bank conflicts and how to avoid them",
+      "case": "case3_rrf_hybrid_superiority",
+      "case_label": "Case 3 \u2014 RRF hybrid",
+      "target_chunk": "1fabb00b8793f603b648e7d1",
+      "classify": "conceptual",
+      "gated_dense_query": "shared memory bank conflicts and how to avoid them",
+      "gated_strategy": "no-op",
+      "gated_detail": "no legacy term or camelCase identifier",
+      "ungated_dense_query": "shared memory bank conflicts and how to avoid them",
+      "ungated_strategy": "no-op",
+      "ungated_detail": "no legacy term or camelCase identifier",
+      "bm25_rank": 2,
+      "modes": {
+        "baseline": {
+          "dense_query": "shared memory bank conflicts and how to avoid them",
+          "dense_rank": 1,
+          "rrf_rank": 1
+        },
+        "gated": {
+          "dense_query": "shared memory bank conflicts and how to avoid them",
+          "dense_rank": 1,
+          "rrf_rank": 1,
+          "rrf_delta_vs_baseline": 0
+        },
+        "ungated": {
+          "dense_query": "shared memory bank conflicts and how to avoid them",
+          "dense_rank": 1,
+          "rrf_rank": 1,
+          "rrf_delta_vs_baseline": 0
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "Q9",
+      "query": "memory coalescing rules for global memory access patterns",
+      "case": "case3_rrf_hybrid_superiority",
+      "case_label": "Case 3 \u2014 RRF hybrid",
+      "target_chunk": "3c8573a7f22cd37a771b4816",
+      "classify": "conceptual",
+      "gated_dense_query": "memory coalescing rules for global memory access patterns",
+      "gated_strategy": "no-op",
+      "gated_detail": "no legacy term or camelCase identifier",
+      "ungated_dense_query": "memory coalescing rules for global memory access patterns",
+      "ungated_strategy": "no-op",
+      "ungated_detail": "no legacy term or camelCase identifier",
+      "bm25_rank": 1,
+      "modes": {
+        "baseline": {
+          "dense_query": "memory coalescing rules for global memory access patterns",
+          "dense_rank": 1,
+          "rrf_rank": 1
+        },
+        "gated": {
+          "dense_query": "memory coalescing rules for global memory access patterns",
+          "dense_rank": 1,
+          "rrf_rank": 1,
+          "rrf_delta_vs_baseline": 0
+        },
+        "ungated": {
+          "dense_query": "memory coalescing rules for global memory access patterns",
+          "dense_rank": 1,
+          "rrf_rank": 1,
+          "rrf_delta_vs_baseline": 0
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "Q10",
+      "query": "latency hiding through instruction level parallelism",
+      "case": "case4_bm25_failure_dense_advantage",
+      "case_label": "Case 4 \u2014 BM25 failure / vocab gap",
+      "target_chunk": "f2730f1e6b30f8901b027a33",
+      "classify": "conceptual",
+      "gated_dense_query": "latency hiding through instruction level parallelism",
+      "gated_strategy": "no-op",
+      "gated_detail": "no legacy term or camelCase identifier",
+      "ungated_dense_query": "latency hiding through instruction level parallelism",
+      "ungated_strategy": "no-op",
+      "ungated_detail": "no legacy term or camelCase identifier",
+      "bm25_rank": 14,
+      "modes": {
+        "baseline": {
+          "dense_query": "latency hiding through instruction level parallelism",
+          "dense_rank": 1,
+          "rrf_rank": 4
+        },
+        "gated": {
+          "dense_query": "latency hiding through instruction level parallelism",
+          "dense_rank": 1,
+          "rrf_rank": 4,
+          "rrf_delta_vs_baseline": 0
+        },
+        "ungated": {
+          "dense_query": "latency hiding through instruction level parallelism",
+          "dense_rank": 1,
+          "rrf_rank": 4,
+          "rrf_delta_vs_baseline": 0
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "Q11",
+      "query": "occupancy versus performance tradeoffs",
+      "case": "case4_bm25_failure_dense_advantage",
+      "case_label": "Case 4 \u2014 BM25 failure / vocab gap",
+      "target_chunk": "0a880bdf76e6612e502eb50a",
+      "classify": "conceptual",
+      "gated_dense_query": "occupancy versus performance tradeoffs",
+      "gated_strategy": "no-op",
+      "gated_detail": "no legacy term or camelCase identifier",
+      "ungated_dense_query": "occupancy versus performance tradeoffs",
+      "ungated_strategy": "no-op",
+      "ungated_detail": "no legacy term or camelCase identifier",
+      "bm25_rank": 6,
+      "modes": {
+        "baseline": {
+          "dense_query": "occupancy versus performance tradeoffs",
+          "dense_rank": 1,
+          "rrf_rank": 4
+        },
+        "gated": {
+          "dense_query": "occupancy versus performance tradeoffs",
+          "dense_rank": 1,
+          "rrf_rank": 4,
+          "rrf_delta_vs_baseline": 0
+        },
+        "ungated": {
+          "dense_query": "occupancy versus performance tradeoffs",
+          "dense_rank": 1,
+          "rrf_rank": 4,
+          "rrf_delta_vs_baseline": 0
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "Q12",
+      "query": "cudaDeviceSynchronize return value",
+      "case": "case5_dense_failure_bm25_advantage",
+      "case_label": "Case 5 \u2014 dense failure / exact lookup",
+      "target_chunk": "02bb6a205ba73aa9763b937c",
+      "classify": "exact_identifier",
+      "gated_dense_query": "cudaDeviceSynchronize return value",
+      "gated_strategy": "gated-skip",
+      "gated_detail": "exact-identifier query left untouched",
+      "ungated_dense_query": "cudaDeviceSynchronize return value cuda device synchronize",
+      "ungated_strategy": "identifier-split",
+      "ungated_detail": "split: cuda device synchronize",
+      "bm25_rank": 23,
+      "modes": {
+        "baseline": {
+          "dense_query": "cudaDeviceSynchronize return value",
+          "dense_rank": 1,
+          "rrf_rank": 2
+        },
+        "gated": {
+          "dense_query": "cudaDeviceSynchronize return value",
+          "dense_rank": 1,
+          "rrf_rank": 2,
+          "rrf_delta_vs_baseline": 0
+        },
+        "ungated": {
+          "dense_query": "cudaDeviceSynchronize return value cuda device synchronize",
+          "dense_rank": 2,
+          "rrf_rank": 2,
+          "rrf_delta_vs_baseline": 0
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "Q13",
+      "query": "dim3 struct constructor syntax",
+      "case": "case5_dense_failure_bm25_advantage",
+      "case_label": "Case 5 \u2014 dense failure / exact lookup",
+      "target_chunk": "a612172bf233e826b41e390c",
+      "classify": "exact_identifier",
+      "gated_dense_query": "dim3 struct constructor syntax",
+      "gated_strategy": "gated-skip",
+      "gated_detail": "exact-identifier query left untouched",
+      "ungated_dense_query": "dim3 struct constructor syntax",
+      "ungated_strategy": "no-op",
+      "ungated_detail": "no legacy term or camelCase identifier",
+      "bm25_rank": 1,
+      "modes": {
+        "baseline": {
+          "dense_query": "dim3 struct constructor syntax",
+          "dense_rank": 3,
+          "rrf_rank": 1
+        },
+        "gated": {
+          "dense_query": "dim3 struct constructor syntax",
+          "dense_rank": 3,
+          "rrf_rank": 1,
+          "rrf_delta_vs_baseline": 0
+        },
+        "ungated": {
+          "dense_query": "dim3 struct constructor syntax",
+          "dense_rank": 3,
+          "rrf_rank": 1,
+          "rrf_delta_vs_baseline": 0
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "Q14",
+      "query": "pinned memory cudaMallocHost benefits and when to use",
+      "case": "case6_rrf_hybrid_advantage_mixed",
+      "case_label": "Case 6 \u2014 RRF mixed",
+      "target_chunk": "5e38563157daf351863b54ec",
+      "classify": "exact_identifier",
+      "gated_dense_query": "pinned memory cudaMallocHost benefits and when to use",
+      "gated_strategy": "gated-skip",
+      "gated_detail": "exact-identifier query left untouched",
+      "ungated_dense_query": "pinned memory cudaMallocHost benefits and when to use cuda malloc host",
+      "ungated_strategy": "identifier-split",
+      "ungated_detail": "split: cuda malloc host",
+      "bm25_rank": 1,
+      "modes": {
+        "baseline": {
+          "dense_query": "pinned memory cudaMallocHost benefits and when to use",
+          "dense_rank": 1,
+          "rrf_rank": 1
+        },
+        "gated": {
+          "dense_query": "pinned memory cudaMallocHost benefits and when to use",
+          "dense_rank": 1,
+          "rrf_rank": 1,
+          "rrf_delta_vs_baseline": 0
+        },
+        "ungated": {
+          "dense_query": "pinned memory cudaMallocHost benefits and when to use cuda malloc host",
+          "dense_rank": 3,
+          "rrf_rank": 1,
+          "rrf_delta_vs_baseline": 0
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "Q15",
+      "query": "register pressure and its effect on occupancy",
+      "case": "case6_rrf_hybrid_advantage_mixed",
+      "case_label": "Case 6 \u2014 RRF mixed",
+      "target_chunk": "a1f985eaed4eb1f19e46d20a",
+      "classify": "conceptual",
+      "gated_dense_query": "register pressure and its effect on occupancy",
+      "gated_strategy": "no-op",
+      "gated_detail": "no legacy term or camelCase identifier",
+      "ungated_dense_query": "register pressure and its effect on occupancy",
+      "ungated_strategy": "no-op",
+      "ungated_detail": "no legacy term or camelCase identifier",
+      "bm25_rank": 3,
+      "modes": {
+        "baseline": {
+          "dense_query": "register pressure and its effect on occupancy",
+          "dense_rank": 1,
+          "rrf_rank": 1
+        },
+        "gated": {
+          "dense_query": "register pressure and its effect on occupancy",
+          "dense_rank": 1,
+          "rrf_rank": 1,
+          "rrf_delta_vs_baseline": 0
+        },
+        "ungated": {
+          "dense_query": "register pressure and its effect on occupancy",
+          "dense_rank": 1,
+          "rrf_rank": 1,
+          "rrf_delta_vs_baseline": 0
+        }
+      },
+      "supplementary": false
+    },
+    {
+      "query_id": "R1-Q7",
+      "query": "shader processor count",
+      "case": "case4_bm25_failure_dense_advantage",
+      "case_label": "Case 4 \u2014 BM25 failure / vocab gap",
+      "target_chunk": "35b73f3371037bf5ba8fefc0",
+      "classify": "conceptual",
+      "gated_dense_query": "shader processor count CUDA core",
+      "gated_strategy": "legacy-expansion",
+      "gated_detail": "expand: CUDA core",
+      "ungated_dense_query": "shader processor count CUDA core",
+      "ungated_strategy": "legacy-expansion",
+      "ungated_detail": "expand: CUDA core",
+      "bm25_rank": null,
+      "modes": {
+        "baseline": {
+          "dense_query": "shader processor count",
+          "dense_rank": 1,
+          "rrf_rank": 10
+        },
+        "gated": {
+          "dense_query": "shader processor count CUDA core",
+          "dense_rank": 1,
+          "rrf_rank": 10,
+          "rrf_delta_vs_baseline": 0
+        },
+        "ungated": {
+          "dense_query": "shader processor count CUDA core",
+          "dense_rank": 1,
+          "rrf_rank": 10,
+          "rrf_delta_vs_baseline": 0
+        }
+      },
+      "supplementary": true
+    }
+  ],
+  "per_case": {
+    "by_case": {
+      "Case 1 \u2014 BM25 lexical": {
+        "gated": {
+          "n": 3,
+          "n_scored": 3,
+          "improved": 0,
+          "unchanged": 3,
+          "worsened": 0,
+          "mean_delta": 0.0
+        },
+        "ungated": {
+          "n": 3,
+          "n_scored": 3,
+          "improved": 1,
+          "unchanged": 1,
+          "worsened": 1,
+          "mean_delta": 0.0
+        }
+      },
+      "Case 2 \u2014 dense semantic": {
+        "gated": {
+          "n": 3,
+          "n_scored": 3,
+          "improved": 1,
+          "unchanged": 1,
+          "worsened": 1,
+          "mean_delta": 0.67
+        },
+        "ungated": {
+          "n": 3,
+          "n_scored": 3,
+          "improved": 1,
+          "unchanged": 1,
+          "worsened": 1,
+          "mean_delta": 0.67
+        }
+      },
+      "Case 3 \u2014 RRF hybrid": {
+        "gated": {
+          "n": 3,
+          "n_scored": 3,
+          "improved": 0,
+          "unchanged": 3,
+          "worsened": 0,
+          "mean_delta": 0.0
+        },
+        "ungated": {
+          "n": 3,
+          "n_scored": 3,
+          "improved": 0,
+          "unchanged": 3,
+          "worsened": 0,
+          "mean_delta": 0.0
+        }
+      },
+      "Case 4 \u2014 BM25 failure / vocab gap": {
+        "gated": {
+          "n": 2,
+          "n_scored": 2,
+          "improved": 0,
+          "unchanged": 2,
+          "worsened": 0,
+          "mean_delta": 0.0
+        },
+        "ungated": {
+          "n": 2,
+          "n_scored": 2,
+          "improved": 0,
+          "unchanged": 2,
+          "worsened": 0,
+          "mean_delta": 0.0
+        }
+      },
+      "Case 5 \u2014 dense failure / exact lookup": {
+        "gated": {
+          "n": 2,
+          "n_scored": 2,
+          "improved": 0,
+          "unchanged": 2,
+          "worsened": 0,
+          "mean_delta": 0.0
+        },
+        "ungated": {
+          "n": 2,
+          "n_scored": 2,
+          "improved": 0,
+          "unchanged": 2,
+          "worsened": 0,
+          "mean_delta": 0.0
+        }
+      },
+      "Case 6 \u2014 RRF mixed": {
+        "gated": {
+          "n": 2,
+          "n_scored": 2,
+          "improved": 0,
+          "unchanged": 2,
+          "worsened": 0,
+          "mean_delta": 0.0
+        },
+        "ungated": {
+          "n": 2,
+          "n_scored": 2,
+          "improved": 0,
+          "unchanged": 2,
+          "worsened": 0,
+          "mean_delta": 0.0
+        }
+      }
+    },
+    "supplementary": {
+      "R1-Q7": {
+        "gated": 0,
+        "ungated": 0
+      }
+    }
+  }
+}
