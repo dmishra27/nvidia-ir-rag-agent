@@ -216,6 +216,8 @@
   .badge-pass { background: #eaf6d8; color: var(--nv-green-dark); }
   .badge-blocked { background: var(--amber-bg); color: var(--amber); }
   .badge-winner { background: #eaf6d8; color: var(--nv-green-dark); }
+  .badge-rescue { background: #eaf6d8; color: var(--nv-green-dark); }
+  .badge-demote { background: var(--amber-bg); color: var(--amber); }
 
   /* ---------- Limitations list ---------- */
   .limitations-list {
@@ -534,9 +536,94 @@
     </p>
   </section>
 
-  <!-- ============ 5. Limitations ============ -->
+  <!-- ============ 5. What fusion does to a good result ============ -->
   <section class="eval-section">
-    <h2><span class="step">5</span>Limitations</h2>
+    <h2><span class="step">5</span>What fusion does to a good result</h2>
+    <p class="section-intro">
+      §4 examined RRF's behaviour on Q1 in detail. The same rank-only
+      mechanism cuts both ways across the wider query set — sometimes
+      lifting a chunk one retriever missed, sometimes burying one only a
+      single retriever found. The five queries below were re-measured live
+      (<code>BM25 + dense top-100 each, RRF k=60</code>) for the D-QR
+      evaluation; ranks are the target chunk's position in each list.
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Query</th><th class="num">BM25</th><th class="num">Dense</th><th class="num">RRF</th><th>Effect</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="wrap">R1-Q7 &middot; shader processor count</td><td class="num">not in top 100</td><td class="num">1</td><td class="num">10</td><td><span class="badge badge-demote">fusion demotes</span></td></tr>
+          <tr><td class="wrap">Q10 &middot; latency hiding through instruction level parallelism</td><td class="num">weak (14)</td><td class="num">1</td><td class="num">4</td><td><span class="badge badge-demote">fusion demotes</span></td></tr>
+          <tr><td class="wrap">Q11 &middot; occupancy versus performance tradeoffs</td><td class="num">weak (6)</td><td class="num">1</td><td class="num">4</td><td><span class="badge badge-demote">fusion demotes</span></td></tr>
+          <tr><td class="wrap">Q1 &middot; CUDA cudaMalloc function parameters</td><td class="num">2</td><td class="num">75</td><td class="num">4</td><td><span class="badge badge-rescue">fusion rescues</span></td></tr>
+          <tr><td class="wrap">Q3 &middot; CUDA error cudaErrorInvalidValue description</td><td class="num">strong (1)</td><td class="num">49</td><td class="num">2</td><td><span class="badge badge-rescue">fusion rescues</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      RRF scores a chunk on its <em>rank position</em> in each list —
+      <code>1/(60&nbsp;+&nbsp;rank)</code> summed across retrievers — and never
+      on how confident either retriever was. A chunk that one retriever is
+      uniquely right about carries a single such contribution, and a single
+      contribution loses to chunks that <em>both</em> retrievers rank only
+      moderately: two mid-table agreements outscore one strong solo hit.
+    </p>
+    <p>
+      That arithmetic <strong>rescues</strong> queries where one retriever is
+      lost — on Q1 dense buries the <code>cudaMalloc</code> signature at rank
+      75, BM25 holds it at rank 2, and the sum lands it at fused rank 4
+      (§4 covers why fusion still didn't restore it all the way to rank 1 —
+      a straddling-boilerplate chunk beat it there); Q3 is the same shape,
+      dense rank 49 lifted to fused rank 2. It <strong>penalises</strong>
+      queries where one retriever is uniquely correct — on R1-Q7
+      (<code>shader processor count</code>), Q10 and Q11, dense ranks the
+      right chunk #1 and BM25 does not corroborate it, so fusion pushes it
+      down to ranks 10, 4 and 4.
+      R1-Q7 is the sharpest case: dense is right, BM25 never surfaces the
+      chunk at all, and after cross-encoder re-ranking the chunk drops out
+      of the top 10 entirely — which is why <code>/search</code> returns
+      nothing useful for that query under <code>live_fast</code>.
+    </p>
+
+    <div class="finding-callout">
+      <strong>The pattern:</strong> fusion is a net positive when neither
+      retriever can be trusted alone, and a net negative when one retriever
+      is decisively correct and the other is silent. RRF cannot tell those
+      two situations apart, because it has discarded the score information
+      that would distinguish them.
+    </div>
+
+    <h3>Query rewriting (D-QR) — evaluated, not shipped</h3>
+    <p>
+      A conditional query-rewriting step
+      (<code>retrieval/query_rewrite.py</code>) was implemented and evaluated
+      against 16 queries in three arms — baseline, gated (skip
+      exact-identifier lookups), and ungated — to see whether expanding
+      legacy terminology on the dense query could close gaps like R1-Q7's.
+      It was <strong>deliberately not wired into retrieval</strong>. The
+      measured reason: the rewrite moved the target chunk's dense rank on
+      exactly one of the 16 queries (Q4, 16&nbsp;&rarr;&nbsp;10), and fusion
+      then absorbed half of even that gain; the identifier gate's net effect
+      across all 16 queries is zero. R1-Q7 specifically is unreachable by
+      rewriting — the expansion touches only the dense query, and the
+      bridging term <code>CUDA</code> is too frequent in the corpus to carry
+      weight in BM25 anyway. The bottleneck there is fusion, not vocabulary.
+    </p>
+    <p class="source-note">
+      <strong>Not a live feature.</strong> <code>/search</code> and
+      <code>/ask</code> do not rewrite queries. Full write-up, per-query
+      table, and three-arm comparison:
+      <code>docs/uat/round3_dqr_findings.md</code>
+      (raw data: <code>evaluation/dqr_eval.json</code>).
+    </p>
+  </section>
+
+  <!-- ============ 6. Limitations ============ -->
+  <section class="eval-section">
+    <h2><span class="step">6</span>Limitations</h2>
     <ol class="limitations-list">
       <li>
         <strong>Smoke-scope benchmark.</strong> The NDCG@10 gate above runs
