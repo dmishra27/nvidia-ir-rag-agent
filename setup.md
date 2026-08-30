@@ -142,6 +142,26 @@ mlflow/streamlit install; expect the first `docker compose up -d` to take
 Docker reuses the cached layer as long as `requirements.txt` hasn't
 changed.
 
+### Editing app source needs `--build` — plain `up -d` won't pick it up
+
+`agents/`, `api/`, `evaluation/`, `monitoring/`, `retrieval/`,
+`schema/`, and `streamlit_app/` are **copied into the image at build
+time** (`Dockerfile`'s `deps`/`streamlit` stages), not bind-mounted — the
+`api` and `streamlit` services have no source `volumes:`. A plain
+`docker compose up -d` after editing any of them restarts the container
+against the **existing image**, so the change silently does nothing: no
+error, no rebuild, stale file still served. This includes the hand-written
+HTML under `api/static/` (`/` and `/evaluation`) — editing
+`api/static/evaluation.html` and re-running `up -d` cost a debugging cycle
+before this note existed. Force the rebuild:
+
+```bash
+docker compose up -d --build api        # or: --build streamlit
+```
+
+(Same class of non-obvious `docker compose` behaviour as the
+`docker compose ps` health check below — D7 in the clean-clone findings.)
+
 `api` won't report healthy until `postgres`/`qdrant` do (it `depends_on`
 them with `condition: service_healthy`); `streamlit` waits on `api` the
 same way.

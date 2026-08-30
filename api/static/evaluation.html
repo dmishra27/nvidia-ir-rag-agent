@@ -476,18 +476,34 @@
       both parameters named ranked <strong>BM25 #2</strong> (score 11.99)
       and <strong>dense #75</strong> (cosine 0.872) — strong on one signal,
       weak on the other — yet fused to only <strong>rank 4</strong> (RRF
-      0.0235). Fused rank 1 went instead to <code>81b9c458…</code>, a
-      chunk about <code>cudaFreeArray</code> that mentions
-      <code>cudaMalloc</code> only in a "see also" list (RRF 0.0317) — it
-      sat at rank 3 in <em>both</em> input lists. Two-list moderate
-      agreement outscored one-list strong confidence, the same pattern
-      already documented on Q10 above.
+      0.0235). It did not even lead its own strong signal: <strong>BM25
+      #1</strong> was <code>381cf7a1…</code>, a
+      <code>cudaFreeMipmappedArray</code> "see also" block scoring 12.1774
+      against the signature's 11.99 — a straddling-boundary chunk (see the
+      root-cause finding below) outscoring the page that answers the query,
+      on lexical terms alone. Fused rank 1 then went to
+      <code>81b9c458…</code>, a <code>cudaStreamAddCallback</code> note
+      that also carries a <code>cudaMalloc</code> cross-reference (RRF
+      0.0317) — it sat at rank 3 in <em>both</em> input lists, so two-list
+      moderate agreement outscored one-list strong confidence. §5 lays out
+      this displacement pattern in both directions.
     </p>
     <p>
-      A cross-encoder that scores each candidate independently — rather
-      than by rank position — was expected not to be subject to this
-      mechanism. Re-ranking the fused top-10 with the ms-marco
-      cross-encoder confirms the independence claim on its own terms:
+      Round 1 recommended a cross-encoder here on the reasoning that,
+      scoring each candidate independently rather than by rank position, it
+      would be immune to this fusion mechanism and could recover what fusion
+      discards. <strong>That expectation was retracted on measured evidence
+      at commit <code>609937c</code>.</strong> §5 below reproduces the
+      retraction on a second query: on R1-Q7 the cross-encoder drops the
+      correct chunk out of the top 10 entirely, after fusion had merely
+      buried it at rank 10. The proper regression test for "can re-ranking
+      correct a fusion discard" is <strong>A1-R</strong> in
+      <code>docs/uat/correction_notice_a1.md</code> §5, specified on Round
+      1's Q3 and Q7 — <em>not</em> Q1, because (as the rest of this
+      paragraph shows) Q1's competing chunk defeats text-based scoring too,
+      so Q1 cannot isolate whether re-ranking fixes fusion. Re-ranking Q1's
+      fused top-10 with the ms-marco cross-encoder confirms the independence
+      claim on its own terms:
       chunks with weak fused support (fused ranks 8 and 10) rose to CE
       ranks 3 and 4, while chunks with strong two-list fused support
       (fused ranks 2 and 3) fell to CE ranks 5 and 7 — rank agreement
@@ -532,7 +548,12 @@
       <code>retrieval/rrf_fusion.py</code>, <code>retrieval/reranker_msmarco.py</code>),
       chunk text and section headings read from <code>chunks</code> /
       <code>doc_metadata</code> in Postgres — not yet snapshotted to a
-      committed artifact file.
+      committed artifact file. Q1's per-chunk BM25 ranks and scores are
+      cross-checked against
+      <code>docs/uat/uat_superiority_cases_raw.json</code>; an earlier
+      test-plan draft quoted a 33.4-vs-12.1 BM25 gap for Q1, which in fact
+      belonged to Q8 and is corrected in
+      <code>docs/uat/correction_notice_a1.md</code> §2.1.
     </p>
   </section>
 
