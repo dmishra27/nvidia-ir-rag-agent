@@ -2,9 +2,21 @@
 
 **Reference:** UAT-NVIR-2026-003-D-QR
 **Executed:** 29 August 2026
-**Status:** Resolved — **weakly confirmed / inconclusive**
+**Revised:** 30 August 2026 — decisive claim corrected; no measurement changed
+**Status:** Resolved — **weakly confirmed / inconclusive** · recommendation unchanged (do not ship)
 **Plan:** `docs/uat/round3_hypothesis_test_plan.md` §6 (D-QR)
 **Criterion:** rubric point 10, third best-practice item (query rewriting)
+
+> **Revision note — 30 August 2026.** The 29 August write-up concluded that Round 1's
+> `shader processor count` finding (R1-Q7) *"does not reproduce as a vocabulary gap against
+> e5-base-v2"*, treating dense rank 1 as evidence the gap had closed. **That reasoning was
+> wrong, and it was the write-up's decisive claim.** Round 1's finding was never that dense
+> ranked the chunk first — it was that *dense finds the chunk and RRF discards it*. Re-verified
+> live today (postgres + qdrant up, `RERANKER_MODE=live_fast`): dense still ranks the correct
+> chunk first, BM25 still does not surface it, and fusion still promotes a doubly-ranked
+> mediocre chunk over it. R1-Q7 reproduces exactly. The "do not ship" recommendation stands,
+> but now on a measured reason (§6) rather than on the gap having closed. No per-query
+> measurement in §3 changed — only the interpretation; §§2, 4, 5, 6 and the footer are revised.
 
 ---
 
@@ -35,14 +47,21 @@ BM25 always gets the literal string; only the dense query is ever rewritten.
 
 ## 2. Verdict
 
-**Weakly confirmed on the gate; inconclusive on the benefit; the motivating Round 1 finding does not reproduce.**
+**Weakly confirmed on the gate; inconclusive on the benefit; the motivating Round 1 finding reproduces exactly — as a fusion failure that query rewriting cannot reach.**
 
 - **Confirm condition (2) — fully met.** Gated rewriting holds every Case 1 and Case 5 target at **exactly** baseline rank (delta 0), because the identifier gate fires on all five of those queries and hands both retrievers the literal string. The gate is provably zero-harm on identifier lookups — that is the one solid result here.
-- **Confirm condition (1) — weak partial support.** Of the two queries with a genuine terminology mismatch, Q4 improved (+3 fused ranks) and R1-Q7 was unchanged (already at dense rank 1 — nothing to fix). 1 of 2 improved, 0 worsened. Round 2's *nominal* Case 4 (Q10, Q11) has no terminology mismatch and the rewriter correctly no-ops on both.
+- **Confirm condition (1) — weak partial support.** Of the two queries with a genuine terminology mismatch, Q4 improved (+3 fused ranks) and R1-Q7 was unchanged — the rewrite reaches only the dense query, which already ranks the target first; the failure is downstream in fusion, where rewriting has no lever. 1 of 2 improved, 0 worsened. Round 2's *nominal* Case 4 (Q10, Q11) has no terminology mismatch and the rewriter correctly no-ops on both.
 - **Falsify condition (b) — partially triggered.** The ungated arm is net-neutral on Case 1 (mean delta 0.0: Q1 +1, Q2 −1, Q3 0) and Case 5 (0.0). It is not the clear "harms Case 1/5" the hypothesis predicted — so the gate's value over doing nothing is thin: it prevents exactly one 1-rank regression (Q2) and one absorbed dense perturbation (Q14).
 - **Falsify conditions (a) and (c) — not triggered.** Q4 did improve; the gate never moved a gated query at all.
 
-**The sharpest finding is not in the confirm/falsify grid.** R1-Q7 — `shader processor count`, the query Round 1 called *"the most important finding of the UAT"* — **does not reproduce as a vocabulary gap against e5-base-v2.** Dense retrieval ranks the "An SM consists of: 128 CUDA cores" chunk (`35b73f33…`) at **position 1 with no rewriting at all**. The Round 1 finding was measured against lexical-only behaviour; the current hybrid pipeline's dense arm already does the "shader processor" → "CUDA cores" bridging the rule-based expander was built to add. On R1-Q7 the expander's job is already done by the encoder.
+**The sharpest finding is not in the confirm/falsify grid.** R1-Q7 — `shader processor count`, the query Round 1 called *"the most important finding of the UAT"* — **reproduces exactly, seven weeks on, on the query that first surfaced it.** Round 1's finding was never "dense ranks it first" — it was *dense finds the chunk and fusion discards it*. Verified live today (`RERANKER_MODE=live_fast`, postgres + qdrant up):
+
+- Dense ranks the correct chunk `35b73f3371037bf5ba8fefc0` ("An SM consists of: ▶ 128 CUDA cores for arithmetic operations") at **rank 1, score 0.8281**.
+- BM25 does **not** rank it in its top 20.
+- The GPU-metrics chunk `a8c35fe2813fdaec5c5356ab` sits at **BM25 rank 2, dense rank 9** — two moderate contributions — and **wins fusion**. It is rank 1 in `/search` output under `live_fast`; the correct chunk is absent from the top 10 entirely.
+- Dense scores across its top 20 span only **0.8281–0.8156, a 1.5% spread**. The correct chunk is *marginally* rather than confidently first — which is exactly what makes it easy for fusion to overrule.
+
+This is Round 1's corroboration bias reproducing in its exact form. The encoder placing the chunk at dense rank 1 does not close the gap Round 1 documented — it *is* the condition Round 1 documented: a lone strong dense hit that fusion throws away because BM25 does not corroborate it. Query rewriting was never aimed at that failure and does not touch it (§6).
 
 ---
 
@@ -90,7 +109,9 @@ The Case 2 mean (+0.67) is Q4's +3 divided across three queries, one of which (Q
 
 **Q4 — the one genuine improvement — is counteracting phrasing dilution, not bridging a lexical gap.** Round 2 already diagnosed Q4: the short form `shader processor count` found the right chunk (that is R1-Q7, dense rank 1), and adding `per streaming multiprocessor` *"diluted it out of all three top-3s"*. Appending `CUDA core` pulls the dense rank back from 16 to 10 and the fused rank from 39 to 36 — real, directionally correct, and still nowhere near a rank a user would see. The gain is undoing dilution the query itself introduced, not closing a vocabulary gap the corpus created.
 
-**R1-Q7 — the documented gap — is already closed by the encoder.** Dense rank 1, no rewrite. The `+CUDA core` expansion changes nothing because there is nothing to change. Its fused rank of 10 is the RRF corroboration-bias displacement Round 1 recorded (BM25 contributes zero, so the lone dense signal loses to doubly-ranked mediocre chunks) — a fusion problem that query rewriting does not touch and was never meant to.
+**R1-Q7 — the documented gap — is not closed; it reproduces.** Dense ranks the "128 CUDA cores" chunk (`35b73f33…`) first at 0.8281, BM25 does not surface it in the top 20, and fusion promotes `a8c35fe2…` (BM25 rank 2, dense rank 9) over it — fused rank 10 for the target, absent from `/search`'s top 10 under `live_fast`. That is the RRF corroboration-bias displacement Round 1 recorded, unchanged: a lone strong dense hit loses to a doubly-ranked mediocre chunk because BM25 contributes nothing. The write-up's earlier framing — "already closed by the encoder", "nothing to change" — was wrong: dense rank 1 is Round 1's *premise*, not a refutation of it.
+
+**Rewriting cannot fix R1-Q7 even in principle — tested directly today.** `rewrite_query('shader processor count')` returns `bm25_query='shader processor count'` (unchanged) and `dense_query='shader processor count CUDA core'` — the expansion reaches the dense query only, by design. Running BM25 on the expanded string `'shader processor count CUDA core'` still does not surface `35b73f33…` in the top 20. `CUDA` appears across thousands of chunks; its IDF has collapsed — exactly the mechanism Round 1 recorded for `cudaDeviceSynchronize` on Q12. Vocabulary expansion cannot rescue a term whose discriminative weight is already gone, so even if the expansion *did* reach BM25 it would not help.
 
 **Legacy expansion has a cost.** Q5 (`how to make GPU programs run faster`) fired the `GPU programs → kernels` rule and the fused rank slipped 17 → 18. One rank, but it is the wrong direction, and it came from applying an expansion where the encoder did not need help.
 
@@ -102,13 +123,13 @@ The Case 2 mean (+0.67) is Q4's +3 divided across three queries, one of which (Q
 
 | Branch | Predicted | Observed |
 |---|---|---|
-| Confirm (1): gated helps a majority of vocab-gap queries | Q4, R1-Q7, (Q10, Q11) improve | Q4 +3; R1-Q7 already optimal; Q10/Q11 no-op. **1 improved, 0 worse, rest not applicable.** Weak. |
+| Confirm (1): gated helps a majority of vocab-gap queries | Q4, R1-Q7, (Q10, Q11) improve | Q4 +3; R1-Q7 unchanged — rewrite reaches only the dense query (target already dense rank 1); the discard is in fusion; Q10/Q11 no-op. **1 improved, 0 worse, rest not applicable.** Weak. |
 | Confirm (2): gated holds Case 1 & Case 5 within ±1 | deltas near 0 | **deltas exactly 0** (gate skips them). Met. |
 | Falsify (a): no Case 4 improvement anywhere | — | Not triggered (Q4 +3). |
 | Falsify (b): ungated also neutral-to-positive on Case 1 & 5 → gate pointless | — | **Partially triggered.** Ungated mean Δ = 0.0 on both. The gate prevents one 1-rank regression (Q2); that is the whole of its measured value on this set. |
 | Falsify (c): gated moves a Case 1/5 target > ±1 despite the gate | — | Not triggered. |
 
-**Reading.** The hypothesis is not falsified — Q4 improved and the gate is safe — but it is not meaningfully confirmed either. The pattern the plan anticipated (clear Case 4 help, clear Case 1/5 harm, therefore gate) did not materialise, for two reasons the plan's own "why it might not" section listed: **(b)** e5-base-v2 already bridges the one real terminology gap (R1-Q7), and **(c)** BM25 keeping the literal query means identifier queries are largely protected even ungated — only the dense half shifts, and RRF absorbs most of it.
+**Reading.** The hypothesis is not falsified — Q4 improved and the gate is safe — but it is not meaningfully confirmed either. The pattern the plan anticipated (clear Case 4 help, clear Case 1/5 harm, therefore gate) did not materialise, for two reasons: **(b)** on the one real terminology gap (R1-Q7) the encoder ranks the target first *unaided* — but Round 1's finding was a *fusion* discard, not a dense-rank problem, and that discard still happens (target at fused rank 10, absent from `/search`'s top 10 under `live_fast`); the expansion is not redundant, it is aimed at the wrong stage. And **(c)** BM25 keeping the literal query means identifier queries are largely protected even ungated — only the dense half shifts, and RRF absorbs most of it. The plan's own "why it might not" (b) guessed the encoder would make the expansion *redundant*; what actually happened is subtler — the encoder does its part and fusion undoes it.
 
 ---
 
@@ -119,11 +140,13 @@ The Case 2 mean (+0.67) is Q4's +3 divided across three queries, one of which (Q
 - The gate is sound but its measured benefit on this set is preventing a single 1-rank regression.
 - The one improvement (Q4, +3 fused ranks to rank 36) does not reach a rank a user sees, and it corrects dilution the query introduced rather than a corpus vocabulary gap.
 - Blind legacy expansion carries a real if small cost (Q5, −1).
-- The finding that motivated the whole hypothesis — Round 1's `shader processor count` gap — does not reproduce against the current dense encoder.
+- The finding that motivated the whole hypothesis — Round 1's `shader processor count` gap (R1-Q7) — **reproduces exactly**: dense ranks the correct chunk `35b73f33…` first at 0.8281, BM25 does not surface it in the top 20, fusion promotes `a8c35fe2…` (BM25 rank 2 / dense rank 9) over it, and the target lands at fused rank 10 — absent from `/search`'s top 10 under `live_fast`. Query rewriting cannot fix this: `rewrite_query('shader processor count')` expands the **dense** query only (`… CUDA core`), by design; and forcing the expansion onto BM25 fails too, because `CUDA` occurs across thousands of chunks and its IDF has collapsed — the same mechanism Round 1 recorded for `cudaDeviceSynchronize` on Q12. A term with no discriminative weight left cannot be revived by adding it. This is a fusion defect (Family B), measured today — a stronger reason not to ship than "the gap has closed", which was wrong.
 
-Keep the module and this evaluation as the D-QR record. **Re-test only if** (a) authored genuine vocabulary-gap queries exist (plan D3: queries where no query term appears in the target chunk) and (b) retriever-independent graded relevance labels exist (ENH-11). The current 15-query set contains exactly one terminology mismatch, and the encoder already handles its undiluted form.
+Keep the module and this evaluation as the D-QR record. **Re-test only if** (a) authored genuine vocabulary-gap queries exist (plan D3: queries where no query term appears in the target chunk) and (b) retriever-independent graded relevance labels exist (ENH-11). The current 15-query set contains exactly one terminology mismatch (R1-Q7), and on it the bottleneck is fusion, not vocabulary — a stage query rewriting does not act on.
 
 If rewriting is ever revisited, the evidence says: keep the identifier gate (it is free and it is correct), drop the blind legacy map in favour of expansions tied to measured corpus gaps, and treat the RRF corroboration-bias displacement on single-signal queries (R1-Q7 fused rank 10) as a separate problem — it is Family B's territory, not query rewriting's.
+
+**Cross-reference — A1-R.** R1-Q7 is confirmed today as a live, reproducible RRF corroboration-bias case against the working pipeline: dense holds the target at rank 1, fusion discards it, and the chunk itself is sound (no straddling-boilerplate defect of the kind that makes Round 2's Q1 a poor test). `A1-R` in `docs/uat/correction_notice_a1.md` §5 is therefore runnable exactly as specified on R1-Q7. R1-Q3 (`H100 HBM2e memory capacity`) remains blocked behind DEF-19.
 
 ---
 
@@ -146,4 +169,4 @@ Stated plainly, as the A3 write-up does. Each Round 2 case rests on 2–3 querie
 
 ---
 
-*D-QR resolved: weakly confirmed / inconclusive. The identifier gate is correct and free; the rewriting benefit does not justify wiring it into retrieval on this corpus + encoder. Round 1's motivating vocabulary-gap finding does not reproduce against e5-base-v2.*
+*D-QR resolved: weakly confirmed / inconclusive. The identifier gate is correct and free; the rewriting benefit does not justify wiring it into retrieval on this corpus + encoder. Round 1's motivating finding reproduces exactly — dense still finds the chunk, fusion still discards it — but it is a fusion defect (Family B), not one query rewriting can reach: the expansion touches only the dense query, and the bridging term's IDF has already collapsed.*
