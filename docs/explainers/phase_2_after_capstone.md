@@ -62,7 +62,7 @@ Family A was executed. Families B through F remain open.
 
 This is hypothesis **A1** being written back into the repository.
 
-A1 asked whether a cross-encoder can rescue what fusion loses, run against Q1's target chunk `cc6c8e53936d04e9b192a7d5` — the `cudaMalloc(void**, size_t)` signature block that BM25 had ranked **first with a score of 33.4 against 12.1** for its own rank 2, a 2.8× confidence gap that RRF discarded entirely because RRF looks only at rank position.
+A1 asked whether a cross-encoder can rescue what fusion loses, run against Q1's target chunk `cc6c8e53936d04e9b192a7d5` — the `cudaMalloc(void**, size_t)` signature block. On BM25's own scoring the signature sat at **rank 2**, behind a "See also" boilerplate chunk (`381cf7a1…`, dense with cross-reference function names, empty of prose) that scored 12.1774 to the signature's 11.99. Lexical ranking had already been corrupted before fusion touched it; RRF then pushed the target down to rank 4.
 
 **Result: partially confirmed.** The cross-encoder lifted the target from rank 4 to rank 2 — real, measurable rescue — but a `cudaFreeArray` chunk still held rank 1.
 

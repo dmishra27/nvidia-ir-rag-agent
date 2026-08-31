@@ -77,6 +77,8 @@ The central family. Every hypothesis here is currently untested, and A1 is the o
 
 ### A1  A cross-encoder rescues RRF corroboration failures when the candidate pool is deep enough
 
+*Correction annotation, 31 August 2026 — see CORR-NVIR-2026-001 §2. A1's re-ranking measurements stand; its evidence base does not, and is left here as originally written per plan-of-record convention. The "BM25 rank 1, score 33.4 against 12.1 for its own rank 2 — a 2.8× gap" in the Claim and Protocol below is a cross-query transposition: 33.4207 is R2-Q8's BM25 rank-1 score (`fd5aa331…`, the TMA Swizzle chunk). Q1's actual BM25 top two are `381cf7a1…` (a "See also" boilerplate block) at 12.1774 and the target `cc6c8e53…` at 11.99 — a 1.5% spread, target at rank 2, not rank 1. A1 was also run against R2-Q1 and R2-Q10, whereas the corroboration claim it set out to test was documented on Round 1's Q3 and Q7 (CORR-001 §2.2). The claim is re-specified as **A1-R** in §5, to run on R1-Q3 and R1-Q7 where the target chunk is sound; the single-signal-displacement question is separately re-specified as B3 in §4.*
+
 
 | Field | Detail |
 |---|---|
