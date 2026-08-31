@@ -7,7 +7,9 @@
 > executed; see `docs/uat/round3_family_a_findings.md`. Families B–F remain open. Hypothesis
 > **D-QR** (conditional query rewriting, §6) was added on 29 August 2026; implementation is
 > `retrieval/query_rewrite.py`, evaluation is `run_dqr_eval.py` →
-> `docs/uat/round3_dqr_findings.md`.
+> `docs/uat/round3_dqr_findings.md`. Hypothesis **B3** (§4) was re-specified on 31 August 2026
+> per CORR-NVIR-2026-001 §3.3 — its original score-ratio premise was void; it now tests
+> single-signal displacement under fusion and is paired with B4.
 
 ---
 
@@ -184,13 +186,33 @@ Claim: applying a weight per retriever — score = w_bm25/(k+rank_bm25) + w_dens
 Sweep w_bm25 from 0.5 to 2.0 with w_dense fixed at 1.0. Confirms if any weighting beats uniform across all 15 queries. Falsifies if the best global weighting is uniform, which would mean the per-class advantages cancel — itself a useful finding, and an argument for routing rather than reweighting.
 
 
-### B3  The magnitude of the corroboration effect is predictable from the winning retriever's score gap
+### B3  RRF displaces high-confidence single-signal results toward a central rank band
 
-Claim: a lone strong hit is displaced when its own retriever's score gap (rank 1 versus rank 2) is large — that is, precisely when the retriever is most confident — because a large gap means the second-place chunk is weak and unlikely to corroborate.
+*Re-specified 31 August 2026 per CORR-NVIR-2026-001 §3.3. The original B3 — "the magnitude of the corroboration effect is predictable from the winning retriever's rank-1-to-rank-2 score gap" — rested entirely on Q1's "33.4 versus 12.1, a 2.8× gap." That gap does not exist: the 33.4 figure belongs to R2-Q8, and Q1's actual BM25 top-two scores are 12.1774 and 11.99, a 1.5% spread (CORR-001 §2.1, §4.1). The score-ratio formulation is withdrawn. The underlying question — does fusion displace high-confidence single-signal results more readily? — is sound, and is re-specified below around single-signal displacement measured by target-chunk rank.*
 
-On Q1, BM25 scored 33.4 for the target against 12.1 for its rank 2: a 2.8x gap. Test whether displacement correlates with this ratio across all 15 queries. Confirms if the queries where fusion loses the best chunk are the high-gap ones. Falsifies if displacement is uncorrelated with gap, which would make it unpredictable and harder to guard against.
+> **Numbering note.** CORR-001 §3.3, `round3_family_a_findings.md` R9, and `completion_plan.md` originally referred to this hypothesis as "B4" — an off-by-one against this document, where B4 is "score-normalised fusion." Those three references have been corrected to "B3." B4 is the candidate *remedy* for the defect B3 measures; the two are cross-referenced at the end of both entries and are meant to be run as a pair.
 
-If confirmed, this yields a cheap runtime heuristic: when one retriever's top-1 score gap exceeds a threshold, trust it over the fused order.
+| Field | Detail |
+|---|---|
+| Claim | RRF regresses a single-signal result toward a central band — roughly fused rank 2–10 on this corpus — largely irrespective of the rank its sole supporting retriever gave it. A chunk one retriever ranks 1 cannot reach fused rank 1 without corroboration; a chunk one retriever buries at rank 49–75 is pulled *up* into the same band. The mechanism: RRF reads rank position only and never sees scores, so one contribution of 1/(k+1) is outweighed by two mid-list contributions that sum higher, however confident the lone retriever is. |
+| Motivating evidence — displacement | Three live-measured cases (`evaluation/dqr_eval.json`, baseline mode, pool 100, k=60) where dense uniquely holds the answer: **R1-Q7** `shader processor count` — dense rank 1, BM25 absent, **fused rank 10**; **R2-Q10** `latency hiding through instruction level parallelism` — dense rank 1, BM25 rank 14, **fused rank 4**; **R2-Q11** `occupancy versus performance tradeoffs` — dense rank 1, BM25 rank 6, **fused rank 4**. |
+| Motivating evidence — mirror | Two cases where the buried signal is dense and fusion pulls the chunk back up: **R2-Q1** `CUDA cudaMalloc function parameters` — BM25 rank 2, dense rank 75, **fused rank 4**; **R2-Q3** `CUDA error cudaErrorInvalidValue description` — BM25 rank 1, dense rank 49, **fused rank 2**. Q1 shows the regression from both sides at once: fusion lifts the target from dense's 75 and pushes it down from BM25's 2, the two meeting at fused rank 4 (CORR-001 §4.1 documents the downward half as corroboration bias). |
+| Why it should hold | RRF's score for a chunk is Σ 1/(k+rankᵢ) over the retrievers that returned it. At k=60 a lone rank-1 contribution is 1/61 ≈ 0.0164; two rank-3 contributions sum to ≈ 0.0317. A single strong retriever is arithmetically unable to beat any chunk that two retrievers place in their top ~5, and the strength of its conviction — carried only in scores RRF discards — never enters. |
+| Why it might not | The five cases show the relationship is coarse, not strict: R2-Q10 (BM25 rank 14) and R2-Q11 (BM25 rank 6) displace to the *same* fused rank 4 despite different corroboration strength, while R1-Q7 (BM25 absent) is markedly worse at fused 10. Displacement may track only the presence or absence of *any* corroboration, not its degree — the 15-query sweep is what separates the two. |
+| Confirms | On the single-signal-dense cases the target's fused rank is strictly worse than its dense rank, and the absent-corroboration case (R1-Q7) is worse-displaced than the weak-corroboration cases; on the mirror cases fusion improves the target's rank relative to the retriever that lost it; and in every displacement case the target's lone 1/(k+rank) contribution is smaller than the summed contribution of the chunk immediately above it in the fused list. |
+| Falsifies | Displacement is uncorrelated with corroboration (absent and weak corroboration displace equally, at every depth) — or a displaced target reaches fused rank 1 with no corroboration — or the mirror cases show no fusion benefit — or single-signal targets across the wider set scatter from rank 1 to rank 30 with no central clustering, making "band" the wrong description. |
+
+**Protocol**
+
+1. Take the five live-measured cases above from `evaluation/dqr_eval.json` (baseline mode) as the motivating set — already retrieved at pool 100, RRF k=60, target chunks fixed in that file's `targets` block.
+2. Extend to all 15 Round 2 queries (`uat_superiority_cases_raw.json`) plus R1-Q7. For each: retrieve BM25 top-100 and dense top-100 live, fuse with RRF k=60, and record the pre-identified target chunk's rank in the BM25 list, the dense list, and the fused list.
+3. Classify each query by corroboration structure: **single-signal-dense** (dense rank ≤ 5, BM25 rank ≥ 6 or absent — covers R1-Q7, R2-Q10, R2-Q11), **single-signal-BM25** (the mirror: BM25 rank ≤ 5, dense rank ≥ 6 or absent — covers R2-Q1, R2-Q3), **corroborated** (both retrievers rank the target ≤ 5), **weak/neither** (neither retriever ranks it ≤ 5). The ≤ 5 / ≥ 6 split is a starting cut, to be reported alongside the raw ranks so a reader can re-bin.
+4. For every single-signal case compute: (a) displacement = fused_rank − finding_retriever_rank (the retriever that ranks it ≤ 5); (b) corroboration strength = the *other* retriever's rank on that same chunk, as a continuous variable (6, 14, 49, 75, … ∞ if absent); (c) an RRF-score decomposition — the target's 1/(k+rank) contribution versus the per-retriever contributions of the chunk one rank above it in the fused list.
+5. Plot displacement against corroboration strength across all single-signal cases. Report per-query, never aggregate — per §9.1 the effect is invisible in a mean.
+6. **Metric is target-chunk rank, not NDCG.** `run_day9_relevance_labelling.py`'s qrels are circular (established by A2/A3) and no retriever-independent graded labels exist yet (ENH-11). Because the metric is the rank of a single pre-identified chunk, B3 needs no graded relevance judgements and is **not blocked behind ENH-11** — unlike Family A's NDCG hypotheses and Family D's router hypotheses. That is what makes B3 runnable now.
+7. Persist the per-query JSON before any analysis, per `0149ca4`.
+
+**If confirmed**, this yields a cheap runtime heuristic — when one retriever ranks a chunk in its top ~3 and the other ranks it outside its top ~10 (or not at all), prefer the single retriever's placement over the fused order — and it sets the target for **B4**: score-normalised fusion is the direct candidate remedy, because it restores the score signal whose absence is the mechanism measured here. **Run B3 and B4 as a pair**, on the same queries and target chunks, so B4's normalised-fusion ranks read directly against B3's measured RRF displacement.
 
 
 ### B4  Score-normalised fusion outperforms rank-based fusion on this corpus
@@ -200,6 +222,8 @@ Claim: min-max or z-score normalising each retriever's scores before summing pre
 The counter-argument is the one that motivated RRF in the first place: BM25 produces unbounded term-weight sums, cosine similarity is bounded, and normalisation across incomparable distributions is fragile in a way rank fusion is not. Expect this to help on the displaced-chunk queries and hurt on stability.
 
 Confirms if normalised fusion beats RRF on NDCG@10 across all 15. Falsifies if it wins on Q1 and Q10 but loses in aggregate — the likely outcome, and worth reporting as the trade-off it is.
+
+**Relation to B3.** B3 measures a displacement defect that exists *precisely because* RRF fuses on rank position and never sees retriever scores. Score-normalised fusion is the direct candidate remedy: min-max or z-scored scores let a single highly-confident retriever hold rank 1 against weak corroboration. Run B4 on the same query set and target chunks as B3, and read each single-signal target's normalised-fusion rank against its measured RRF displacement. The two are better run together than independently — B3 quantifies the defect, B4 tests whether this fix closes it without the aggregate cost the counter-argument predicts.
 
 
 ### B5  Fusion adds nothing when one retriever returns an empty or near-empty result set
@@ -390,12 +414,12 @@ All three require Anthropic API credit and are recorded for completeness.
 |---|---|---|---|
 | 1 | A1, A2 | Half a day | The claim already published on the evaluation page. Pool-depth sweep answers both at once, and A2 gives an operational parameter as a by-product. |
 | 2 | A4, A6 | Half a day | Tests whether the cross-encoder is a net positive on identifier queries at all. A6 is the cheapest candidate fix for the corroboration bias and needs no new components. |
-| 3 | B1, B3 | Half a day | Cheap parameter sweeps that directly probe the corroboration mechanism. B3 may yield a runtime heuristic. |
+| 3 | B1, B3, B4 | One day | Cheap parameter sweeps that directly probe the corroboration mechanism. B3 measures single-signal displacement and may yield a runtime heuristic; B4 (score-normalised fusion) is its candidate remedy and is run in the same pass, against the same target chunks. |
 | 4 | C2, C3, C4 | One day | Characterises the boilerplate problem per retriever and per query type before committing to the re-indexing that C1 requires. |
 | 5 | C1 or C5 | One day | Only after C4 says whether the fix is filtering or re-chunking. Requires NDCG re-baselining and updating the passage count in five places. |
 | 6 | D1, D3, D4 | One day | The routing groundwork. D1 alone may be enough to justify or retire ENH-09. |
 | 7 | E1 | Half a day | Converts the standing exhaustive-search caveat into a measured figure. |
-| 8 | A5, B2, B4, C6, D2, D5 | Variable | Second-order refinements. Run if the earlier results make them interesting. |
+| 8 | A5, B2, C6, D2, D5 | Variable | Second-order refinements. Run if the earlier results make them interesting. |
 
 
 ### 9.1  Reporting standard

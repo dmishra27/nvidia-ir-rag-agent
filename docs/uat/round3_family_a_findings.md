@@ -12,8 +12,10 @@
 > ⚠️ **Correction in force — CORR-NVIR-2026-001 v2.0 (22 Aug 2026).** A1's write-up quoted a BM25 score
 > belonging to a different query, and A1 ran against different cases from the ones the claim was
 > documented on. Its measurements are real; its evidence base and mechanism are corrected below.
-> Hypothesis B4 is unrunnable as written. **No other verdict in this document is affected**, and
-> commit `609937c` was correct throughout. See `docs/uat/correction_notice_a1.md`.
+> Hypothesis B3 is unrunnable as written (this notice and R9 below originally called it "B4" — an
+> off-by-one against the plan, corrected 31 Aug; B4 is a separate, valid hypothesis). **No other
+> verdict in this document is affected**, and commit `609937c` was correct throughout. See
+> `docs/uat/correction_notice_a1.md`.
 
 This document records outcomes for Family A. **Not all of them are reproducible from this repository**, and the table below states which are which. That distinction is deliberate and non-negotiable: an unreproducible number should never be presented alongside a reproducible one without a flag, because a reader cannot tell them apart from the prose.
 
@@ -217,7 +219,7 @@ That last point is the sharpest. The bias under investigation had **systematical
 | **R6** | Keep A7 visible as blocked. Do not interpolate. | A7 |
 | **R7** | Bind model names to config labels in the same sentence, everywhere. The plan's A5 entry does not, and the resulting misreading would have inverted every A5 conclusion. | A5 |
 | **R8** | Run **A1-R** — the corroboration-bias claim has never actually been tested. Round 1's Q3 and Q7 are the documented cases. Requires DEF-19 resolved for Q3. | CORR-001 §5 |
-| **R9** | Re-specify **B4** before running Family B. Its premise — Q1's "2.8× BM25 gap" — does not exist. | CORR-001 §3.3 |
+| **R9** | ~~Re-specify **B4**~~ **B3** before running Family B. Its premise — Q1's "2.8× BM25 gap" — does not exist. **Done 31 Aug**: re-specified around single-signal displacement, target-chunk rank as metric (no ENH-11 dependency), paired with B4 (score-normalised fusion) as the remedy. | CORR-001 §3.3 |
 | **R10** | Adopt round-prefixed query identifiers (`R1-Q7`, `R2-Q7`) throughout. Overlapping numbering across rounds caused CORR-001. | CORR-001 §7 |
 
 ---

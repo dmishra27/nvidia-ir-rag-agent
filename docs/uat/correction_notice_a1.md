@@ -4,7 +4,9 @@
 **Version:** 2.0 — supersedes v1.0 of the same date
 **Raised:** 22 August 2026
 **Severity:** Major — affects a stated mechanism and one unrun hypothesis. **No measured result is invalidated.**
-**Affects:** Retrieval Hypothesis Test Plan (A1, B4) · `docs/uat/round3_family_a_findings.md` · `docs/explainers/family_a_explained.md`
+**Affects:** Retrieval Hypothesis Test Plan (A1, B3) · `docs/uat/round3_family_a_findings.md` · `docs/explainers/family_a_explained.md`
+
+> **Label correction (31 Aug 2026).** This notice originally called the void-premise hypothesis "B4." In the plan as written, that hypothesis is **B3** ("the winning retriever's score gap"); B4 is a separate, still-valid hypothesis ("score-normalised fusion"). All references below now read **B3**. The re-specification landed in the plan on 31 August.
 
 > **v2.0 revision note.** v1.0 of this notice concluded that Round 2 Q1 could not demonstrate
 > corroboration bias, on the grounds that BM25 had ranked a See-also block above the target. Inspection
@@ -116,15 +118,19 @@ That is corroboration bias in its exact form. The plan's error was in *which* as
 | Item | Correction required |
 |---|---|
 | **Plan, A1** | Wrong score, wrong rank, wrong queries. Re-specified in §5. |
-| **Plan, B4** | Premise void — see §3.3 |
+| **Plan, B3** | Premise void — see §3.3 |
 | **`round3_family_a_findings.md`** | A1 entry repeats the score and mechanism |
 | **`family_a_explained.md`** | A1 section and Part Six Q&A repeat both |
 
-### 3.3 Hypothesis B4 is unrunnable as written
+### 3.3 Hypothesis B3 is unrunnable as written
 
-B4 proposes testing whether displacement under fusion correlates with the BM25 rank-1-to-rank-2 score ratio, motivated entirely by Q1's *"2.8× gap."* **That gap does not exist**, so B4 has no motivating case.
+*(Referred to as "B4" in v2.0 of this notice — corrected to B3, the plan's actual label for it; see the label-correction note under "Affects" at the top of this notice.)*
 
-Family B has not been run, so nothing is invalidated. But B4 must be re-specified before it is. The underlying question — *does fusion displace high-confidence single-signal results more readily?* — remains sound and is arguably better served by Round 1's Q3 and Q7, where dense uniquely held the answer.
+B3 proposes testing whether displacement under fusion correlates with the BM25 rank-1-to-rank-2 score ratio, motivated entirely by Q1's *"2.8× gap."* **That gap does not exist**, so B3 has no motivating case.
+
+Family B has not been run, so nothing is invalidated. But B3 must be re-specified before it is. The underlying question — *does fusion displace high-confidence single-signal results more readily?* — remains sound and is arguably better served by Round 1's Q3 and Q7, where dense uniquely held the answer.
+
+**Re-specified 31 August 2026.** The plan's B3 now reads "RRF displaces high-confidence single-signal results toward a central rank band," motivated by five live-measured cases in `evaluation/dqr_eval.json` (R1-Q7, R2-Q10, R2-Q11 as displacement; R2-Q1, R2-Q3 as the mirror where fusion rescues a dense-buried chunk), with target-chunk rank as the metric — which sidesteps the circular-qrels problem that constrained Family A, so B3 is runnable without waiting on ENH-11. It is paired with B4 (score-normalised fusion), the candidate remedy.
 
 ---
 
@@ -333,7 +339,7 @@ There is a symmetry here with Family A's central finding, and it should be state
 | **C1** | Correct A1 in `round3_family_a_findings.md` — replace mechanism per §4, mark verdict *"partially confirmed, wrong evidence"* | High |
 | **C2** | Correct the A1 section and Part Six Q&A in `family_a_explained.md` | High |
 | **C3** | ~~Verify `609937c`~~ — **closed, no action.** Commit is correct as written and is the authoritative account of Q1. | Done |
-| **C4** | Re-specify B4 in the plan; note the void premise | High |
+| **C4** | ~~Re-specify B4 in the plan; note the void premise~~ — **done 31 Aug** (`round3_hypothesis_test_plan.md` §4 B3; label was B4 here, corrected to B3). Paired with B4 (score-normalised fusion) as the candidate remedy. | Done |
 | **C5** | Add a correction note to the plan's A1 entry pointing here | Medium |
 | **C6** | Run A1-R per §5 — the first genuine test of the corroboration-bias claim | Medium |
 | **C7** | Raise DEF-19 through DEF-22 in the defect register | Medium |
