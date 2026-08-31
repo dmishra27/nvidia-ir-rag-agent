@@ -295,10 +295,20 @@ python -m slackbot.app
 ## 8. Tests / lint / typecheck
 
 ```bash
-pytest                 # 561 tests, all mocked (no live API/DB/MLflow calls — see AGENTS.md)
+pytest                 # 589 tests, all mocked (no live API/DB/MLflow calls — see AGENTS.md)
 ruff check .
 mypy .                  # strict on agents/, api/, retrieval/, monitoring/, evaluation/, schema/, mcp/, slackbot/, streamlit_app/
 ```
+
+On a memory-constrained host the full `pytest` run may be impractical.
+`tests/evaluation` alone took 80 s at ~0.44 GB free and threw five Windows
+access violations during torch DLL loading, recovering only because
+`pytest-rerunfailures` retried the collection. Per-directory runs are the
+working procedure there — verified 30 August as 589 tests total: retrieval
+201, agents 134, api 66, evaluation 77, monitoring 66, streamlit_app 24,
+slackbot 18, utils 3 (all passed, zero failures). This is another symptom
+of the memory ceiling being documented but not enforced — see DEF-23
+(`docs/uat/correction_notice_a1.md` §6).
 
 No backing services need to be running for `pytest` — including
 `tests/streamlit_app/test_tabs.py`'s benchmark/eval-dashboard tests, which

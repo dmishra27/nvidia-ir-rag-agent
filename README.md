@@ -264,7 +264,7 @@ things worth knowing before you start:
 **Tests:**
 
 ```bash
-pytest          # 561 tests, all mock embedding/LLM/DB/MLflow calls — no live services needed
+pytest          # 589 tests, all mock embedding/LLM/DB/MLflow calls — no live services needed
 ruff check .
 mypy .           # strict on agents/, api/, retrieval/, monitoring/, evaluation/, schema/, mcp/, slackbot/, streamlit_app/
 ```
