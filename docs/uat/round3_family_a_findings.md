@@ -219,7 +219,7 @@ That last point is the sharpest. The bias under investigation had **systematical
 | **R6** | Keep A7 visible as blocked. Do not interpolate. | A7 |
 | **R7** | Bind model names to config labels in the same sentence, everywhere. The plan's A5 entry does not, and the resulting misreading would have inverted every A5 conclusion. | A5 |
 | **R8** | Run **A1-R** — the corroboration-bias claim has never actually been tested. Round 1's Q3 and Q7 are the documented cases. Requires DEF-19 resolved for Q3. | CORR-001 §5 |
-| **R9** | ~~Re-specify **B4**~~ **B3** before running Family B. Its premise — Q1's "2.8× BM25 gap" — does not exist. **Done 31 Aug**: re-specified around single-signal displacement, target-chunk rank as metric (no ENH-11 dependency), paired with B4 (score-normalised fusion) as the remedy. | CORR-001 §3.3 |
+| **R9** | ~~Re-specify **B4**~~ **B3** before running Family B. Its premise — Q1's "2.8× BM25 gap" — does not exist. **Done 31 Aug**: re-specified around single-signal displacement, target-chunk rank as metric (no ENH-11 dependency), paired with B4 (score-normalised fusion) as the remedy. **Both run 2 Sep** (`round3_b3_b4_findings.md`): B3 confirmed binary / graded falsified as pre-registered; B4 a directional remedy with the predicted stability cost, not recommended. | CORR-001 §3.3 |
 | **R10** | Adopt round-prefixed query identifiers (`R1-Q7`, `R2-Q7`) throughout. Overlapping numbering across rounds caused CORR-001. | CORR-001 §7 |
 
 ---

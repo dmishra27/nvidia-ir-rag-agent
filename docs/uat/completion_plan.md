@@ -200,7 +200,7 @@ Worth naming, so the picture stays honest:
 - **A7** — hardware-blocked. Needs Colab, a rented GPU hour, or a larger machine.
 - **A2, A3, A3-2, A4, A6** — analysis-only, no retained scripts. Re-running them properly is a separate piece of work, and it should wait for graded relevance judgements, since those verdicts need re-testing against a non-circular answer key regardless.
 - **ENH-11 graded relevance judgements** — the documented prerequisite for trusting any further re-ranking conclusion. The largest remaining item in the project and out of scope here.
-- **Families B–F** — 24 of the plan's 31 hypotheses, none yet run. B3 (called "B4" in CORR-001 §3.3 — an off-by-one, corrected 31 Aug) was re-specified on 31 August after its score-ratio premise was found void; it now tests single-signal displacement under fusion, measured by target-chunk rank, and is paired with B4 (score-normalised fusion). The rest of Families B–F are unchanged and open.
+- **Families B–F** — of the plan's 32 hypotheses, **B3 and B4 were run together on 2 September 2026** (`run_b3_b4_fusion_eval.py` → `evaluation/b3_b4_fusion_eval.json` → `docs/uat/round3_b3_b4_findings.md`, both committed pre-run / pre-analysis per `0149ca4`). B3 (called "B4" in CORR-001 §3.3 — an off-by-one, corrected 31 Aug) re-specified 31 Aug around single-signal displacement measured by target-chunk rank: **confirmed binary, graded form falsified as pre-registered**. B4 (score-normalised fusion): **directional remedy, predicted stability cost, not recommended** — the aggregate-NDCG test is unevaluable until ENH-11. The remaining ~22 hypotheses across B–F are unchanged and open.
 
 ---
 

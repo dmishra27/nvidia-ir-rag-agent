@@ -4,9 +4,13 @@
 
 > Converted from `Retrieval_Hypothesis_Test_Plan_nvidia_ir_rag_agent.docx` for repository readability.
 > The plan's status line reads "Version 1.0 — planned, none executed". Family A has since been
-> executed; see `docs/uat/round3_family_a_findings.md`. Families B–F remain open. Hypothesis
-> **D-QR** (conditional query rewriting, §6) was added on 29 August 2026; implementation is
-> `retrieval/query_rewrite.py`, evaluation is `run_dqr_eval.py` →
+> executed; see `docs/uat/round3_family_a_findings.md`. **B3 and B4 were executed together on
+> 2 September 2026** (`run_b3_b4_fusion_eval.py` → `evaluation/b3_b4_fusion_eval.json` →
+> `docs/uat/round3_b3_b4_findings.md`): B3 confirmed in its binary form, its graded form
+> falsified as pre-registered; B4 (score-normalised fusion) is a directional remedy that carries
+> the predicted stability cost and is **not** recommended for wiring in. The rest of Families
+> B–F remain open. Hypothesis **D-QR** (conditional query rewriting, §6) was added on 29 August
+> 2026; implementation is `retrieval/query_rewrite.py`, evaluation is `run_dqr_eval.py` →
 > `docs/uat/round3_dqr_findings.md`. Hypothesis **B3** (§4) was re-specified on 31 August 2026
 > per CORR-NVIR-2026-001 §3.3 — its original score-ratio premise was void; it now tests
 > single-signal displacement under fusion and is paired with B4.
@@ -190,6 +194,17 @@ Sweep w_bm25 from 0.5 to 2.0 with w_dense fixed at 1.0. Confirms if any weightin
 
 ### B3  RRF displaces high-confidence single-signal results toward a central rank band
 
+*Executed 2 September 2026 with B4 — see `docs/uat/round3_b3_b4_findings.md`. **Confirmed in
+substance, binary form.** Every single-signal-dense target lands strictly below its dense rank
+(5/5); every single-signal-BM25 mirror target is rescued from the retriever that buried it (3/3).
+Displacement is bimodal on corroboration **presence** — fused rank 1–4 when the other retriever
+also returns the target (`+1` to `+3`), fused rank 10–17 when it does not (`+9`, `+15`). The
+graded form is **falsified as pre-registered**: displacement does not scale with corroboration
+magnitude (Q12 BM25 rank 23 → `+1`; Q10 rank 14 and Q11 rank 6 → `+3` each). Two wording
+corrections carried forward: "central band 2–10" → "bimodal, 1–4 vs 10–17"; "irrespective of the
+supporting retriever's rank" holds for the finding retriever, not for the other retriever's
+presence.*
+
 *Re-specified 31 August 2026 per CORR-NVIR-2026-001 §3.3. The original B3 — "the magnitude of the corroboration effect is predictable from the winning retriever's rank-1-to-rank-2 score gap" — rested entirely on Q1's "33.4 versus 12.1, a 2.8× gap." That gap does not exist: the 33.4 figure belongs to R2-Q8, and Q1's actual BM25 top-two scores are 12.1774 and 11.99, a 1.5% spread (CORR-001 §2.1, §4.1). The score-ratio formulation is withdrawn. The underlying question — does fusion displace high-confidence single-signal results more readily? — is sound, and is re-specified below around single-signal displacement measured by target-chunk rank.*
 
 > **Numbering note.** CORR-001 §3.3, `round3_family_a_findings.md` R9, and `completion_plan.md` originally referred to this hypothesis as "B4" — an off-by-one against this document, where B4 is "score-normalised fusion." Those three references have been corrected to "B3." B4 is the candidate *remedy* for the defect B3 measures; the two are cross-referenced at the end of both entries and are meant to be run as a pair.
@@ -218,6 +233,16 @@ Sweep w_bm25 from 0.5 to 2.0 with w_dense fixed at 1.0. Confirms if any weightin
 
 
 ### B4  Score-normalised fusion outperforms rank-based fusion on this corpus
+
+*Executed 2 September 2026 with B3 — see `docs/uat/round3_b3_b4_findings.md`. **Directional
+remedy, predicted stability cost, not recommended.** Min-max CombSUM reduces single-signal
+displacement in 6 of 8 cases (fully recovers the mild cases Q12, Q3 to rank 1; thirds the severe
+ones — Q5 17→5, R1-Q7 10→3) but never recovers a severely-displaced un-corroborated target to
+rank 1, and it regresses a corroborated target (Q15 rank 1→3) plus two weak cases — exactly the
+BM25-unbounded-magnitude fragility the counter-argument below names. Min-max beats z-score here.
+The "beats RRF on NDCG@10 across all 15" test is **unevaluable** on this corpus (circular qrels,
+A2/A3; ENH-11 not done); on target-chunk rank the result is B4's own predicted "Falsifies" shape
+— wins on the displaced queries, loses in aggregate. Do not wire in; re-open with ENH-11.*
 
 Claim: min-max or z-score normalising each retriever's scores before summing preserves the confidence signal RRF discards, and beats RRF on the queries where corroboration bias bites.
 
