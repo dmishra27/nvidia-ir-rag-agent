@@ -1,0 +1,744 @@
+{
+  "hypotheses": [
+    "B3",
+    "B4"
+  ],
+  "plan": "docs/uat/round3_hypothesis_test_plan.md \u00a74",
+  "metric": "target-chunk rank in each of {bm25, dense, rrf, minmax_combsum, zscore_combsum} top-100",
+  "pool_size": 100,
+  "rrf_k": 60,
+  "corroboration_cut": 5,
+  "b4_normalisation": {
+    "minmax": "per-retriever (s - min) / (max - min) over its top-100 pool; absent chunk -> 0.0",
+    "zscore": "per-retriever (s - mean) / pstdev over its top-100 pool; absent chunk -> min(z in pool)",
+    "combine": "sum of the two normalised scores (CombSUM), sorted descending"
+  },
+  "targets": {
+    "Q1": "cc6c8e53936d04e9b192a7d5",
+    "Q2": "242e353090d3f493c8ef64dc",
+    "Q3": "0904f18029b044943773fe74",
+    "Q4": "35b73f3371037bf5ba8fefc0",
+    "Q5": "8f2dbd94357e8ac31b8a595c",
+    "Q6": "3c9b5ecfb38e9ee9377cf4f6",
+    "Q7": "ccd7708bb87a3ea7259deb4c",
+    "Q8": "1fabb00b8793f603b648e7d1",
+    "Q9": "3c8573a7f22cd37a771b4816",
+    "Q10": "f2730f1e6b30f8901b027a33",
+    "Q11": "0a880bdf76e6612e502eb50a",
+    "Q12": "02bb6a205ba73aa9763b937c",
+    "Q13": "a612172bf233e826b41e390c",
+    "Q14": "5e38563157daf351863b54ec",
+    "Q15": "a1f985eaed4eb1f19e46d20a",
+    "R1-Q7": "35b73f3371037bf5ba8fefc0"
+  },
+  "per_query": [
+    {
+      "query_id": "Q1",
+      "query": "CUDA cudaMalloc function parameters",
+      "case": "case1_bm25_lexical_superiority",
+      "case_label": "Case 1 \u2014 BM25 lexical",
+      "supplementary": false,
+      "target_chunk": "cc6c8e53936d04e9b192a7d5",
+      "target_score_bm25": 11.990006817384254,
+      "target_score_dense": 0.87228984,
+      "bm25_rank": 2,
+      "dense_rank": 75,
+      "corroboration_class": "single-signal-bm25",
+      "finding_retriever": "bm25",
+      "finding_rank": 2,
+      "corroboration_strength_rank": 75,
+      "best_single_rank": 2,
+      "fused_rank": {
+        "rrf": 4,
+        "minmax_combsum": 3,
+        "zscore_combsum": 5
+      },
+      "displacement_rrf_vs_finding": 2,
+      "displacement_rrf_vs_best_single": 2,
+      "b4_recovery_vs_rrf": {
+        "minmax": 1,
+        "zscore": -1
+      },
+      "rrf_decomposition": {
+        "chunk_above_id": "a1db062e97d26a49ab333961",
+        "chunk_above_rank_bm25": 9,
+        "chunk_above_rank_dense": 19,
+        "target_rrf_contribution": {
+          "bm25": 0.016129032258064516,
+          "dense": 0.007407407407407408,
+          "sum": 0.023536439665471923
+        },
+        "chunk_above_rrf_contribution": {
+          "bm25": 0.014492753623188406,
+          "dense": 0.012658227848101266,
+          "sum": 0.02715098147128967
+        }
+      }
+    },
+    {
+      "query_id": "Q2",
+      "query": "cudaMemcpyAsync stream parameter",
+      "case": "case1_bm25_lexical_superiority",
+      "case_label": "Case 1 \u2014 BM25 lexical",
+      "supplementary": false,
+      "target_chunk": "242e353090d3f493c8ef64dc",
+      "target_score_bm25": 9.293430851969916,
+      "target_score_dense": 0.87624645,
+      "bm25_rank": 8,
+      "dense_rank": 18,
+      "corroboration_class": "weak/neither",
+      "finding_retriever": "bm25",
+      "finding_rank": 8,
+      "corroboration_strength_rank": 18,
+      "best_single_rank": 8,
+      "fused_rank": {
+        "rrf": 3,
+        "minmax_combsum": 4,
+        "zscore_combsum": 5
+      },
+      "displacement_rrf_vs_finding": -5,
+      "displacement_rrf_vs_best_single": -5,
+      "b4_recovery_vs_rrf": {
+        "minmax": -1,
+        "zscore": -2
+      },
+      "rrf_decomposition": {
+        "chunk_above_id": "03bdaee52ee8d2e972e53567",
+        "chunk_above_rank_bm25": 14,
+        "chunk_above_rank_dense": 8,
+        "target_rrf_contribution": {
+          "bm25": 0.014705882352941176,
+          "dense": 0.01282051282051282,
+          "sum": 0.027526395173453996
+        },
+        "chunk_above_rrf_contribution": {
+          "bm25": 0.013513513513513514,
+          "dense": 0.014705882352941176,
+          "sum": 0.02821939586645469
+        }
+      }
+    },
+    {
+      "query_id": "Q3",
+      "query": "CUDA error cudaErrorInvalidValue description",
+      "case": "case1_bm25_lexical_superiority",
+      "case_label": "Case 1 \u2014 BM25 lexical",
+      "supplementary": false,
+      "target_chunk": "0904f18029b044943773fe74",
+      "target_score_bm25": 12.348977036802419,
+      "target_score_dense": 0.8762793,
+      "bm25_rank": 1,
+      "dense_rank": 49,
+      "corroboration_class": "single-signal-bm25",
+      "finding_retriever": "bm25",
+      "finding_rank": 1,
+      "corroboration_strength_rank": 49,
+      "best_single_rank": 1,
+      "fused_rank": {
+        "rrf": 2,
+        "minmax_combsum": 1,
+        "zscore_combsum": 1
+      },
+      "displacement_rrf_vs_finding": 1,
+      "displacement_rrf_vs_best_single": 1,
+      "b4_recovery_vs_rrf": {
+        "minmax": 1,
+        "zscore": 1
+      },
+      "rrf_decomposition": {
+        "chunk_above_id": "7c67cdb0338710d0ce1e33f8",
+        "chunk_above_rank_bm25": 7,
+        "chunk_above_rank_dense": 14,
+        "target_rrf_contribution": {
+          "bm25": 0.01639344262295082,
+          "dense": 0.009174311926605505,
+          "sum": 0.025567754549556326
+        },
+        "chunk_above_rrf_contribution": {
+          "bm25": 0.014925373134328358,
+          "dense": 0.013513513513513514,
+          "sum": 0.028438886647841874
+        }
+      }
+    },
+    {
+      "query_id": "Q4",
+      "query": "shader processor count per streaming multiprocessor",
+      "case": "case2_dense_semantic_superiority",
+      "case_label": "Case 2 \u2014 dense semantic",
+      "supplementary": false,
+      "target_chunk": "35b73f3371037bf5ba8fefc0",
+      "target_score_bm25": null,
+      "target_score_dense": 0.8230198,
+      "bm25_rank": null,
+      "dense_rank": 16,
+      "corroboration_class": "weak/neither",
+      "finding_retriever": "dense",
+      "finding_rank": 16,
+      "corroboration_strength_rank": null,
+      "best_single_rank": 16,
+      "fused_rank": {
+        "rrf": 39,
+        "minmax_combsum": 41,
+        "zscore_combsum": 32
+      },
+      "displacement_rrf_vs_finding": 23,
+      "displacement_rrf_vs_best_single": 23,
+      "b4_recovery_vs_rrf": {
+        "minmax": -2,
+        "zscore": 7
+      },
+      "rrf_decomposition": {
+        "chunk_above_id": "84d5aa0fdbe0b3f321f26079",
+        "chunk_above_rank_bm25": 16,
+        "chunk_above_rank_dense": null,
+        "target_rrf_contribution": {
+          "bm25": 0.0,
+          "dense": 0.013157894736842105,
+          "sum": 0.013157894736842105
+        },
+        "chunk_above_rrf_contribution": {
+          "bm25": 0.013157894736842105,
+          "dense": 0.0,
+          "sum": 0.013157894736842105
+        }
+      }
+    },
+    {
+      "query_id": "Q5",
+      "query": "how to make GPU programs run faster",
+      "case": "case2_dense_semantic_superiority",
+      "case_label": "Case 2 \u2014 dense semantic",
+      "supplementary": false,
+      "target_chunk": "8f2dbd94357e8ac31b8a595c",
+      "target_score_bm25": null,
+      "target_score_dense": 0.85672235,
+      "bm25_rank": null,
+      "dense_rank": 2,
+      "corroboration_class": "single-signal-dense",
+      "finding_retriever": "dense",
+      "finding_rank": 2,
+      "corroboration_strength_rank": null,
+      "best_single_rank": 2,
+      "fused_rank": {
+        "rrf": 17,
+        "minmax_combsum": 5,
+        "zscore_combsum": 5
+      },
+      "displacement_rrf_vs_finding": 15,
+      "displacement_rrf_vs_best_single": 15,
+      "b4_recovery_vs_rrf": {
+        "minmax": 12,
+        "zscore": 12
+      },
+      "rrf_decomposition": {
+        "chunk_above_id": "e0d64832cd47434e0a7e4a3f",
+        "chunk_above_rank_bm25": 2,
+        "chunk_above_rank_dense": null,
+        "target_rrf_contribution": {
+          "bm25": 0.0,
+          "dense": 0.016129032258064516,
+          "sum": 0.016129032258064516
+        },
+        "chunk_above_rrf_contribution": {
+          "bm25": 0.016129032258064516,
+          "dense": 0.0,
+          "sum": 0.016129032258064516
+        }
+      }
+    },
+    {
+      "query_id": "Q6",
+      "query": "problems with threads executing different code paths",
+      "case": "case2_dense_semantic_superiority",
+      "case_label": "Case 2 \u2014 dense semantic",
+      "supplementary": false,
+      "target_chunk": "3c9b5ecfb38e9ee9377cf4f6",
+      "target_score_bm25": 17.773191105954115,
+      "target_score_dense": 0.84532344,
+      "bm25_rank": 2,
+      "dense_rank": 1,
+      "corroboration_class": "corroborated",
+      "finding_retriever": "dense",
+      "finding_rank": 1,
+      "corroboration_strength_rank": 2,
+      "best_single_rank": 1,
+      "fused_rank": {
+        "rrf": 1,
+        "minmax_combsum": 1,
+        "zscore_combsum": 1
+      },
+      "displacement_rrf_vs_finding": 0,
+      "displacement_rrf_vs_best_single": 0,
+      "b4_recovery_vs_rrf": {
+        "minmax": 0,
+        "zscore": 0
+      },
+      "rrf_decomposition": null
+    },
+    {
+      "query_id": "Q7",
+      "query": "CUDA thread synchronization performance overhead",
+      "case": "case3_rrf_hybrid_superiority",
+      "case_label": "Case 3 \u2014 RRF hybrid",
+      "supplementary": false,
+      "target_chunk": "ccd7708bb87a3ea7259deb4c",
+      "target_score_bm25": 15.70082686752411,
+      "target_score_dense": 0.86634433,
+      "bm25_rank": 2,
+      "dense_rank": 6,
+      "corroboration_class": "single-signal-bm25",
+      "finding_retriever": "bm25",
+      "finding_rank": 2,
+      "corroboration_strength_rank": 6,
+      "best_single_rank": 2,
+      "fused_rank": {
+        "rrf": 1,
+        "minmax_combsum": 2,
+        "zscore_combsum": 2
+      },
+      "displacement_rrf_vs_finding": -1,
+      "displacement_rrf_vs_best_single": -1,
+      "b4_recovery_vs_rrf": {
+        "minmax": -1,
+        "zscore": -1
+      },
+      "rrf_decomposition": null
+    },
+    {
+      "query_id": "Q8",
+      "query": "shared memory bank conflicts and how to avoid them",
+      "case": "case3_rrf_hybrid_superiority",
+      "case_label": "Case 3 \u2014 RRF hybrid",
+      "supplementary": false,
+      "target_chunk": "1fabb00b8793f603b648e7d1",
+      "target_score_bm25": 29.192697352298953,
+      "target_score_dense": 0.8726194,
+      "bm25_rank": 2,
+      "dense_rank": 1,
+      "corroboration_class": "corroborated",
+      "finding_retriever": "dense",
+      "finding_rank": 1,
+      "corroboration_strength_rank": 2,
+      "best_single_rank": 1,
+      "fused_rank": {
+        "rrf": 1,
+        "minmax_combsum": 1,
+        "zscore_combsum": 1
+      },
+      "displacement_rrf_vs_finding": 0,
+      "displacement_rrf_vs_best_single": 0,
+      "b4_recovery_vs_rrf": {
+        "minmax": 0,
+        "zscore": 0
+      },
+      "rrf_decomposition": null
+    },
+    {
+      "query_id": "Q9",
+      "query": "memory coalescing rules for global memory access patterns",
+      "case": "case3_rrf_hybrid_superiority",
+      "case_label": "Case 3 \u2014 RRF hybrid",
+      "supplementary": false,
+      "target_chunk": "3c8573a7f22cd37a771b4816",
+      "target_score_bm25": 24.597229115813537,
+      "target_score_dense": 0.8783824,
+      "bm25_rank": 1,
+      "dense_rank": 1,
+      "corroboration_class": "corroborated",
+      "finding_retriever": "bm25",
+      "finding_rank": 1,
+      "corroboration_strength_rank": 1,
+      "best_single_rank": 1,
+      "fused_rank": {
+        "rrf": 1,
+        "minmax_combsum": 1,
+        "zscore_combsum": 1
+      },
+      "displacement_rrf_vs_finding": 0,
+      "displacement_rrf_vs_best_single": 0,
+      "b4_recovery_vs_rrf": {
+        "minmax": 0,
+        "zscore": 0
+      },
+      "rrf_decomposition": null
+    },
+    {
+      "query_id": "Q10",
+      "query": "latency hiding through instruction level parallelism",
+      "case": "case4_bm25_failure_dense_advantage",
+      "case_label": "Case 4 \u2014 BM25 failure / vocab gap",
+      "supplementary": false,
+      "target_chunk": "f2730f1e6b30f8901b027a33",
+      "target_score_bm25": 9.75332631360645,
+      "target_score_dense": 0.84950995,
+      "bm25_rank": 14,
+      "dense_rank": 1,
+      "corroboration_class": "single-signal-dense",
+      "finding_retriever": "dense",
+      "finding_rank": 1,
+      "corroboration_strength_rank": 14,
+      "best_single_rank": 1,
+      "fused_rank": {
+        "rrf": 4,
+        "minmax_combsum": 3,
+        "zscore_combsum": 3
+      },
+      "displacement_rrf_vs_finding": 3,
+      "displacement_rrf_vs_best_single": 3,
+      "b4_recovery_vs_rrf": {
+        "minmax": 1,
+        "zscore": 1
+      },
+      "rrf_decomposition": {
+        "chunk_above_id": "31e19331c0ba6e801c17ffbd",
+        "chunk_above_rank_bm25": 9,
+        "chunk_above_rank_dense": 3,
+        "target_rrf_contribution": {
+          "bm25": 0.013513513513513514,
+          "dense": 0.01639344262295082,
+          "sum": 0.029906956136464335
+        },
+        "chunk_above_rrf_contribution": {
+          "bm25": 0.014492753623188406,
+          "dense": 0.015873015873015872,
+          "sum": 0.03036576949620428
+        }
+      }
+    },
+    {
+      "query_id": "Q11",
+      "query": "occupancy versus performance tradeoffs",
+      "case": "case4_bm25_failure_dense_advantage",
+      "case_label": "Case 4 \u2014 BM25 failure / vocab gap",
+      "supplementary": false,
+      "target_chunk": "0a880bdf76e6612e502eb50a",
+      "target_score_bm25": 9.2760832655209,
+      "target_score_dense": 0.8419524,
+      "bm25_rank": 6,
+      "dense_rank": 1,
+      "corroboration_class": "single-signal-dense",
+      "finding_retriever": "dense",
+      "finding_rank": 1,
+      "corroboration_strength_rank": 6,
+      "best_single_rank": 1,
+      "fused_rank": {
+        "rrf": 4,
+        "minmax_combsum": 4,
+        "zscore_combsum": 4
+      },
+      "displacement_rrf_vs_finding": 3,
+      "displacement_rrf_vs_best_single": 3,
+      "b4_recovery_vs_rrf": {
+        "minmax": 0,
+        "zscore": 0
+      },
+      "rrf_decomposition": {
+        "chunk_above_id": "35dfc6787549aaeda1677954",
+        "chunk_above_rank_bm25": 1,
+        "chunk_above_rank_dense": 6,
+        "target_rrf_contribution": {
+          "bm25": 0.015151515151515152,
+          "dense": 0.01639344262295082,
+          "sum": 0.031544957774465976
+        },
+        "chunk_above_rrf_contribution": {
+          "bm25": 0.01639344262295082,
+          "dense": 0.015151515151515152,
+          "sum": 0.031544957774465976
+        }
+      }
+    },
+    {
+      "query_id": "Q12",
+      "query": "cudaDeviceSynchronize return value",
+      "case": "case5_dense_failure_bm25_advantage",
+      "case_label": "Case 5 \u2014 dense failure / exact lookup",
+      "supplementary": false,
+      "target_chunk": "02bb6a205ba73aa9763b937c",
+      "target_score_bm25": 6.14398844407105,
+      "target_score_dense": 0.90155303,
+      "bm25_rank": 23,
+      "dense_rank": 1,
+      "corroboration_class": "single-signal-dense",
+      "finding_retriever": "dense",
+      "finding_rank": 1,
+      "corroboration_strength_rank": 23,
+      "best_single_rank": 1,
+      "fused_rank": {
+        "rrf": 2,
+        "minmax_combsum": 1,
+        "zscore_combsum": 1
+      },
+      "displacement_rrf_vs_finding": 1,
+      "displacement_rrf_vs_best_single": 1,
+      "b4_recovery_vs_rrf": {
+        "minmax": 1,
+        "zscore": 1
+      },
+      "rrf_decomposition": {
+        "chunk_above_id": "7168ba67e35c613f13986864",
+        "chunk_above_rank_bm25": 10,
+        "chunk_above_rank_dense": 5,
+        "target_rrf_contribution": {
+          "bm25": 0.012048192771084338,
+          "dense": 0.01639344262295082,
+          "sum": 0.02844163539403516
+        },
+        "chunk_above_rrf_contribution": {
+          "bm25": 0.014285714285714285,
+          "dense": 0.015384615384615385,
+          "sum": 0.02967032967032967
+        }
+      }
+    },
+    {
+      "query_id": "Q13",
+      "query": "dim3 struct constructor syntax",
+      "case": "case5_dense_failure_bm25_advantage",
+      "case_label": "Case 5 \u2014 dense failure / exact lookup",
+      "supplementary": false,
+      "target_chunk": "a612172bf233e826b41e390c",
+      "target_score_bm25": 11.91813684678642,
+      "target_score_dense": 0.83837336,
+      "bm25_rank": 1,
+      "dense_rank": 3,
+      "corroboration_class": "corroborated",
+      "finding_retriever": "bm25",
+      "finding_rank": 1,
+      "corroboration_strength_rank": 3,
+      "best_single_rank": 1,
+      "fused_rank": {
+        "rrf": 1,
+        "minmax_combsum": 1,
+        "zscore_combsum": 1
+      },
+      "displacement_rrf_vs_finding": 0,
+      "displacement_rrf_vs_best_single": 0,
+      "b4_recovery_vs_rrf": {
+        "minmax": 0,
+        "zscore": 0
+      },
+      "rrf_decomposition": null
+    },
+    {
+      "query_id": "Q14",
+      "query": "pinned memory cudaMallocHost benefits and when to use",
+      "case": "case6_rrf_hybrid_advantage_mixed",
+      "case_label": "Case 6 \u2014 RRF mixed",
+      "supplementary": false,
+      "target_chunk": "5e38563157daf351863b54ec",
+      "target_score_bm25": 16.378873595218533,
+      "target_score_dense": 0.87201524,
+      "bm25_rank": 1,
+      "dense_rank": 1,
+      "corroboration_class": "corroborated",
+      "finding_retriever": "bm25",
+      "finding_rank": 1,
+      "corroboration_strength_rank": 1,
+      "best_single_rank": 1,
+      "fused_rank": {
+        "rrf": 1,
+        "minmax_combsum": 1,
+        "zscore_combsum": 1
+      },
+      "displacement_rrf_vs_finding": 0,
+      "displacement_rrf_vs_best_single": 0,
+      "b4_recovery_vs_rrf": {
+        "minmax": 0,
+        "zscore": 0
+      },
+      "rrf_decomposition": null
+    },
+    {
+      "query_id": "Q15",
+      "query": "register pressure and its effect on occupancy",
+      "case": "case6_rrf_hybrid_advantage_mixed",
+      "case_label": "Case 6 \u2014 RRF mixed",
+      "supplementary": false,
+      "target_chunk": "a1f985eaed4eb1f19e46d20a",
+      "target_score_bm25": 16.133629477502343,
+      "target_score_dense": 0.82452244,
+      "bm25_rank": 3,
+      "dense_rank": 1,
+      "corroboration_class": "corroborated",
+      "finding_retriever": "dense",
+      "finding_rank": 1,
+      "corroboration_strength_rank": 3,
+      "best_single_rank": 1,
+      "fused_rank": {
+        "rrf": 1,
+        "minmax_combsum": 3,
+        "zscore_combsum": 3
+      },
+      "displacement_rrf_vs_finding": 0,
+      "displacement_rrf_vs_best_single": 0,
+      "b4_recovery_vs_rrf": {
+        "minmax": -2,
+        "zscore": -2
+      },
+      "rrf_decomposition": null
+    },
+    {
+      "query_id": "R1-Q7",
+      "query": "shader processor count",
+      "case": "case4_bm25_failure_dense_advantage",
+      "case_label": "Case 4 \u2014 BM25 failure / vocab gap",
+      "supplementary": true,
+      "target_chunk": "35b73f3371037bf5ba8fefc0",
+      "target_score_bm25": null,
+      "target_score_dense": 0.8281363,
+      "bm25_rank": null,
+      "dense_rank": 1,
+      "corroboration_class": "single-signal-dense",
+      "finding_retriever": "dense",
+      "finding_rank": 1,
+      "corroboration_strength_rank": null,
+      "best_single_rank": 1,
+      "fused_rank": {
+        "rrf": 10,
+        "minmax_combsum": 3,
+        "zscore_combsum": 4
+      },
+      "displacement_rrf_vs_finding": 9,
+      "displacement_rrf_vs_best_single": 9,
+      "b4_recovery_vs_rrf": {
+        "minmax": 7,
+        "zscore": 6
+      },
+      "rrf_decomposition": {
+        "chunk_above_id": "b9a40bfc766a52f03fe856ba",
+        "chunk_above_rank_bm25": 57,
+        "chunk_above_rank_dense": 31,
+        "target_rrf_contribution": {
+          "bm25": 0.0,
+          "dense": 0.01639344262295082,
+          "sum": 0.01639344262295082
+        },
+        "chunk_above_rrf_contribution": {
+          "bm25": 0.008547008547008548,
+          "dense": 0.01098901098901099,
+          "sum": 0.019536019536019536
+        }
+      }
+    }
+  ],
+  "summary": {
+    "classes": {
+      "single-signal-bm25": [
+        "Q1",
+        "Q3",
+        "Q7"
+      ],
+      "weak/neither": [
+        "Q2",
+        "Q4"
+      ],
+      "single-signal-dense": [
+        "Q10",
+        "Q11",
+        "Q12",
+        "Q5",
+        "R1-Q7"
+      ],
+      "corroborated": [
+        "Q13",
+        "Q14",
+        "Q15",
+        "Q6",
+        "Q8",
+        "Q9"
+      ]
+    },
+    "single_signal_cases": [
+      {
+        "query_id": "Q1",
+        "class": "single-signal-bm25",
+        "finding_retriever": "bm25",
+        "finding_rank": 2,
+        "corroboration_strength_rank": 75,
+        "rrf_rank": 4,
+        "displacement_rrf_vs_finding": 2,
+        "minmax_rank": 3,
+        "zscore_rank": 5
+      },
+      {
+        "query_id": "Q3",
+        "class": "single-signal-bm25",
+        "finding_retriever": "bm25",
+        "finding_rank": 1,
+        "corroboration_strength_rank": 49,
+        "rrf_rank": 2,
+        "displacement_rrf_vs_finding": 1,
+        "minmax_rank": 1,
+        "zscore_rank": 1
+      },
+      {
+        "query_id": "Q5",
+        "class": "single-signal-dense",
+        "finding_retriever": "dense",
+        "finding_rank": 2,
+        "corroboration_strength_rank": null,
+        "rrf_rank": 17,
+        "displacement_rrf_vs_finding": 15,
+        "minmax_rank": 5,
+        "zscore_rank": 5
+      },
+      {
+        "query_id": "Q7",
+        "class": "single-signal-bm25",
+        "finding_retriever": "bm25",
+        "finding_rank": 2,
+        "corroboration_strength_rank": 6,
+        "rrf_rank": 1,
+        "displacement_rrf_vs_finding": -1,
+        "minmax_rank": 2,
+        "zscore_rank": 2
+      },
+      {
+        "query_id": "Q10",
+        "class": "single-signal-dense",
+        "finding_retriever": "dense",
+        "finding_rank": 1,
+        "corroboration_strength_rank": 14,
+        "rrf_rank": 4,
+        "displacement_rrf_vs_finding": 3,
+        "minmax_rank": 3,
+        "zscore_rank": 3
+      },
+      {
+        "query_id": "Q11",
+        "class": "single-signal-dense",
+        "finding_retriever": "dense",
+        "finding_rank": 1,
+        "corroboration_strength_rank": 6,
+        "rrf_rank": 4,
+        "displacement_rrf_vs_finding": 3,
+        "minmax_rank": 4,
+        "zscore_rank": 4
+      },
+      {
+        "query_id": "Q12",
+        "class": "single-signal-dense",
+        "finding_retriever": "dense",
+        "finding_rank": 1,
+        "corroboration_strength_rank": 23,
+        "rrf_rank": 2,
+        "displacement_rrf_vs_finding": 1,
+        "minmax_rank": 1,
+        "zscore_rank": 1
+      },
+      {
+        "query_id": "R1-Q7",
+        "class": "single-signal-dense",
+        "finding_retriever": "dense",
+        "finding_rank": 1,
+        "corroboration_strength_rank": null,
+        "rrf_rank": 10,
+        "displacement_rrf_vs_finding": 9,
+        "minmax_rank": 3,
+        "zscore_rank": 4
+      }
+    ]
+  }
+}
