@@ -13,7 +13,10 @@
 > 2026; implementation is `retrieval/query_rewrite.py`, evaluation is `run_dqr_eval.py` →
 > `docs/uat/round3_dqr_findings.md`. Hypothesis **B3** (§4) was re-specified on 31 August 2026
 > per CORR-NVIR-2026-001 §3.3 — its original score-ratio premise was void; it now tests
-> single-signal displacement under fusion and is paired with B4.
+> single-signal displacement under fusion and is paired with B4. Hypothesis **B7** (§4) was
+> added on 4 September 2026, specification only — not implemented, not executed — as the binary
+> alternative to B4: a single-retriever-preference rule motivated by B3's finding that fusion
+> displacement is binary, not graded.
 
 ---
 
@@ -61,13 +64,13 @@ So the headline experiment of this round is not "does re-ranking help" but "can 
 
 ## 2.  Hypothesis Families
 
-Thirty-two hypotheses across six families (D-QR added 29 August 2026). Each states what would confirm it and what would falsify it, because a hypothesis that cannot fail is not a hypothesis. Families A and C are the ones worth doing first; F is mostly deferred.
+Thirty-three hypotheses across six families (D-QR added 29 August 2026; B7 added 4 September 2026). Each states what would confirm it and what would falsify it, because a hypothesis that cannot fail is not a hypothesis. Families A and C are the ones worth doing first; F is mostly deferred.
 
 
 | Family | Theme | Count | Priority |
 |---|---|---|---|
 | A | Re-ranker isolation — the untested arm | 7 | P1 — the gap this round exists to close |
-| B | RRF parameter sensitivity | 6 | P2 — cheap, and directly tests the corroboration mechanism |
+| B | RRF parameter sensitivity | 7 | P2 — cheap, and directly tests the corroboration mechanism |
 | C | Chunk quality and boilerplate | 6 | P2 — closes DEF-10 with evidence rather than assertion |
 | D | Query characteristics as predictors | 5 + D-QR | P3 — the most publishable, the least operationally urgent |
 | E | Corpus and index scale | 4 | P3 — expensive, invalidates existing baselines |
@@ -267,6 +270,56 @@ Claim: adding a third retriever increases the probability that two mediocre chun
 Testable cheaply by adding a trivial third ranker (title-match, or a BM25 variant with different parameters) and re-measuring Q1 and Q10. Speculative, but it bears on whether the common instinct to "add more retrievers" is sound on a corpus like this one.
 
 
+### B7  A binary single-retriever-preference rule recovers severe displacement without B4's cross-scale cost
+
+*Added 4 September 2026. Specification only — not implemented, not executed. The claim, both
+thresholds and the falsify branch are committed here before any result exists; see "Post-hoc
+tuning" below.*
+
+B3 (2 September, `7120deb`) established that RRF displacement is **binary, not graded**: a target
+loses 1–3 fused ranks when the other retriever also returns it somewhere in the pool, and 9–15
+when it does not. Q12's weakest corroboration — BM25 rank 23 — produced the *smallest*
+displacement (`+1`); Q10 (BM25 rank 14) and Q11 (BM25 rank 6) displaced identically (`+3`).
+Decomposition confirmed the mechanism in 7/7 cases: the target's lone `1/(k+rank)` contribution
+is ≤ the summed contribution of the chunk one rank above it in the fused list. B4 —
+score-normalised fusion, the pre-planned remedy — behaved as its own counter-argument predicted:
+it improved 6 of 8 displaced cases but regressed a corroborated target (Q15, rank 1 → 3) plus two
+weak ones, because BM25's unbounded term-weight sums and bounded cosine similarity do not share a
+scale. Not recommended.
+
+B7 is the alternative the measurement points to. If the defect is binary, the remedy can be
+binary: no normalisation, no cross-distribution comparison, no reintroduced scale.
+
+| Field | Detail |
+|---|---|
+| Claim | When one retriever ranks the target in its top **N = 3** and the other does not return it **anywhere in the retrieved pool (M = 100)**, substituting the single retriever's rank for the fused rank recovers the target on the severely-displaced queries — R1-Q7 (fused 10) and Q5 (fused 17) — without regressing any target currently at fused rank 1. |
+| Motivating evidence | B3's two severe-displacement cases: **R1-Q7** `shader processor count` — dense rank 1, BM25 absent, fused rank 10; **Q5** — finding retriever top-3, other retriever absent, fused rank 17 (B4 recovered these only to 3 and 5). Both sit on the "no corroboration" side of B3's bimodal split. The three mild cases — Q10 (`+3`), Q11 (`+3`), Q12 (`+1`) — sit on the "corroboration present" side, at BM25 ranks 14 / 6 / 23, inside the pool and so outside this rule's trigger. |
+| Why it should hold | B3 showed severe displacement occurs only when the other retriever contributes nothing to `Σ 1/(k+rankᵢ)`, leaving the target with a single small term while several corroborated-but-wrong chunks each carry two. In that regime the fused order carries strictly less information than the lone retriever's own order, which placed the known-correct target at rank 1 in every measured case. Taking that rank directly bypasses the fusion arithmetic exactly where B3 isolated it as pathological, and the rule is inert everywhere else — so, unlike B4, it never touches a corroborated target. |
+| Why it might not | (1) Any rule that promotes a single-signal result reorders the list. A target held at fused rank 1 by *one* retriever alone — nothing corroborating it, but nothing else corroborated either, so it won by default — would be demoted to its raw retriever rank. Eight of the sixteen queries currently sit at fused rank 1; if any is a single-signal default win, B7 regresses it and falsifies on B4's exact grounds. (2) B3 measured displacement of *known-correct* targets only. It is silent on how often a lone top-3 placement is **wrong**; B7 would newly trust a retriever that confidently ranks a wrong chunk first, turning a recall problem into a precision problem B3's design cannot observe. (3) N is under-constrained — all five B3 single-signal cases had finding-retriever rank 1, so N ∈ {1, 3, 5} are indistinguishable on the current data. |
+| Confirms | The rule fires on R1-Q7 and Q5 and lands each at its finding-retriever rank (R1-Q7 → 1, better than B4's 3), **and** a spot-check confirms the promoted top-3 chunk is B3's fixed target and not a lookalike, **and** no target currently at fused rank 1 regresses (the rule fires on none of the eight), **and** Q10 / Q11 / Q12 are unchanged. |
+| Falsifies | Any fused-rank-1 target regresses (B4's failure mode, disqualifying on the same terms) — **or** R1-Q7 or Q5 does not improve — **or** the chunk B7 promotes to the top on either severe case is not the correct target, exposing the precision cost B3 could not measure. |
+
+**Thresholds — committed now**
+
+- **N = 3** (finding-retriever rank). The loosest value still describable as "top of list"; B3's data does not discriminate below N = 5, so this is recorded as weakly justified rather than derived.
+- **M = 100 = pool depth** (the other retriever's rank of the target, or its absence). B3's bimodal split is presence-versus-absence *in the top-100 pool*, not presence within some shallower band: Q12's BM25 rank 23 counted as present and gave the mildest displacement on record. Any M materially below the pool edge would reclassify a functioning corroboration signal as absent and fire the rule on queries B3 showed are only mildly displaced. The pool edge is the only M the measurement supports — wider than B3's closing note, which had mooted "outside its top ~10" before the executed data moved the boundary out.
+
+Under (N = 3, M = 100) the rule is predicted to fire on **R1-Q7 and Q5 only**. It will not fire on Q10 / Q11 / Q12 (other retriever present at BM25 14 / 6 / 23) or on B3's mirror cases Q1 / Q3 (dense present at 75 / 49, where fusion already helps and should be left alone).
+
+**Post-hoc tuning invalidates the test.** N and M are free parameters and both are trivial to fit to a desired firing set once the per-query ranks are visible. Widening M to ~5 would capture Q10 / Q11 / Q12 — which the motivating discussion would like — but B3's rank-23 result is direct evidence against doing so. Either threshold changed after execution voids B7 as a pre-registered result; a re-run with different values is a new hypothesis and gets its own entry.
+
+**Protocol**
+
+1. Reuse B3's persisted per-query table (`evaluation/b3_b4_fusion_eval.json`): BM25 top-100, dense top-100, RRF k = 60, and the target chunk's rank in each of the three lists, for the 15 Round 2 queries (`uat_superiority_cases_raw.json`) plus R1-Q7. No new retrieval — B7 is a re-scoring of that file.
+2. Apply the rule offline per query: if `min(bm25_rank, dense_rank) ≤ 3` **and** the target is absent from the other retriever's top-100, set `b7_rank = min(bm25_rank, dense_rank)`; otherwise `b7_rank = fused_rank`.
+3. Report per-query: `fused_rank`, `b7_rank`, `delta` (positive = improvement). Never aggregate — per §9.1 the effect is invisible in a mean.
+4. As **exploratory only**, outside the pass/fail read: tabulate what `M ∈ {10, 20, 50}` would do to the firing set and the per-query deltas, so the sensitivity the pre-registered M forecloses is at least visible.
+5. Metric is **target-chunk rank**, per B3 and D-QR. `run_day9_relevance_labelling.py`'s qrels are circular (A2/A3) and no retriever-independent graded labels exist yet (ENH-11), so NDCG is unevaluable on this corpus and is not reported.
+6. If `b3_b4_fusion_eval.json` is missing a field the rule needs, re-run retrieval per B3's protocol and persist the table before any analysis (`0149ca4`).
+
+**Relation to B3 and B4.** B3 measured the defect and found it binary. B4 tried to fix it by restoring the discarded score signal and paid the cross-scale cost its own counter-argument predicted. B7 tries to fix it without reintroducing scores at all: it acts only in the regime B3 isolated as pathological — one retriever confident, the other silent — and is inert elsewhere, which is the structural reason it should not reproduce B4's regression of corroborated targets. On R1-Q7 the two remedies make a directly falsifiable contrast: B7's mechanical prediction is fused rank 1 (dense's own rank), against B4's measured 3. Run B7 against the same table as B3 and B4 so its per-query ranks read against both the measured displacement and B4's normalised-fusion attempt.
+
+
 ## 5.  Family C — Chunk Quality and Boilerplate
 
 DEF-10 measured the problem at 7.9% of top-10 results across three classes. This family tests whether fixing it actually improves retrieval, which the defect record currently assumes rather than demonstrates.
@@ -441,7 +494,7 @@ All three require Anthropic API credit and are recorded for completeness.
 |---|---|---|---|
 | 1 | A1, A2 | Half a day | The claim already published on the evaluation page. Pool-depth sweep answers both at once, and A2 gives an operational parameter as a by-product. |
 | 2 | A4, A6 | Half a day | Tests whether the cross-encoder is a net positive on identifier queries at all. A6 is the cheapest candidate fix for the corroboration bias and needs no new components. |
-| 3 | B1, B3, B4 | One day | Cheap parameter sweeps that directly probe the corroboration mechanism. B3 measures single-signal displacement and may yield a runtime heuristic; B4 (score-normalised fusion) is its candidate remedy and is run in the same pass, against the same target chunks. |
+| 3 | B1, B3, B4, B7 | One day | Cheap parameter sweeps that directly probe the corroboration mechanism. B3 measures single-signal displacement and may yield a runtime heuristic; B4 (score-normalised fusion) is its candidate remedy and is run in the same pass, against the same target chunks; B7 is the binary alternative to B4 and re-scores B3's persisted output at near-zero added cost. |
 | 4 | C2, C3, C4 | One day | Characterises the boilerplate problem per retriever and per query type before committing to the re-indexing that C1 requires. |
 | 5 | C1 or C5 | One day | Only after C4 says whether the fix is filtering or re-chunking. Requires NDCG re-baselining and updating the passage count in five places. |
 | 6 | D1, D3, D4 | One day | The routing groundwork. D1 alone may be enough to justify or retire ENH-09. |
