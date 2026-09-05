@@ -14,9 +14,14 @@
 > `docs/uat/round3_dqr_findings.md`. Hypothesis **B3** (§4) was re-specified on 31 August 2026
 > per CORR-NVIR-2026-001 §3.3 — its original score-ratio premise was void; it now tests
 > single-signal displacement under fusion and is paired with B4. Hypothesis **B7** (§4) was
-> added on 4 September 2026, specification only — not implemented, not executed — as the binary
-> alternative to B4: a single-retriever-preference rule motivated by B3's finding that fusion
-> displacement is binary, not graded.
+> added on 4 September 2026 (specification, thresholds and falsify branch committed at
+> `4a15435` before any result) and **executed on 5 September 2026** as an offline re-scoring
+> of `evaluation/b3_b4_fusion_eval.json` (`run_b7_single_retriever_rule.py` →
+> `evaluation/b7_single_retriever_rule.json` → `docs/uat/round3_b7_findings.md`): **confirmed
+> as pre-registered** — the binary single-retriever-preference rule fires on exactly the two
+> queries predicted (Q5, R1-Q7), recovers both (R1-Q7 to rank 1, beating B4's 3), and
+> regresses no fused-rank-1 target; the precision cost B3's design cannot observe is
+> unmeasured and defers a ship recommendation to ENH-11.
 
 ---
 
@@ -275,6 +280,27 @@ Testable cheaply by adding a trivial third ranker (title-match, or a BM25 varian
 *Added 4 September 2026. Specification only — not implemented, not executed. The claim, both
 thresholds and the falsify branch are committed here before any result exists; see "Post-hoc
 tuning" below.*
+
+*Executed 5 September 2026 — see `docs/uat/round3_b7_findings.md`. **Confirmed as
+pre-registered.** Offline re-scoring of `evaluation/b3_b4_fusion_eval.json`
+(`run_b7_single_retriever_rule.py` → `evaluation/b7_single_retriever_rule.json`), thresholds
+untouched. The rule fired on **Q5 and R1-Q7 only** — the exact predicted firing set — and was
+inert (`b7_rank == fused_rank`) on the other 14 queries by construction. **Prediction 1
+(fires on R1-Q7 and Q5 only): confirmed.** **Prediction 2 (R1-Q7 → fused rank 1 against B4's
+3): confirmed** — R1-Q7 `10 → 1` (dense's own rank), Q5 `17 → 2`, deltas `+9` and `+15`. No
+fused-rank-1 target regressed: the persisted table has **seven** targets at RRF rank 1 (not
+eight — the "eight of the sixteen" above is one high; outcome unchanged), and the rule fires
+on none of them, because every one is genuinely corroborated (the other retriever returns the
+target inside its top-100). The "single-signal default win at fused rank 1" that "why it might
+not" point (1) feared **does not occur in this data**. The precision falsify branch is **not
+triggered for the two firing cases** — R1-Q7's promoted chunk is independently confirmed as
+`35b73f33…` via `round3_dqr_findings.md`, Q5's target sits at dense rank 2 — but B3 measured
+known-correct targets only, so the general false-positive rate of a lone top-3 placement is
+**unevaluable here and needs ENH-11**. Exploratory `M ∈ {5,10,20,50}` sweep (outside the
+pass/fail read): `M = 5` would capture the three mild cases Q10/Q11/Q12 **and regress Q7
+(1 → 2)** — B4's exact failure mode, and the pre-registration reasoning vindicated. Verdict:
+a confirmed, zero-parameter recall-axis remedy that beats both RRF and B4's score-normalised
+fusion on the two queries where fusion fails hardest; **not wired in** pending ENH-11.*
 
 B3 (2 September, `7120deb`) established that RRF displacement is **binary, not graded**: a target
 loses 1–3 fused ranks when the other retriever also returns it somewhere in the pool, and 9–15
