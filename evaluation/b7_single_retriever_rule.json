@@ -1,0 +1,544 @@
+{
+  "hypothesis": "B7",
+  "plan": "docs/uat/round3_hypothesis_test_plan.md \u00a74",
+  "source": "evaluation\\b3_b4_fusion_eval.json",
+  "source_commit_note": "b3_b4_fusion_eval.json committed 0b13307 (before B3/B4 analysis)",
+  "method": "offline re-scoring of the B3/B4 persisted table; no retrieval, no encoder",
+  "metric": "target-chunk rank (per B3 and D-QR); NDCG unevaluable pre-ENH-11",
+  "thresholds": {
+    "N": 3,
+    "M": 100,
+    "locked_commit": "4a15435 (4 September 2026), pre-registered",
+    "rule": "if min(bm25_rank, dense_rank) <= N and target absent from the other retriever's top-M pool: b7_rank = min(bm25_rank, dense_rank); else b7_rank = fused_rank"
+  },
+  "n_queries": 16,
+  "small_n_limit": "16 queries (15 Round 2 superiority + R1-Q7 supplementary). The rule fires on at most a handful; every statement is per-query, read directionally, the same standard as B3 and D-QR. No aggregate is computed \u2014 per plan \u00a79.1 the effect is invisible in a mean.",
+  "predictions": {
+    "fires_on_R1-Q7_and_Q5_only": {
+      "predicted": [
+        "R1-Q7",
+        "Q5"
+      ],
+      "observed": [
+        "Q5",
+        "R1-Q7"
+      ],
+      "match": true
+    },
+    "R1-Q7_reaches_fused_rank_1": {
+      "predicted_b7_rank": 1,
+      "observed_b7_rank": 1,
+      "b4_minmax_rank_for_contrast": 3,
+      "match": true
+    }
+  },
+  "falsify_conditions": {
+    "any_fused_rank1_target_regresses": {
+      "fused_rank1_queries": [
+        "Q6",
+        "Q7",
+        "Q8",
+        "Q9",
+        "Q13",
+        "Q14",
+        "Q15"
+      ],
+      "count": 7,
+      "regressions": [],
+      "triggered": false
+    },
+    "R1-Q7_or_Q5_fails_to_improve": {
+      "R1-Q7_delta": 9,
+      "Q5_delta": 15,
+      "triggered": false
+    },
+    "promoted_chunk_is_not_the_target": {
+      "note": "Unevaluable from this file alone. b3_b4_fusion_eval.json stores only the target chunk's own rank in each retriever list (from _rank_of(target, ...)), not the full ranked chunk-id lists, so b7_rank = min(bm25_rank, dense_rank) places the FIXED target at that rank by construction. Independent confirmation for R1-Q7: docs/uat/round3_dqr_findings.md verified dense ranks 35b73f33... ('128 CUDA cores') first for 'shader processor count'. For Q5 the target 8f2dbd94... sits at dense rank 2 per the same anchor set.",
+      "triggered": false
+    }
+  },
+  "precision_caveat": "B3 measured displacement of KNOWN-CORRECT targets only. This re-scoring inherits that design limit: it says nothing about how often a lone top-3 placement is WRONG. B7 as a runtime rule would promote the finding retriever's rank-1 chunk whether or not it is correct, converting a recall problem into a precision problem this data cannot observe. Quantifying the false-positive rate needs retriever-independent graded labels (ENH-11).",
+  "per_query": [
+    {
+      "query_id": "Q1",
+      "query": "CUDA cudaMalloc function parameters",
+      "case_label": "Case 1 \u2014 BM25 lexical",
+      "supplementary": false,
+      "target_chunk": "cc6c8e53936d04e9b192a7d5",
+      "bm25_rank": 2,
+      "dense_rank": 75,
+      "corroboration_class": "single-signal-bm25",
+      "finding_retriever": "bm25",
+      "other_retriever_rank": 75,
+      "fused_rank": 4,
+      "b7_fired": false,
+      "b7_rank": 4,
+      "delta": 0,
+      "b4_minmax_rank": 3,
+      "b4_zscore_rank": 5
+    },
+    {
+      "query_id": "Q2",
+      "query": "cudaMemcpyAsync stream parameter",
+      "case_label": "Case 1 \u2014 BM25 lexical",
+      "supplementary": false,
+      "target_chunk": "242e353090d3f493c8ef64dc",
+      "bm25_rank": 8,
+      "dense_rank": 18,
+      "corroboration_class": "weak/neither",
+      "finding_retriever": "bm25",
+      "other_retriever_rank": 18,
+      "fused_rank": 3,
+      "b7_fired": false,
+      "b7_rank": 3,
+      "delta": 0,
+      "b4_minmax_rank": 4,
+      "b4_zscore_rank": 5
+    },
+    {
+      "query_id": "Q3",
+      "query": "CUDA error cudaErrorInvalidValue description",
+      "case_label": "Case 1 \u2014 BM25 lexical",
+      "supplementary": false,
+      "target_chunk": "0904f18029b044943773fe74",
+      "bm25_rank": 1,
+      "dense_rank": 49,
+      "corroboration_class": "single-signal-bm25",
+      "finding_retriever": "bm25",
+      "other_retriever_rank": 49,
+      "fused_rank": 2,
+      "b7_fired": false,
+      "b7_rank": 2,
+      "delta": 0,
+      "b4_minmax_rank": 1,
+      "b4_zscore_rank": 1
+    },
+    {
+      "query_id": "Q4",
+      "query": "shader processor count per streaming multiprocessor",
+      "case_label": "Case 2 \u2014 dense semantic",
+      "supplementary": false,
+      "target_chunk": "35b73f3371037bf5ba8fefc0",
+      "bm25_rank": null,
+      "dense_rank": 16,
+      "corroboration_class": "weak/neither",
+      "finding_retriever": "dense",
+      "other_retriever_rank": null,
+      "fused_rank": 39,
+      "b7_fired": false,
+      "b7_rank": 39,
+      "delta": 0,
+      "b4_minmax_rank": 41,
+      "b4_zscore_rank": 32
+    },
+    {
+      "query_id": "Q5",
+      "query": "how to make GPU programs run faster",
+      "case_label": "Case 2 \u2014 dense semantic",
+      "supplementary": false,
+      "target_chunk": "8f2dbd94357e8ac31b8a595c",
+      "bm25_rank": null,
+      "dense_rank": 2,
+      "corroboration_class": "single-signal-dense",
+      "finding_retriever": "dense",
+      "other_retriever_rank": null,
+      "fused_rank": 17,
+      "b7_fired": true,
+      "b7_rank": 2,
+      "delta": 15,
+      "b4_minmax_rank": 5,
+      "b4_zscore_rank": 5
+    },
+    {
+      "query_id": "Q6",
+      "query": "problems with threads executing different code paths",
+      "case_label": "Case 2 \u2014 dense semantic",
+      "supplementary": false,
+      "target_chunk": "3c9b5ecfb38e9ee9377cf4f6",
+      "bm25_rank": 2,
+      "dense_rank": 1,
+      "corroboration_class": "corroborated",
+      "finding_retriever": "dense",
+      "other_retriever_rank": 2,
+      "fused_rank": 1,
+      "b7_fired": false,
+      "b7_rank": 1,
+      "delta": 0,
+      "b4_minmax_rank": 1,
+      "b4_zscore_rank": 1
+    },
+    {
+      "query_id": "Q7",
+      "query": "CUDA thread synchronization performance overhead",
+      "case_label": "Case 3 \u2014 RRF hybrid",
+      "supplementary": false,
+      "target_chunk": "ccd7708bb87a3ea7259deb4c",
+      "bm25_rank": 2,
+      "dense_rank": 6,
+      "corroboration_class": "single-signal-bm25",
+      "finding_retriever": "bm25",
+      "other_retriever_rank": 6,
+      "fused_rank": 1,
+      "b7_fired": false,
+      "b7_rank": 1,
+      "delta": 0,
+      "b4_minmax_rank": 2,
+      "b4_zscore_rank": 2
+    },
+    {
+      "query_id": "Q8",
+      "query": "shared memory bank conflicts and how to avoid them",
+      "case_label": "Case 3 \u2014 RRF hybrid",
+      "supplementary": false,
+      "target_chunk": "1fabb00b8793f603b648e7d1",
+      "bm25_rank": 2,
+      "dense_rank": 1,
+      "corroboration_class": "corroborated",
+      "finding_retriever": "dense",
+      "other_retriever_rank": 2,
+      "fused_rank": 1,
+      "b7_fired": false,
+      "b7_rank": 1,
+      "delta": 0,
+      "b4_minmax_rank": 1,
+      "b4_zscore_rank": 1
+    },
+    {
+      "query_id": "Q9",
+      "query": "memory coalescing rules for global memory access patterns",
+      "case_label": "Case 3 \u2014 RRF hybrid",
+      "supplementary": false,
+      "target_chunk": "3c8573a7f22cd37a771b4816",
+      "bm25_rank": 1,
+      "dense_rank": 1,
+      "corroboration_class": "corroborated",
+      "finding_retriever": "bm25",
+      "other_retriever_rank": 1,
+      "fused_rank": 1,
+      "b7_fired": false,
+      "b7_rank": 1,
+      "delta": 0,
+      "b4_minmax_rank": 1,
+      "b4_zscore_rank": 1
+    },
+    {
+      "query_id": "Q10",
+      "query": "latency hiding through instruction level parallelism",
+      "case_label": "Case 4 \u2014 BM25 failure / vocab gap",
+      "supplementary": false,
+      "target_chunk": "f2730f1e6b30f8901b027a33",
+      "bm25_rank": 14,
+      "dense_rank": 1,
+      "corroboration_class": "single-signal-dense",
+      "finding_retriever": "dense",
+      "other_retriever_rank": 14,
+      "fused_rank": 4,
+      "b7_fired": false,
+      "b7_rank": 4,
+      "delta": 0,
+      "b4_minmax_rank": 3,
+      "b4_zscore_rank": 3
+    },
+    {
+      "query_id": "Q11",
+      "query": "occupancy versus performance tradeoffs",
+      "case_label": "Case 4 \u2014 BM25 failure / vocab gap",
+      "supplementary": false,
+      "target_chunk": "0a880bdf76e6612e502eb50a",
+      "bm25_rank": 6,
+      "dense_rank": 1,
+      "corroboration_class": "single-signal-dense",
+      "finding_retriever": "dense",
+      "other_retriever_rank": 6,
+      "fused_rank": 4,
+      "b7_fired": false,
+      "b7_rank": 4,
+      "delta": 0,
+      "b4_minmax_rank": 4,
+      "b4_zscore_rank": 4
+    },
+    {
+      "query_id": "Q12",
+      "query": "cudaDeviceSynchronize return value",
+      "case_label": "Case 5 \u2014 dense failure / exact lookup",
+      "supplementary": false,
+      "target_chunk": "02bb6a205ba73aa9763b937c",
+      "bm25_rank": 23,
+      "dense_rank": 1,
+      "corroboration_class": "single-signal-dense",
+      "finding_retriever": "dense",
+      "other_retriever_rank": 23,
+      "fused_rank": 2,
+      "b7_fired": false,
+      "b7_rank": 2,
+      "delta": 0,
+      "b4_minmax_rank": 1,
+      "b4_zscore_rank": 1
+    },
+    {
+      "query_id": "Q13",
+      "query": "dim3 struct constructor syntax",
+      "case_label": "Case 5 \u2014 dense failure / exact lookup",
+      "supplementary": false,
+      "target_chunk": "a612172bf233e826b41e390c",
+      "bm25_rank": 1,
+      "dense_rank": 3,
+      "corroboration_class": "corroborated",
+      "finding_retriever": "bm25",
+      "other_retriever_rank": 3,
+      "fused_rank": 1,
+      "b7_fired": false,
+      "b7_rank": 1,
+      "delta": 0,
+      "b4_minmax_rank": 1,
+      "b4_zscore_rank": 1
+    },
+    {
+      "query_id": "Q14",
+      "query": "pinned memory cudaMallocHost benefits and when to use",
+      "case_label": "Case 6 \u2014 RRF mixed",
+      "supplementary": false,
+      "target_chunk": "5e38563157daf351863b54ec",
+      "bm25_rank": 1,
+      "dense_rank": 1,
+      "corroboration_class": "corroborated",
+      "finding_retriever": "bm25",
+      "other_retriever_rank": 1,
+      "fused_rank": 1,
+      "b7_fired": false,
+      "b7_rank": 1,
+      "delta": 0,
+      "b4_minmax_rank": 1,
+      "b4_zscore_rank": 1
+    },
+    {
+      "query_id": "Q15",
+      "query": "register pressure and its effect on occupancy",
+      "case_label": "Case 6 \u2014 RRF mixed",
+      "supplementary": false,
+      "target_chunk": "a1f985eaed4eb1f19e46d20a",
+      "bm25_rank": 3,
+      "dense_rank": 1,
+      "corroboration_class": "corroborated",
+      "finding_retriever": "dense",
+      "other_retriever_rank": 3,
+      "fused_rank": 1,
+      "b7_fired": false,
+      "b7_rank": 1,
+      "delta": 0,
+      "b4_minmax_rank": 3,
+      "b4_zscore_rank": 3
+    },
+    {
+      "query_id": "R1-Q7",
+      "query": "shader processor count",
+      "case_label": "Case 4 \u2014 BM25 failure / vocab gap",
+      "supplementary": true,
+      "target_chunk": "35b73f3371037bf5ba8fefc0",
+      "bm25_rank": null,
+      "dense_rank": 1,
+      "corroboration_class": "single-signal-dense",
+      "finding_retriever": "dense",
+      "other_retriever_rank": null,
+      "fused_rank": 10,
+      "b7_fired": true,
+      "b7_rank": 1,
+      "delta": 9,
+      "b4_minmax_rank": 3,
+      "b4_zscore_rank": 4
+    }
+  ],
+  "exploratory_M_sweep": {
+    "note": "Protocol step 4 \u2014 exploratory only, outside the pass/fail read. Shows what M < 100 would do to the firing set. N held at 3 throughout. The pre-registered result is M = 100 above; changing M post hoc voids B7 as a pre-registered test (plan \u00a74, 'Post-hoc tuning invalidates the test').",
+    "sweep": [
+      {
+        "M": 5,
+        "fires_on": [
+          "Q1",
+          "Q3",
+          "Q5",
+          "Q7",
+          "Q10",
+          "Q11",
+          "Q12",
+          "R1-Q7"
+        ],
+        "per_query": [
+          {
+            "query_id": "Q1",
+            "fused_rank": 4,
+            "b7_rank": 2,
+            "delta": 2
+          },
+          {
+            "query_id": "Q3",
+            "fused_rank": 2,
+            "b7_rank": 1,
+            "delta": 1
+          },
+          {
+            "query_id": "Q5",
+            "fused_rank": 17,
+            "b7_rank": 2,
+            "delta": 15
+          },
+          {
+            "query_id": "Q7",
+            "fused_rank": 1,
+            "b7_rank": 2,
+            "delta": -1
+          },
+          {
+            "query_id": "Q10",
+            "fused_rank": 4,
+            "b7_rank": 1,
+            "delta": 3
+          },
+          {
+            "query_id": "Q11",
+            "fused_rank": 4,
+            "b7_rank": 1,
+            "delta": 3
+          },
+          {
+            "query_id": "Q12",
+            "fused_rank": 2,
+            "b7_rank": 1,
+            "delta": 1
+          },
+          {
+            "query_id": "R1-Q7",
+            "fused_rank": 10,
+            "b7_rank": 1,
+            "delta": 9
+          }
+        ],
+        "fused_rank1_regressions": [
+          "Q7"
+        ]
+      },
+      {
+        "M": 10,
+        "fires_on": [
+          "Q1",
+          "Q3",
+          "Q5",
+          "Q10",
+          "Q12",
+          "R1-Q7"
+        ],
+        "per_query": [
+          {
+            "query_id": "Q1",
+            "fused_rank": 4,
+            "b7_rank": 2,
+            "delta": 2
+          },
+          {
+            "query_id": "Q3",
+            "fused_rank": 2,
+            "b7_rank": 1,
+            "delta": 1
+          },
+          {
+            "query_id": "Q5",
+            "fused_rank": 17,
+            "b7_rank": 2,
+            "delta": 15
+          },
+          {
+            "query_id": "Q10",
+            "fused_rank": 4,
+            "b7_rank": 1,
+            "delta": 3
+          },
+          {
+            "query_id": "Q12",
+            "fused_rank": 2,
+            "b7_rank": 1,
+            "delta": 1
+          },
+          {
+            "query_id": "R1-Q7",
+            "fused_rank": 10,
+            "b7_rank": 1,
+            "delta": 9
+          }
+        ],
+        "fused_rank1_regressions": []
+      },
+      {
+        "M": 20,
+        "fires_on": [
+          "Q1",
+          "Q3",
+          "Q5",
+          "Q12",
+          "R1-Q7"
+        ],
+        "per_query": [
+          {
+            "query_id": "Q1",
+            "fused_rank": 4,
+            "b7_rank": 2,
+            "delta": 2
+          },
+          {
+            "query_id": "Q3",
+            "fused_rank": 2,
+            "b7_rank": 1,
+            "delta": 1
+          },
+          {
+            "query_id": "Q5",
+            "fused_rank": 17,
+            "b7_rank": 2,
+            "delta": 15
+          },
+          {
+            "query_id": "Q12",
+            "fused_rank": 2,
+            "b7_rank": 1,
+            "delta": 1
+          },
+          {
+            "query_id": "R1-Q7",
+            "fused_rank": 10,
+            "b7_rank": 1,
+            "delta": 9
+          }
+        ],
+        "fused_rank1_regressions": []
+      },
+      {
+        "M": 50,
+        "fires_on": [
+          "Q1",
+          "Q5",
+          "R1-Q7"
+        ],
+        "per_query": [
+          {
+            "query_id": "Q1",
+            "fused_rank": 4,
+            "b7_rank": 2,
+            "delta": 2
+          },
+          {
+            "query_id": "Q5",
+            "fused_rank": 17,
+            "b7_rank": 2,
+            "delta": 15
+          },
+          {
+            "query_id": "R1-Q7",
+            "fused_rank": 10,
+            "b7_rank": 1,
+            "delta": 9
+          }
+        ],
+        "fused_rank1_regressions": []
+      }
+    ]
+  }
+}
