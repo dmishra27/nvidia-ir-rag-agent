@@ -9,12 +9,19 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
-from mlflow.tracking import MlflowClient
+
+# mlflow.tracking is imported lazily inside _get_client. Importing mlflow at
+# module load pulls in pandas + sqlalchemy + pydantic and a large mlflow
+# submodule tree. It loads fine today, but that margin against the MCP
+# client's 30s init handshake is thinner than mcp_airflow's (requests only),
+# and "loads fine at 0.38 GB free" is not "loads fine at 17 MB". See DEF-26.
+if TYPE_CHECKING:
+    from mlflow.tracking import MlflowClient
 
 load_dotenv()
 
@@ -34,6 +41,8 @@ _client: MlflowClient | None = None
 def _get_client() -> MlflowClient:
     global _client
     if _client is None:
+        from mlflow.tracking import MlflowClient
+
         _client = MlflowClient(tracking_uri=MLFLOW_TRACKING_URI)
     return _client
 

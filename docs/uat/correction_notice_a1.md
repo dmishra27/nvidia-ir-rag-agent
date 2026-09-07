@@ -302,6 +302,20 @@ The DVC remote (DEF-19) stores its 8 content-addressed cache objects on the orph
 
 **Fix:** exit status now keys off `failed_doc_ids` instead. A run that writes nothing because everything is already present now exits 0; a run that fails to ingest one or more documents exits 1, regardless of how many documents were newly written. Found and fixed while verifying DEF-19/DEF-20 during the same session's re-ingestion re-run (5 docs, 5,389 chunks, `docs_written=0 chunks_written=0 failed_docs=[] coverage=100%`).
 
+### DEF-26 · MCP `nvidia-ir-qdrant` fails to load — misdiagnosed twice from the symptom before the file was read — **FIXED, uncommitted**
+
+`nvidia-ir-qdrant` fails its MCP init handshake with `CONNECT_TIMEOUT` (`connection timed out after 30000ms`). It was diagnosed twice from the symptom alone before `mcp/mcp_qdrant/server.py` was opened — first as an eager Qdrant connection at server startup, then, once Docker was confirmed up with both containers healthy, as a host/port misconfiguration in `.mcp.json`. Both were wrong.
+
+**The server connects to nothing at startup.** `_get_client()` and `_get_model()` are both lazy — first invoked inside a tool call, never at import. `QDRANT_URL` defaults to `http://localhost:6333`, correct for a host-run stdio server against the docker-mapped port, and `.mcp.json` sets no overriding env. Docker health was never relevant to the handshake.
+
+**The cause is a module-level import.** `from sentence_transformers import SentenceTransformer` ran at module load, before `mcp.run()` could answer the client's `initialize`. That import pulls in the full `torch` + `transformers` + `huggingface_hub` stack. On this 8 GB CPU-only host under memory pressure — 0.38 GB free at the time, so heavy swapping — that import chain runs past the client's 30 s init window. The two servers that load cleanly (`mcp_airflow`, `mcp_mlflow`) have only lightweight top-level imports; that contrast was the tell, and it was visible only once the file was read.
+
+**Same failure class as DEF-23.** The memory ceiling produced a symptom — a connection timeout — that pointed everywhere except the memory ceiling. DEF-23 was a passing pre-flight check followed by an OOM kill that read as a parse bug; this was an import-time stall that read as a connectivity or config bug. In both, the diagnosis that fit the symptom was reached before the diagnosis that fit the evidence, and in both the real constraint was RAM.
+
+**Fix:** `sentence_transformers` and `qdrant_client` are now imported inside `_get_model` / `_get_client`, with a `TYPE_CHECKING` guard for the annotations. Module import is cheap and the handshake completes; the first `search_vectors` call pays the torch-import cost under the tool-call timeout instead of the init handshake. `mcp_mlflow` got the same treatment for `mlflow.tracking` as a precaution — it loads today, but its top-level import (pandas + sqlalchemy + a large mlflow tree) has a thinner margin than `mcp_airflow`'s `requests`-only imports, and "loads fine at 0.38 GB free" is not "loads fine at 17 MB". `mcp_airflow` was left as-is.
+
+**Residual.** The import-deferral fixes the load-time timeout only. Actually calling `search_vectors` still needs enough free RAM to load `torch`; with memory in the low hundreds of MB that call will itself fail or thrash. Freeing memory before use remains a precondition — see DEF-23 and F-11.
+
 ### Verification — CC-ACQ-02 · Dataset acquisition — **PASSED**
 
 Run against `clean_clone_test_protocol.md`'s CC-ACQ-02 (the highest-risk test case in that protocol): a fresh clone, no pre-existing DVC cache on the machine performing the check, `dvc pull` against the `dvc-storage` remote.

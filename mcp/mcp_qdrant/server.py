@@ -11,13 +11,21 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
-from qdrant_client import QdrantClient
-from sentence_transformers import SentenceTransformer
+
+# qdrant_client and sentence_transformers are imported lazily inside
+# _get_client / _get_model. Importing sentence_transformers at module load
+# pulls in the full torch + transformers stack; on a memory-constrained host
+# that import can outlast the MCP client's 30s init handshake and surface as
+# CONNECT_TIMEOUT — a failure that reads as a Qdrant connectivity or config
+# problem but is really an import-chain cost paid before mcp.run(). See DEF-26.
+if TYPE_CHECKING:
+    from qdrant_client import QdrantClient
+    from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 
@@ -42,6 +50,8 @@ _query_prefix: str = ""
 def _get_client() -> QdrantClient:
     global _client
     if _client is None:
+        from qdrant_client import QdrantClient
+
         _client = QdrantClient(url=QDRANT_URL)
     return _client
 
@@ -61,6 +71,8 @@ def _winning_model() -> tuple[str, str]:
 def _get_model() -> SentenceTransformer:
     global _model, _query_prefix
     if _model is None:
+        from sentence_transformers import SentenceTransformer
+
         hf_id, prefix = _winning_model()
         _query_prefix = prefix
         log.info("mcp_qdrant_model_loaded", stage="mcp_qdrant", query_id="server", hf_id=hf_id)
