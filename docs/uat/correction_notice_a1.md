@@ -316,6 +316,27 @@ The DVC remote (DEF-19) stores its 8 content-addressed cache objects on the orph
 
 **Residual.** The import-deferral fixes the load-time timeout only. Actually calling `search_vectors` still needs enough free RAM to load `torch`; with memory in the low hundreds of MB that call will itself fail or thrash. Freeing memory before use remains a precondition — see DEF-23 and F-11.
 
+### DEF-27 · MCP stdio servers ran doubled — a redirector stub in `.venv\Scripts` was a workaround for the base interpreter not being on PATH — **FIXED, uncommitted**
+
+**Symptom.** Every MCP stdio server ran as **two** processes: a `.venv\Scripts\python.exe` parent (parented to the Claude Code client) and a `C:\Users\dmish\AppData\Local\Programs\Python\Python311\python.exe` child running the same `server.py`. Three servers (`nvidia-ir-qdrant`, `nvidia-ir-airflow`, `nvidia-ir-mlflow`) → six processes. On this 8 GB host that roughly doubles the MCP process/handle overhead and the resident footprint — the same ceiling that DEF-23 and DEF-26 turn on. Confirmed this session via `Get-CimInstance Win32_Process`; the six PIDs were 5652/25356 (qdrant), 16744/1884 (airflow), 27616/25612 (mlflow), parent/child respectively.
+
+**Cause.** `.venv\Scripts\python.exe` and `pythonw.exe` had been replaced in a prior session with a ~274 KB / ~263 KB "redirector" launcher that re-execs the base interpreter as a child process and proxies stdio. The prior session saved the launchers as `python.exe.redirector.bak` / `pythonw.exe.redirector.bak`; both are sha256-identical to the live files, confirming the live `.venv` interpreters *were* the redirector, not a real CPython.
+
+**Why the redirector existed.** A plain copy of the base `python.exe` into `.venv\Scripts\` fails at startup with `0xC0000135` (`STATUS_DLL_NOT_FOUND`). The Python 3.11 per-user install **root** (`...\Programs\Python\Python311`) is not on `PATH` — only its `%APPDATA%\Roaming\Python\Python311\scripts` user-scripts dir is — and the modern venv layout keeps no CPython runtime DLLs in `Scripts\`, relying on the OS loader to find `python311.dll` via `PATH` or the base dir. With the base dir absent from `PATH`, the loader cannot resolve `python311.dll`, and a bare `.venv\Scripts\python.exe` will not start. The redirector sidestepped this by launching the base exe, which sits next to its own DLLs — at the cost of one permanent extra process per server. Verified both directions this session: the copied exe runs cleanly with `...\Python311` prepended to `PATH` and dies with `0xC0000135` without it.
+
+**Fix.**
+1. Stopped all six MCP processes (`Stop-Process -Force`; children die with their stub parents).
+2. Copied the real `python.exe` / `pythonw.exe` from `...\Programs\Python\Python311\` into `.venv\Scripts\`, sha256-verified against source (`5f7b89a6…` / `d5355e1d…`).
+3. Also copied the four CPython runtime DLLs — `python311.dll`, `python3.dll`, `vcruntime140.dll`, `vcruntime140_1.dll` — into `.venv\Scripts\`, so the interpreter resolves them locally and no longer depends on the base dir being on `PATH`. This is the pre-3.7.2 venv layout: non-standard for 3.11 but fully self-contained. Chosen over adding `...\Python311` to the user `PATH`, which is a broader environment change for the same effect.
+
+**Verification.** With a clean `PATH` (no `...\Python311` entry): `.venv\Scripts\python.exe` reports `sys.version` 3.11.9, `sys.prefix = …\.venv`, `sys.base_prefix = …\Python311` (`sys.prefix != sys.base_prefix`); `pip` resolves to `.venv\Lib\site-packages`; `structlog` / `fastapi` / `pytest` / `mcp` / `qdrant_client` import; a spawned child process shows **no** python subprocess — single process, redirect gone; all three `mcp_*/server.py` modules import without pulling `torch` (DEF-26's deferral holds). `pytest tests/retrieval -q` → **201 passed in 0.61 s**, exit 0.
+
+**Residual.**
+- `.venv\Scripts\` now carries ~6 MB of runtime DLLs it did not before. Harmless, but it means a future base-interpreter patch upgrade (3.11.9 → 3.11.x) will not reach the venv until these four files and the two exes are re-copied.
+- The MCP servers stay disconnected for the remainder of the session that applied the fix — Claude Code does not respawn stdio servers mid-session. A `/mcp` reconnect or a fresh session brings them back as single processes.
+- `python.exe.redirector.bak` / `pythonw.exe.redirector.bak` are retained in `.venv\Scripts\` for rollback and are untouched.
+- Same family as DEF-23 / DEF-26: the visible defect (process doubling) was itself a workaround for a Windows loader/`PATH` quirk, and it mattered only because of the 8 GB ceiling.
+
 ### Verification — CC-ACQ-02 · Dataset acquisition — **PASSED**
 
 Run against `clean_clone_test_protocol.md`'s CC-ACQ-02 (the highest-risk test case in that protocol): a fresh clone, no pre-existing DVC cache on the machine performing the check, `dvc pull` against the `dvc-storage` remote.
