@@ -2,7 +2,7 @@
 ### Protocol for building a retriever-independent, graded qrel set
 
 **Reference:** ENH-NVIR-2026-011
-**Status:** Specified, not started
+**Status:** In progress — 101 of 325 judgements done (§7.1)
 **Prepared:** 4 September 2026
 **Blocks:** A2, A3, A3-2, A4, A6 re-runs · B4's aggregate test · B7's precision risk · D-QR re-test · every future NDCG figure
 
@@ -140,16 +140,36 @@ Two scripts. Neither needs an API key.
 
 Don't attempt this in one sitting.
 
-| Stage | Work | Output |
-|---|---|---|
-| **1** | Build pool, build interface | Scripts committed, pool counts known |
-| **2** | Judge **5 queries** — suggest Q1, Q4, Q7, Q10, R1-Q7 | ~110 judgements. Validates the process |
-| **3** | **Review stage 2 before continuing.** Does the scale work? Are you consistent? Is the interface fighting you? | Adjust now, not after 350 |
-| **4** | Judge the remaining 11 | ~240 judgements, across sessions |
-| **5** | Consistency analysis, write findings | Disagreement rate, the qrel file itself |
-| **6** | Re-run what was blocked | See §8 |
+| Stage | Work | Output | Status |
+|---|---|---|---|
+| **1** | Build pool, build interface | Scripts committed, pool counts known | Done — `enh11_pool.json`, 325 chunks across 16 queries |
+| **2** | Judge **5 queries** — suggest Q1, Q4, Q7, Q10, R1-Q7 | ~110 judgements. Validates the process | Partial — see below |
+| **3** | **Review stage 2 before continuing.** Does the scale work? Are you consistent? Is the interface fighting you? | Adjust now, not after 350 | Not started |
+| **4** | Judge the remaining 11 | ~240 judgements, across sessions | Not started |
+| **5** | Consistency analysis, write findings | Disagreement rate, the qrel file itself | Not started |
+| **6** | Re-run what was blocked | See §8 | Not started |
 
 **The stage-3 review is not optional.** Discovering at judgement 300 that your 2-vs-3 boundary drifted means redoing all of them.
+
+### 7.1 Current state (12 September 2026)
+
+**101 of 325 judgements done, via `judge_enh11.py` directly — not the stage-2 query set.**
+
+Two sessions so far, both through the actual judging tool (`evaluation/enh11_qrels.json`, commit `e500314`):
+
+| Query | Judged | Grade distribution (0/1/2/3) |
+|---|---|---|
+| Q1 | 24 of 24 | 19 / 2 / 2 / 1 |
+| Q2 | 23 of 23 | 10 / 6 / 5 / 2 |
+| Q3 | 24 of 24 | 4 / 13 / 7 / 0 |
+| Q4 | 23 of 23 | 15 / 4 / 0 / 4 |
+| Q5 | 7 of 23 | 2 / 3 / 2 / 0 |
+
+Q1–Q4 are complete. Q5 is partial (7 of 23 chunks). The remaining 11 queries plus R1-Q7 — 214 chunks, including the two chunks of particular project significance in R1-Q7 (the canonical target `35b73f33…` and the corroborated-but-wrong GPU-Metrics chunk `b1b83570…` from the B3/B7 fusion analysis) — have not been judged in the tool at all.
+
+**No consistency re-check has been run yet.** `enh11_qrels.json` shows `consistency.sample_size: 0` for both sessions — §5's re-check happens at the end of a session's judging, and no session has reached that point.
+
+Separately, a full reasoning record covering roughly 224 further gradings exists in a Claude conversation transcript, produced by working through the pool chunk-by-chunk in that chat rather than through `judge_enh11.py`. That record is not reflected in `enh11_qrels.json` and is not part of the qrel set until it is actually entered through the tool (or an equivalent auditable path) — a reasoning transcript is not a substitute for the blind, tool-mediated judging discipline in §5, and no consistency check exists against it. Until that happens, ENH-11 stands at 101 of 325.
 
 ---
 
