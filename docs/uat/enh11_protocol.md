@@ -2,7 +2,7 @@
 ### Protocol for building a retriever-independent, graded qrel set
 
 **Reference:** ENH-NVIR-2026-011
-**Status:** In progress — 101 of 325 judgements done (§7.1)
+**Status:** In progress — 295 of 325 judgements done (§7.1)
 **Prepared:** 4 September 2026
 **Blocks:** A2, A3, A3-2, A4, A6 re-runs · B4's aggregate test · B7's precision risk · D-QR re-test · every future NDCG figure
 
@@ -153,9 +153,9 @@ Don't attempt this in one sitting.
 
 ### 7.1 Current state (12 September 2026)
 
-**101 of 325 judgements done, via `judge_enh11.py` directly — not the stage-2 query set.**
+**295 of 325 judgements done.** Two sources, kept distinct:
 
-Two sessions so far, both through the actual judging tool (`evaluation/enh11_qrels.json`, commit `e500314`):
+**101 via `judge_enh11.py` directly** (`evaluation/enh11_qrels.json`, commit `e500314`) — two sessions:
 
 | Query | Judged | Grade distribution (0/1/2/3) |
 |---|---|---|
@@ -163,13 +163,48 @@ Two sessions so far, both through the actual judging tool (`evaluation/enh11_qre
 | Q2 | 23 of 23 | 10 / 6 / 5 / 2 |
 | Q3 | 24 of 24 | 4 / 13 / 7 / 0 |
 | Q4 | 23 of 23 | 15 / 4 / 0 / 4 |
-| Q5 | 7 of 23 | 2 / 3 / 2 / 0 |
+| Q5 | 7 of 23 (partial) | 2 / 3 / 2 / 0 |
 
-Q1–Q4 are complete. Q5 is partial (7 of 23 chunks). The remaining 11 queries plus R1-Q7 — 214 chunks, including the two chunks of particular project significance in R1-Q7 (the canonical target `35b73f33…` and the corroborated-but-wrong GPU-Metrics chunk `b1b83570…` from the B3/B7 fusion analysis) — have not been judged in the tool at all.
+**194 recovered from a separate Claude conversation transcript** where the pool was reasoned through chunk-by-chunk outside the tool. Because that reasoning wasn't blind-tool-mediated, the hand-transcribed extraction (`enh11_recovery_grades.md`) was cross-validated row-by-row against `enh11_pool.json` before anything was entered: a row was written into `enh11_qrels.json` only if its chunk_id prefix resolved to exactly one chunk in that query's own pool and wasn't already on disk from the two sessions above. Anything that didn't resolve cleanly was left out, not guessed (commit `40f8251`):
 
-**No consistency re-check has been run yet.** `enh11_qrels.json` shows `consistency.sample_size: 0` for both sessions — §5's re-check happens at the end of a session's judging, and no session has reached that point.
+| Query | Entered from recovery | Total now | Pool size | Gap |
+|---|---|---|---|---|
+| Q5 (remainder) | 15 | 22 | 23 | 1 |
+| Q6 | 19 | 19 | 20 | 1 |
+| Q7 | 21 | 21 | 22 | 1 |
+| Q8 | 12 | 12 | 14 | 2 |
+| Q9 | 14 | 14 | 15 | 1 |
+| Q10 | 17 | 17 | 19 | 2 |
+| Q11 | 12 | 12 | 13 | 1 |
+| Q12 | 23 | 23 | 24 | 1 |
+| Q13 | 18 | 18 | 19 | 1 |
+| Q14 | 18 | 18 | 19 | 1 |
+| R1-Q7 | 25 | 25 | 26 | 1 |
 
-Separately, a full reasoning record covering roughly 224 further gradings exists in a Claude conversation transcript, produced by working through the pool chunk-by-chunk in that chat rather than through `judge_enh11.py`. That record is not reflected in `enh11_qrels.json` and is not part of the qrel set until it is actually entered through the tool (or an equivalent auditable path) — a reasoning transcript is not a substitute for the blind, tool-mediated judging discipline in §5, and no consistency check exists against it. Until that happens, ENH-11 stands at 101 of 325.
+R1-Q7's 25 include both chunks of particular project significance, each graded blind: `35b73f33…` (the canonical target — "An SM consists of: 128 CUDA cores") → **3**, and `b1b83570…` (the corroborated-but-wrong GPU-Metrics warp-occupancy chunk from the B3/B7 fusion analysis) → **0**.
+
+**Still outstanding — nothing here has been guessed or entered:**
+
+- **12 gap chunks**, one query section short by one row each except Q8 and Q10 (short two), to be judged fresh through `judge_enh11.py`'s normal interface:
+
+  | Query | Missing chunk_id |
+  |---|---|
+  | Q5 | `455e5ba8bea35b4cab6db21b` |
+  | Q6 | `85164dc498a016d4e2ece6c6` |
+  | Q7 | `cc01e5e633f3d174d042e24e` |
+  | Q8 | `f85ad7a63d64cfde4bf3ee19`, `06f3d79f4aed4e7be82ed650` |
+  | Q9 | `eecd9b0defd23ef590e187b9` |
+  | Q10 | `cc4b86761f1005773c609b79`, `84d5aa0fdbe0b3f321f26079` |
+  | Q11 | `0a880bdf76e6612e502eb50a` |
+  | Q12 | `b17f44303767ddd72f90478c` |
+  | Q13 | `df535745e848fe63828ad2c4` |
+  | Q14 | `937f086fc6dcd5643e4d486f` |
+  | R1-Q7 | `ba52947371305a0ee68f2c73` |
+
+- **Q15 in full** (17 chunks, 0 judged). The recovery file's Q15 section contains duplicate chunk_ids within itself and is marked unreliable — it was not used at all. Needs judging fresh.
+- **The 22-item consistency re-check.** Not attempted from the recovery transcript (that section was also incomplete and marked unreliable). `judge_enh11.py` will draw its own consistency sample once the primary 325 are on disk — that has not happened yet.
+
+325 total requires: the 12 gap chunks above + Q15's 17 chunks = 30 more primary judgements, then the consistency check. Until then, ENH-11 stands at 295 of 325 — not complete.
 
 ---
 
