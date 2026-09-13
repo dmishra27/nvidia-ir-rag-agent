@@ -337,6 +337,65 @@ The DVC remote (DEF-19) stores its 8 content-addressed cache objects on the orph
 - `python.exe.redirector.bak` / `pythonw.exe.redirector.bak` are retained in `.venv\Scripts\` for rollback and are untouched.
 - Same family as DEF-23 / DEF-26: the visible defect (process doubling) was itself a workaround for a Windows loader/`PATH` quirk, and it mattered only because of the 8 GB ceiling.
 
+### DEF-28 · Four of the 16 anchor target chunks do not independently verify as strong answers — **OPEN**
+
+`run_b3_b4_fusion_eval.py`'s `TARGETS` dict — "the retriever-independent target chunk per query,"
+hand-identified from the Round 1 / Round 2 prose and used unchanged as ground truth by B1 through B7
+and D-QR — has never, until ENH-11, been checked against an independent relevance judgement. It was
+the honest answer at the time: no such judgement existed.
+
+`evaluation/enh11_qrels.json` now grades 325 of 325 pool chunks blind, without knowing which chunk
+any script had designated "the target" for a given query. Looking up each of the 16 `TARGETS`
+entries against its own query's grade (`run_b4_ndcg_rescore.py`'s `target_grade_check`, committed
+`f419c2d`) gives:
+
+| Grade | Count | Queries |
+|---|---|---|
+| 3 — directly answers | 11 | Q1, Q2, Q6, Q7, Q8, Q9, Q10, Q12, Q14, Q15, R1-Q7 |
+| 2 — substantively relevant | 1 | Q11 |
+| 1 — topically related, doesn't answer | 3 | **Q3, Q5, Q13** |
+| ungraded — absent from its own query's ENH-11 pool | 1 | **Q4** |
+
+**12 of 16 verify as strong (grade ≥ 2). Four do not.** Q4 was already flagged in `round3_b3_b4_findings.md`
+§2.6/§3.2 as a "weak/neither" edge case (its target sits at fused rank 39, outside any top-10 pool,
+so ENH-11 never had a chance to grade it for this query — consistent with, not contradicted by, its
+existing classification). Q13 sits in the "corroborated, unchanged" bucket (§3.2) where nothing in
+the existing analysis turned on its grade. **Q3 and Q5 are different: both are core single-signal
+displacement cases that B3's own argument leans on.**
+
+- **Q5** (`how to make GPU programs run faster`) is one of only two queries — with R1-Q7 — behind
+  §2.5's "un-corroborated → fused rank 10–17" bin, and carries the **largest single recovery figure
+  in the entire B4 table** (§3.1: RRF 17 → min-max/z-score 5, "+12"). R1-Q7's target independently
+  grades 3; Q5's grades 1. The displacement **positions** (dense rank 2 → fused rank 17 → recovered
+  rank 5) are unaffected by this — rank is rank regardless of what the chunk says — but the
+  *narrative* weight of "look how badly a confident single signal gets buried" and "look how much
+  normalised fusion recovers" both lean on a chunk that, per the blind grader, was never a strong
+  answer to begin with. The recovered rank 5 is progress toward a weak chunk, not toward a good one.
+- **Q3** (`cudaErrorInvalidValue description`) is one of only three single-signal-BM25 mirror cases
+  (§2.2) and one of only two queries whose min-max/z-score recovery reaches rank 1 at all (§3.1,
+  alongside Q12). Its grade-1 target is exactly what drives the graded-vs-binary divergence recorded
+  in `round3_b3_b4_findings.md` §3.3's addendum (13 Sep 2026): the "recovery" to rank 1 scores as a
+  full win under graded single-item NDCG and as nothing at all under the binary (`grade ≥ 2`) cut,
+  because placing a non-answering chunk first isn't a win.
+- **D-QR** (`round3_dqr_findings.md`) independently treats both as named cases — Q3 as the
+  `exact_identifier` / gated-skip example, Q5 as the conceptual case where "the legacy rule fired and
+  did not move the target's dense rank at all" — so this also touches D-QR's per-query table, not
+  only B3/B4.
+
+**This does not overturn B3's binary finding.** B3's confirmed claim — RRF displaces a single-signal
+target below its finding retriever's own rank, and the displacement is structurally binary on
+whether the other retriever corroborates at all — is a statement about *rank positions relative to
+each other*, true regardless of whether the target chunk is itself a 1, 2, or 3. Q3 and Q5 really
+were displaced the way §2.1/§2.2 describe. **What it does weaken is the motivating strength of using
+Q3 and Q5 specifically as the illustrative severe cases** — two of B3/B4's most-quoted numbers
+(Q5's "+12" recovery, Q3's "reaches rank 1") now rest on targets that the project's own later,
+independent, blind judgement rated as not actually answering the query.
+
+**Not fixed, not re-run.** This is a record of what the 16-target anchor set looks like against
+ENH-11, nothing more. Whether B3/B4/D-QR should be re-run against better-chosen targets for Q3 and
+Q5 (the pool's other graded-3 chunks for those queries are sitting in `enh11_qrels.json` already,
+unused for this purpose) is a decision for later, not taken here.
+
 ### Verification — CC-ACQ-02 · Dataset acquisition — **PASSED**
 
 Run against `clean_clone_test_protocol.md`'s CC-ACQ-02 (the highest-risk test case in that protocol): a fresh clone, no pre-existing DVC cache on the machine performing the check, `dvc pull` against the `dvc-storage` remote.
