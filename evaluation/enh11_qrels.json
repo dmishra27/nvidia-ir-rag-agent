@@ -70,6 +70,45 @@
         "sample_size": 0,
         "rechecked": []
       }
+    },
+    {
+      "session_id": "2026-09-13T08:59:38+00:00",
+      "started": "2026-09-13T08:59:38+00:00",
+      "ended": "2026-09-13T09:09:13+00:00",
+      "query_plan": [
+        "Q5",
+        "Q6",
+        "Q7",
+        "Q8",
+        "Q9",
+        "Q10",
+        "Q11",
+        "Q12",
+        "Q13",
+        "Q14",
+        "Q15",
+        "R1-Q7"
+      ],
+      "seed": 737822211,
+      "primary_judged": 30,
+      "skipped": 0,
+      "consistency": {
+        "sample_size": 3,
+        "rechecked": [
+          {
+            "query_id": "Q11",
+            "chunk_id": "0a880bdf76e6612e502eb50a"
+          },
+          {
+            "query_id": "Q15",
+            "chunk_id": "23082588ef4a1e16d4f49262"
+          },
+          {
+            "query_id": "Q14",
+            "chunk_id": "937f086fc6dcd5643e4d486f"
+          }
+        ]
+      }
     }
   ],
   "judgements": [
@@ -2137,6 +2176,237 @@
       "grade": 0,
       "timestamp": "2026-09-12T19:09:59+00:00",
       "pass": 1
+    },
+    {
+      "query_id": "Q5",
+      "chunk_id": "455e5ba8bea35b4cab6db21b",
+      "grade": 3,
+      "timestamp": "2026-09-13T09:00:10+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q6",
+      "chunk_id": "85164dc498a016d4e2ece6c6",
+      "grade": 0,
+      "timestamp": "2026-09-13T09:00:32+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q7",
+      "chunk_id": "cc01e5e633f3d174d042e24e",
+      "grade": 1,
+      "timestamp": "2026-09-13T09:00:47+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q8",
+      "chunk_id": "f85ad7a63d64cfde4bf3ee19",
+      "grade": 3,
+      "timestamp": "2026-09-13T09:01:06+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q8",
+      "chunk_id": "06f3d79f4aed4e7be82ed650",
+      "grade": 3,
+      "timestamp": "2026-09-13T09:01:30+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q9",
+      "chunk_id": "eecd9b0defd23ef590e187b9",
+      "grade": 0,
+      "timestamp": "2026-09-13T09:01:43+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q10",
+      "chunk_id": "cc4b86761f1005773c609b79",
+      "grade": 0,
+      "timestamp": "2026-09-13T09:01:55+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q10",
+      "chunk_id": "84d5aa0fdbe0b3f321f26079",
+      "grade": 2,
+      "timestamp": "2026-09-13T09:02:07+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q11",
+      "chunk_id": "0a880bdf76e6612e502eb50a",
+      "grade": 2,
+      "timestamp": "2026-09-13T09:02:17+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q12",
+      "chunk_id": "b17f44303767ddd72f90478c",
+      "grade": 0,
+      "timestamp": "2026-09-13T09:02:27+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q13",
+      "chunk_id": "df535745e848fe63828ad2c4",
+      "grade": 0,
+      "timestamp": "2026-09-13T09:02:37+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q14",
+      "chunk_id": "937f086fc6dcd5643e4d486f",
+      "grade": 3,
+      "timestamp": "2026-09-13T09:02:48+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "a6910bcc059caad0d70e2b8b",
+      "grade": 0,
+      "timestamp": "2026-09-13T09:03:03+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "d827aaac6e436932d83f84b7",
+      "grade": 0,
+      "timestamp": "2026-09-13T09:03:15+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "60395666bbc850515b069b6a",
+      "grade": 1,
+      "timestamp": "2026-09-13T09:03:27+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "84905b60e266d84cd0ca1879",
+      "grade": 3,
+      "timestamp": "2026-09-13T09:03:38+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "d5818ab391b69de116120b2b",
+      "grade": 1,
+      "timestamp": "2026-09-13T09:03:50+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "feec243aa03d22d7d2ce573b",
+      "grade": 0,
+      "timestamp": "2026-09-13T09:03:59+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "0a880bdf76e6612e502eb50a",
+      "grade": 1,
+      "timestamp": "2026-09-13T09:04:10+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "9e7d5603c7b8662329834f38",
+      "grade": 0,
+      "timestamp": "2026-09-13T09:04:21+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "a581c5788b1b9cec14161ab5",
+      "grade": 3,
+      "timestamp": "2026-09-13T09:04:32+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "6bf184553531cd05f6e9abf5",
+      "grade": 2,
+      "timestamp": "2026-09-13T09:04:42+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "23082588ef4a1e16d4f49262",
+      "grade": 1,
+      "timestamp": "2026-09-13T09:04:58+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "db1c0602ae6cd49714f13a1b",
+      "grade": 3,
+      "timestamp": "2026-09-13T09:05:08+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "35dfc6787549aaeda1677954",
+      "grade": 1,
+      "timestamp": "2026-09-13T09:05:19+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "9d1f3a9e03910a455b745bd9",
+      "grade": 1,
+      "timestamp": "2026-09-13T09:05:30+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "e3add51e428c21e99b40c9b4",
+      "grade": 3,
+      "timestamp": "2026-09-13T09:05:41+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "a1f985eaed4eb1f19e46d20a",
+      "grade": 3,
+      "timestamp": "2026-09-13T09:05:51+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "875a0e2c918b8a23d3c704f1",
+      "grade": 3,
+      "timestamp": "2026-09-13T09:06:02+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "R1-Q7",
+      "chunk_id": "ba52947371305a0ee68f2c73",
+      "grade": 0,
+      "timestamp": "2026-09-13T09:06:11+00:00",
+      "pass": 1
+    },
+    {
+      "query_id": "Q11",
+      "chunk_id": "0a880bdf76e6612e502eb50a",
+      "grade": 2,
+      "timestamp": "2026-09-13T09:08:49+00:00",
+      "pass": 2
+    },
+    {
+      "query_id": "Q15",
+      "chunk_id": "23082588ef4a1e16d4f49262",
+      "grade": 1,
+      "timestamp": "2026-09-13T09:09:00+00:00",
+      "pass": 2
+    },
+    {
+      "query_id": "Q14",
+      "chunk_id": "937f086fc6dcd5643e4d486f",
+      "grade": 3,
+      "timestamp": "2026-09-13T09:09:13+00:00",
+      "pass": 2
     }
   ]
 }
