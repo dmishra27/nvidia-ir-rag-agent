@@ -2,9 +2,9 @@
 ### Protocol for building a retriever-independent, graded qrel set
 
 **Reference:** ENH-NVIR-2026-011
-**Status:** In progress — 295 of 325 judgements done (§7.1)
+**Status:** Complete — 325 of 325 judgements done (§7.1)
 **Prepared:** 4 September 2026
-**Blocks:** A2, A3, A3-2, A4, A6 re-runs · B4's aggregate test · B7's precision risk · D-QR re-test · every future NDCG figure
+**Unblocks (§8):** A2, A3, A3-2, A4, A6 re-runs · B4's aggregate test · B7's precision risk · D-QR re-test · every future NDCG figure
 
 ---
 
@@ -143,83 +143,48 @@ Don't attempt this in one sitting.
 | Stage | Work | Output | Status |
 |---|---|---|---|
 | **1** | Build pool, build interface | Scripts committed, pool counts known | Done — `enh11_pool.json`, 325 chunks across 16 queries |
-| **2** | Judge **5 queries** — suggest Q1, Q4, Q7, Q10, R1-Q7 | ~110 judgements. Validates the process | Partial — see below |
-| **3** | **Review stage 2 before continuing.** Does the scale work? Are you consistent? Is the interface fighting you? | Adjust now, not after 350 | Not started |
-| **4** | Judge the remaining 11 | ~240 judgements, across sessions | Not started |
-| **5** | Consistency analysis, write findings | Disagreement rate, the qrel file itself | Not started |
-| **6** | Re-run what was blocked | See §8 | Not started |
+| **2** | Judge **5 queries** — suggest Q1, Q4, Q7, Q10, R1-Q7 | ~110 judgements. Validates the process | Done, folded into the live sessions below |
+| **3** | **Review stage 2 before continuing.** Does the scale work? Are you consistent? Is the interface fighting you? | Adjust now, not after 350 | Done — no scale drift found |
+| **4** | Judge the remaining 11 | ~240 judgements, across sessions | Done — via live judging + validated transcript recovery, see §7.1 |
+| **5** | Consistency analysis, write findings | Disagreement rate, the qrel file itself | Done — see §7.1 |
+| **6** | Re-run what was blocked | See §8 | Unblocked, not yet run |
 
 **The stage-3 review is not optional.** Discovering at judgement 300 that your 2-vs-3 boundary drifted means redoing all of them.
 
-### 7.1 Current state (12 September 2026)
+### 7.1 Current state (13 September 2026) — complete
 
-**295 of 325 judgements done.** Two sources, kept distinct:
+**All 325 of 325 judgements are on disk and committed** (`evaluation/enh11_qrels.json`, commit `d13eae0`), verified by direct inspection of the file — 325 pass-1 (primary) entries across all 16 queries, not taken from a pasted tool summary. That distinction matters here: earlier in this process a reported count was trusted without checking the file, and it was wrong (see the superseded consistency result below). This entry is written from the file itself.
 
-**101 via `judge_enh11.py` directly** (`evaluation/enh11_qrels.json`, commit `e500314`) — two sessions:
+Provenance, three sources, kept distinct:
 
-| Query | Judged | Grade distribution (0/1/2/3) |
-|---|---|---|
-| Q1 | 24 of 24 | 19 / 2 / 2 / 1 |
-| Q2 | 23 of 23 | 10 / 6 / 5 / 2 |
-| Q3 | 24 of 24 | 4 / 13 / 7 / 0 |
-| Q4 | 23 of 23 | 15 / 4 / 0 / 4 |
-| Q5 | 7 of 23 (partial) | 2 / 3 / 2 / 0 |
+**101 judged live via `judge_enh11.py`** (two original sessions, 9 and 12 September 2026) — 51 + 50 primary judgements, covering Q1–Q5 (Q5 partial).
 
-**194 recovered from a separate Claude conversation transcript** where the pool was reasoned through chunk-by-chunk outside the tool. Because that reasoning wasn't blind-tool-mediated, the hand-transcribed extraction (`enh11_recovery_grades.md`) was cross-validated row-by-row against `enh11_pool.json` before anything was entered: a row was written into `enh11_qrels.json` only if its chunk_id prefix resolved to exactly one chunk in that query's own pool and wasn't already on disk from the two sessions above. Anything that didn't resolve cleanly was left out, not guessed (commit `40f8251`):
+**194 recovered from a separate Claude conversation transcript**, where the pool had been reasoned through chunk-by-chunk outside the tool (covering the remainder of Q5 through Q14, plus R1-Q7). Because that reasoning wasn't blind-tool-mediated, the hand-transcribed extraction (`enh11_recovery_grades.md`) was cross-validated row-by-row against `enh11_pool.json` before anything was entered: a row was written into `enh11_qrels.json` only if its chunk_id prefix resolved to exactly one chunk in that query's own pool and wasn't already on disk from the two live sessions above. Anything that didn't resolve cleanly was left out, not guessed (commit `40f8251`). See `enh11_recovery_grades.md` for the row-by-row detail.
 
-| Query | Entered from recovery | Total now | Pool size | Gap |
-|---|---|---|---|---|
-| Q5 (remainder) | 15 | 22 | 23 | 1 |
-| Q6 | 19 | 19 | 20 | 1 |
-| Q7 | 21 | 21 | 22 | 1 |
-| Q8 | 12 | 12 | 14 | 2 |
-| Q9 | 14 | 14 | 15 | 1 |
-| Q10 | 17 | 17 | 19 | 2 |
-| Q11 | 12 | 12 | 13 | 1 |
-| Q12 | 23 | 23 | 24 | 1 |
-| Q13 | 18 | 18 | 19 | 1 |
-| Q14 | 18 | 18 | 19 | 1 |
-| R1-Q7 | 25 | 25 | 26 | 1 |
+R1-Q7's judgements include both chunks of particular project significance, each graded blind: `35b73f33…` (the canonical target — "An SM consists of: 128 CUDA cores") → **3**, and `b1b83570…` (the corroborated-but-wrong GPU-Metrics warp-occupancy chunk from the B3/B7 fusion analysis) → **0**.
 
-R1-Q7's 25 include both chunks of particular project significance, each graded blind: `35b73f33…` (the canonical target — "An SM consists of: 128 CUDA cores") → **3**, and `b1b83570…` (the corroborated-but-wrong GPU-Metrics warp-occupancy chunk from the B3/B7 fusion analysis) → **0**.
+**30 judged live in a final gap-fill session** (13 September 2026, commit `d13eae0`) — closed every remaining primary-judgement gap: the 12 chunks left over from the recovery cross-validation (one short per query section, two for Q8 and Q10) plus Q15 in full (17 chunks, whose recovery-transcript section had duplicate chunk_ids within itself and was marked unreliable and never used). This is also the session that ran the genuine consistency check.
 
-**Still outstanding — nothing here has been guessed or entered:**
+**Consistency result: 3/3 exact agreement.** Three chunks re-presented unmarked at the end of the 13 September session — Q11/`0a880bdf…`, Q14/`937f086f…`, Q15/`23082588…` — each re-graded identically to its first pass. A sample of 3 is small; read this as "no disagreement observed in a small check," not as a reliability estimate with any statistical weight. It is the only inter/intra-rater signal this single-judge protocol produces (§9).
 
-- **12 gap chunks**, one query section short by one row each except Q8 and Q10 (short two), to be judged fresh through `judge_enh11.py`'s normal interface:
-
-  | Query | Missing chunk_id |
-  |---|---|
-  | Q5 | `455e5ba8bea35b4cab6db21b` |
-  | Q6 | `85164dc498a016d4e2ece6c6` |
-  | Q7 | `cc01e5e633f3d174d042e24e` |
-  | Q8 | `f85ad7a63d64cfde4bf3ee19`, `06f3d79f4aed4e7be82ed650` |
-  | Q9 | `eecd9b0defd23ef590e187b9` |
-  | Q10 | `cc4b86761f1005773c609b79`, `84d5aa0fdbe0b3f321f26079` |
-  | Q11 | `0a880bdf76e6612e502eb50a` |
-  | Q12 | `b17f44303767ddd72f90478c` |
-  | Q13 | `df535745e848fe63828ad2c4` |
-  | Q14 | `937f086fc6dcd5643e4d486f` |
-  | R1-Q7 | `ba52947371305a0ee68f2c73` |
-
-- **Q15 in full** (17 chunks, 0 judged). The recovery file's Q15 section contains duplicate chunk_ids within itself and is marked unreliable — it was not used at all. Needs judging fresh.
-- **The 22-item consistency re-check.** Not attempted from the recovery transcript (that section was also incomplete and marked unreliable). `judge_enh11.py` will draw its own consistency sample once the primary 325 are on disk — that has not happened yet.
-
-325 total requires: the 12 gap chunks above + Q15's 17 chunks = 30 more primary judgements, then the consistency check. Until then, ENH-11 stands at 295 of 325 — not complete.
+**This supersedes the earlier 22/22 consistency figure reported in a prior session.** That number was never written to disk — it described a consistency pass from a session that, on inspection of `enh11_qrels.json`, was never actually recorded. It should not be cited; the 3/3 figure above is the one genuine consistency result that exists.
 
 ---
 
-## 8. What unblocks on completion
+## 8. What unblocks now that this is complete
 
-| Item | What becomes possible |
+| Item | What is now possible |
 |---|---|
-| **A2** | Re-test pool depth against labels that credit deep finds. The original question — what should `candidate_pool_size` be — is still unanswered |
-| **A3** | All 16 queries usable instead of 8; Case 4 gets data for the first time |
-| **A3-2** | Q7/Q8's competitors get their actual grades. Expect several 2s and 3s |
-| **A4, A6** | Re-run with retained artifacts against a non-circular key |
-| **B4** | Its aggregate NDCG test, recorded as *unevaluable*, becomes evaluable |
-| **B7** | Precision risk quantifiable — how often *is* a lone top-3 placement wrong? |
-| **D-QR** | Re-test on labels with headroom. 8 of 16 queries currently sit at rank 1 with nothing to improve |
-| **Every NDCG figure** | Currently rests on labels drawn from the system's own top-3 output |
+| **A2** | Pool depth is re-testable against labels that credit deep finds. The original question — what should `candidate_pool_size` be — can now be answered, not just re-asked |
+| **A3** | All 16 queries are usable instead of 8; Case 4 has data for the first time |
+| **A3-2** | Q7/Q8's competitors have their actual grades on disk. Several came back 2s and 3s |
+| **A4, A6** | Re-runnable with retained artifacts against a non-circular key |
+| **B4** | Its aggregate NDCG test, previously recorded as *unevaluable*, is now evaluable |
+| **B7** | Precision risk is quantifiable — how often a lone top-3 placement is wrong can now be measured |
+| **D-QR** | Re-testable on labels with headroom, instead of the rank-only workaround |
+| **Every NDCG figure** | No longer rests on labels drawn from the system's own top-3 output — real graded labels exist |
+
+None of these re-runs have been executed yet — completing ENH-11 makes them possible, it doesn't run them.
 
 ---
 
