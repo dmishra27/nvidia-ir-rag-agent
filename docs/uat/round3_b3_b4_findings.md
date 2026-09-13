@@ -256,6 +256,61 @@ win, and the aggregate NDCG question the plan's "Confirms" clause asks cannot be
   target-chunk rank, the honest read is B4's own predicted "Falsifies" shape: *it wins on the
   displaced-chunk queries and loses in aggregate — the trade-off it is, not a fix.*
 
+### 3.3 Addendum — aggregate NDCG re-scored against ENH-11 (13 September 2026)
+
+ENH-11's blocker is gone: `evaluation/enh11_qrels.json` is 325/325 judged (`docs/uat/enh11_protocol.md`
+§7.1). `run_b4_ndcg_rescore.py` (committed `d04609e`, pure offline re-scoring, no live retrieval) ran
+the plan's "Confirms" test for the first time. Output: `evaluation/b4_enh11_ndcg_rescore.json`
+(committed `f419c2d`).
+
+**The test is still not cleanly answerable — for a different reason than before.** The original
+"unevaluable" was about the *labels*: circular qrels, no ENH-11. That's fixed. What remains unfixed
+is the *harness*: `b3_b4_fusion_eval.json` only ever persisted the designated target chunk's rank
+under `minmax_combsum`/`zscore_combsum` — it never pooled or retained either method's full top-10
+list, and no raw per-chunk BM25/dense scores survive on disk to recompute their normalisation.
+`enh11_pool_provenance.json`'s `rrf_rank` does let RRF's full top-10 be reconstructed faithfully
+(same pool=100/k=60 config `build_enh11_pool.py` used; cross-checked against every `fused_rank.rrf`
+in `b3_b4_fusion_eval.json` — 15 of 16 match exactly, the one exception being Q4's target at RRF
+rank 39, correctly absent from a pool that only ever kept each retriever's top 10, not a
+disagreement). No equivalent exists for the two normalised-fusion methods. Reconstructing one would
+mean inventing a score distribution — fabrication, not re-scoring — so the script doesn't.
+
+Two numbers follow from that split, and they answer different questions:
+
+| | RRF | min-max | z-score |
+|---|---|---|---|
+| **Full top-10 NDCG@10** (real, multi-relevant-chunk, 15 Round-2 queries) | graded 0.7086, binary 0.6675 | *no comparable number exists* | *no comparable number exists* |
+| **Single-relevant-item NDCG@10** (the one pre-registered target chunk, same basis all three methods, 15 Round-2 queries) — binary | **0.5615** | 0.5328 | 0.5224 |
+| Single-relevant-item NDCG@10 — graded | 0.6703 | 0.6919 | 0.6815 |
+
+**The graded and binary single-item numbers disagree, and the binary one is the methodologically
+sound read.** Single-relevant-item NDCG@10 reduces to `1/log2(rank+1)` when the one known chunk has
+any positive grade, and to `0` when it doesn't — the grade's *magnitude* cancels against its own
+IDCG, so a grade-1 hit ("topically related, doesn't answer" — protocol §4) scores identically to a
+grade-3 hit as long as both are ranked. That is exactly what happened: two of the three queries
+where min-max/z-score's graded number looks best are **Q3 and Q5, whose targets ENH-11's blind judge
+graded only 1** (see the new F-28 finding, `docs/uat/correction_notice_a1.md` §6) — not the strong
+answers B3/B4 treated them as. Q3's minmax/zscore "recovery" (RRF rank 2 → rank 1, §3.1 table) reads
+as a clean win on the graded number and contributes nothing on the binary one, because a rank-1
+placement of a chunk that doesn't actually answer the query isn't a win. The protocol's own rubric
+(§4: *"the 2 is the grade that matters"*) makes binary (`grade ≥ 2`) the correct cut for judging
+whether a recovery is real; graded, here, is misleading precisely because it can't tell a genuine
+recovery from a grade-1 one.
+
+**Read on the binary numbers, B4's aggregate claim is falsified, and there is no full-list evidence
+anywhere that would overturn that.** RRF's single-item binary score (0.5615) beats both normalised
+methods (0.5328, 0.5224); RRF is also the only method with a real full-list NDCG number at all, and
+nothing computed here gives min-max or z-score a way to be shown ahead of it in aggregate.
+
+**Does this change the §3.3 verdict above? No — it stands, for a sharper reason.** The original
+target-chunk-rank analysis already called B4 a trade-off, not a fix: real recoveries on a handful of
+severely-displaced queries, a stability cost elsewhere, net loss in aggregate. That stands. What
+ENH-11 adds is not a reversal, it's a correction to *why* the aggregate loses: it isn't only the Q15
+regression and the Q2/Q4 weak-case slips documented in §3.2 — part of min-max/z-score's apparent
+upside (Q3, and to a lesser extent Q5) was recovering a rank, not recovering an answer. The
+recommendation in §4 point 4 (do not wire score-normalised fusion into retrieval) is unchanged and,
+if anything, better supported than it was when this was written.
+
 ---
 
 ## 4. What this means for the pipeline
