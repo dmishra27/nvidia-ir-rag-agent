@@ -73,6 +73,11 @@ Displacement = `fused_rank − dense_rank` (dense is the finding retriever). Pos
 is not marginal on the un-corroborated cases: R1-Q7 falls from dense rank 1 to fused rank 10, Q5
 from dense rank 2 to fused rank 17.
 
+*DEF-28 caveat: Q5's target chunk grades only 1 ("topically related, doesn't answer") in
+`enh11_qrels.json`, not independently verified as a strong answer — the rank/displacement figures
+above are unaffected, but see DEF-28 (`docs/uat/correction_notice_a1.md` §6) before citing Q5 as
+an illustrative severe case.*
+
 ### 2.2 The mirror — single-signal-BM25
 
 Displacement = `fused_rank − bm25_rank` (BM25 is the finding retriever). The "does fusion rescue a
@@ -89,6 +94,10 @@ Q1's target 75th and Q3's 49th; fusion put them at 4 and 2. Q1 is the canonical 
 case (CORR-001 §4.1): fusion simultaneously lifts the target from dense's 75 and pushes it down
 from BM25's 2, the two meeting at fused rank 4. The mirror cases show displacement from *both*
 sides at once.
+
+*DEF-28 caveat: Q3's target chunk grades only 1 ("topically related, doesn't answer") in
+`enh11_qrels.json` — the rank/displacement figures above are unaffected, but see DEF-28
+(`docs/uat/correction_notice_a1.md` §6) before citing Q3 as one of the mirror-case showcases.*
 
 ### 2.3 RRF-score decomposition — the mechanism
 
@@ -223,6 +232,11 @@ top 5 scores roughly `0.9 + 0.9 = 1.8` in min-max space, while a lone dense rank
 `1.0 + 0.0 = 1.0`. Score fusion shrinks the corroboration gradient; it does not remove it. A
 confident single retriever still cannot hold rank 1 against two corroborating mid-ranks.
 
+*DEF-28 caveat: two of the recoveries in the table above — Q3's "reaches rank 1" and Q5's "+12"
+(the largest single recovery figure here) — are recoveries of a target chunk `enh11_qrels.json`
+grades only 1, not a strong answer. This doesn't change the recovery/rank numbers or the §3.3
+verdict; see DEF-28 (`docs/uat/correction_notice_a1.md` §6) and the §3.3 Addendum below for detail.*
+
 ### 3.2 Stability cost (corroborated + weak/neither, n=8)
 
 | Query | class | RRF | min-max | z-score | note |
@@ -238,6 +252,11 @@ distribution does exactly what the counter-argument said it would. Q2 slips too.
 buys ~6 mild single-signal recoveries at a cost of one clear corroborated regression (Q15, −2) and
 two weak-case slips.
 
+*DEF-28 caveat: this table's Q13 (unchanged 1/1/1 across all three methods) grades only 1 per
+`enh11_qrels.json`, and Q4's target is ungraded (absent from its own query's ENH-11 pool, already
+flagged weak/neither) — neither changes the stability-cost reading above, since nothing here turns
+on either query's grade. See DEF-28 (`docs/uat/correction_notice_a1.md` §6).*
+
 ### 3.3 B4 verdict
 
 **A directional remedy that carries the stability cost the plan's B4 entry predicted; not a clean
@@ -245,7 +264,8 @@ win, and the aggregate NDCG question the plan's "Confirms" clause asks cannot be
 
 - On the B3 defect: min-max CombSUM reduces single-signal displacement in 6 of 8 cases and is the
   better of the two normalisers. It fully recovers the mild cases (Q12, Q3 → rank 1) and roughly
-  thirds the displacement on the severe ones (Q5 17→5, R1-Q7 10→3).
+  thirds the displacement on the severe ones (Q5 17→5, R1-Q7 10→3). *(DEF-28 caveat: Q3 and Q5's
+  target grades are addressed in the §3.3 Addendum below.)*
 - It does **not** close the defect. No severely-displaced un-corroborated target reaches rank 1;
   summed normalised scores keep the same "two corroborators beat one confident signal" bias, with
   a shallower gradient.
@@ -329,7 +349,8 @@ if anything, better supported than it was when this was written.
    10 and 17 confirm that a top-3 fused candidate pool structurally cannot contain these targets,
    so no downstream re-ranker can rescue them — the fusion error has already removed the
    candidate. This is the A1/A4 "complementary failure modes" point, measured again from the
-   fusion side.
+   fusion side. *(DEF-28 caveat: Q5's target grades only 1 per `enh11_qrels.json`; the rank/pool-depth
+   claim above is about position, not answer quality, and is unaffected — see DEF-28.)*
 4. **Recommendation:** do not wire score-normalised fusion into retrieval on this evidence. Record
    B3's displacement measurement and B4's partial-recovery result. Re-open both alongside ENH-11
    (graded, retriever-independent labels), which is what would let the aggregate-cost question be

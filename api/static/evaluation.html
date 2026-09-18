@@ -584,6 +584,14 @@
       </table>
     </div>
 
+    <p class="source-note">
+      <strong>DEF-28 caveat.</strong> Q3's target chunk grades only 1
+      ("topically related, doesn't answer") in <code>enh11_qrels.json</code>
+      — not independently verified as a strong answer. The BM25/dense/RRF
+      rank figures above are unaffected; see
+      <code>docs/uat/correction_notice_a1.md</code> §6 (DEF-28) before
+      citing Q3 as a "fusion rescues" showcase.
+    </p>
     <p>
       RRF scores a chunk on its <em>rank position</em> in each list —
       <code>1/(60&nbsp;+&nbsp;rank)</code> summed across retrievers — and never
@@ -639,6 +647,13 @@
       table, and three-arm comparison:
       <code>docs/uat/round3_dqr_findings.md</code>
       (raw data: <code>evaluation/dqr_eval.json</code>).
+    </p>
+    <p class="source-note">
+      <strong>DEF-28 caveat.</strong> Q4's target chunk is ungraded in
+      <code>enh11_qrels.json</code> (absent from its own query's ENH-11
+      pool, never independently judged) — doesn't change the measured
+      rank movement above; see
+      <code>docs/uat/correction_notice_a1.md</code> §6 (DEF-28).
     </p>
   </section>
 
