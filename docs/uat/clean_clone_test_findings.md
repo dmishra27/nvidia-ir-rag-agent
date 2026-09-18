@@ -31,6 +31,8 @@ Six of nine cases executed. Three blocked by hardware constraints that are thems
 > **Status as of 27 Aug 2026:** F-14 and F-15 are fixed. Three of the twelve §4 documentation changes are closed (D3, D4, D5); remaining work is D1, D2, and D6–D12.
 >
 > **Status as of 29 Aug 2026:** all twelve §4 changes are closed — D1/D7–D12 in `3eec8cd`, D2 (Python-version guard) in `46e990d`, D6 (`/health/ready`) in `7a615a0`. See the per-row commit tags in §4. CC-VER-01 (test suite) was run this session and reconciled at **561** — but in the working repo, not a fresh clone (see the CC-VER-01 note below).
+>
+> **Status as of 18 Sep 2026: CC-VER-01 is closed — PASS.** A genuinely fresh clone (`%TEMP%\verify`, 13 September 2026) ran the full suite and got **589 passed, 0 failed** — matching the working-repo count exactly, and confirming D11's fix (`da8de39`, 561→589) holds under the clean-clone test it was meant to satisfy. See the CC-VER-01 entry below and the full verification write-up in `docs/uat/correction_notice_a1.md` §6. A new low-severity finding, DEF-29, was recorded alongside it: `scripts/patch_ragas.py` is a required step for test collection, but skipping it surfaces as an opaque `ModuleNotFoundError` rather than a pointer back to the missing step.
 
 ---
 
@@ -131,9 +133,13 @@ BM25 path verified end to end (see CC-EXE-01). Dense path untested — `populate
 
 ---
 
-### CC-EXE-02 / CC-EXE-03 / CC-VER-01 / CC-VER-02 — **BLOCKED**
+### CC-EXE-02 / CC-EXE-03 / CC-VER-02 — **BLOCKED**
 
 Not executed. Remaining cases need the full stack, which OOM-killed the API (F-12). Per §2.1, recorded as a finding rather than worked around.
+
+---
+
+### CC-VER-01 · Test suite — **PASS** *(closed 13 Sep 2026)*
 
 > **CC-VER-01 partial follow-up (29 Aug 2026):** the test suite was run to
 > resolve the D11 count discrepancy — **561 passed, 0 failed, 0 skipped**
@@ -143,6 +149,8 @@ Not executed. Remaining cases need the full stack, which OOM-killed the API (F-1
 > count (README/`setup.md` now say 561) but does not close CC-VER-01's
 > clean-clone requirement. The 550→561 delta is the 11 tests added for D2
 > and D6.
+
+**Closed 13 September 2026.** Run from a genuinely fresh clone (`%TEMP%\verify`, no artifact of prior development present) per protocol: **589 passed, 0 failed** — matching the working-repo count (`setup.md` §8, `da8de39`) exactly. This confirms D11's earlier fix (`da8de39`, 561→589) holds under the test it was meant to satisfy: not just that the suite passes on a machine that already worked, but that it passes from the repository alone. Full verification write-up, including the DEF-29 finding surfaced during this run: `docs/uat/correction_notice_a1.md` §6.
 
 ---
 

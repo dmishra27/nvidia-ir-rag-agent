@@ -169,6 +169,8 @@ R1-Q7's judgements include both chunks of particular project significance, each 
 
 **This supersedes the earlier 22/22 consistency figure reported in a prior session.** That number was never written to disk — it described a consistency pass from a session that, on inspection of `enh11_qrels.json`, was never actually recorded. It should not be cited; the 3/3 figure above is the one genuine consistency result that exists.
 
+**Same-day cross-reference — CC-VER-01.** Also closed 13 September 2026: a genuinely fresh clone (`%TEMP%\verify`) ran the full test suite — 589 passed, 0 failed, matching the working repo exactly — independently confirming that the tooling this protocol depends on (`build_enh11_pool.py`, `judge_enh11.py`, and the `evaluation/` test suite) reproduces from the repository alone, not just from this machine. See `docs/uat/correction_notice_a1.md` §6 and `docs/uat/clean_clone_test_findings.md`.
+
 ---
 
 ## 8. What unblocks now that this is complete

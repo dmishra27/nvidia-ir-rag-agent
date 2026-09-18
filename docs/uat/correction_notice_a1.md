@@ -404,6 +404,22 @@ Run against `clean_clone_test_protocol.md`'s CC-ACQ-02 (the highest-risk test ca
 
 **Honest caveat.** Two of the five ingested PDFs — the CUDA C Best Practices Guide and the Nsight Systems User Guide — were re-downloaded during this work rather than recovered from the original 10 July acquisition, and their bytes differ from the July originals (different NVIDIA-side regeneration of the same published document). They match the originals on page count (118 and 344 pages respectively, exact match against `doc_metadata`) and produce an unchanged 5,389 chunks across the corpus. **The pin is faithful in content — same page counts, same chunk count, same downstream corpus shape — but is not byte-identical to the specific files ingested in July, which no longer exist anywhere to compare against.** Anyone treating the DVC pin as a guarantee of byte-for-byte provenance back to the original ingestion should read this caveat first; it guarantees content stability from this pin forward, not retroactively.
 
+### Verification — CC-VER-01 · Test suite — **PASSED**
+
+Run against `clean_clone_test_protocol.md`'s CC-VER-01 (§ Section D — Verification), from a genuinely fresh clone (`%TEMP%\verify`, 13 September 2026) — not the working repo, closing the gap the 29 August partial follow-up (`docs/uat/clean_clone_test_findings.md`, CC-VER-01 entry) left open.
+
+**Result:** `pytest -q` — **589 passed, 0 failed** — matching the working-repo count (`setup.md` §8, `da8de39`) exactly. This confirms D11's earlier fix (`da8de39`, 561→589) holds under the test it was meant to satisfy: the count is not an artifact of a machine that already had every dependency and patch applied correctly, it reproduces from the repository alone.
+
+### DEF-29 · Missing `scripts/patch_ragas.py` surfaces as an opaque `ModuleNotFoundError`, not a pointer to the missing step — **OPEN, low severity**
+
+Surfaced during the CC-VER-01 run above: running `pytest -q` standalone, without first following `setup.md`'s documented install order, fails test collection with a `ModuleNotFoundError` raised deep inside `langchain_community`'s import chain (`ragas` unconditionally imports `ChatVertexAI` from `langchain_community.chat_models.vertexai`, a submodule this project's pinned `langchain-community==0.4.2` doesn't have — see `requirements_notes.txt`'s `ragas==0.4.3 (patched)` note). The error names `langchain_community.chat_models.vertexai`, `ChatVertexAI`, or a downstream `ragas` import — never `scripts/patch_ragas.py` or the missing step itself.
+
+`setup.md` §0/§8 documents the correct order — `pip install -r requirements.txt` then `python scripts/patch_ragas.py` (§0's install block) before any test run — and `.github/workflows/ci.yml` runs the patch step immediately after install, so the defect is invisible to anyone following the documented sequence exactly. It only bites a reviewer, or an automated check, who runs `pytest` in isolation without the preceding setup step — which is exactly what happened here, deliberately, per the protocol's adversarial stance (§1.2: don't silently supply a missing step from memory).
+
+**Severity: low.** One documented step, skipped, produces a real but misleading error; the fix is a one-line pointer, not a design change.
+
+**Recommendation, not applied here:** add a one-line reminder in `setup.md` §8 — e.g. "collection failing on a `ragas` / `langchain_community` import means `scripts/patch_ragas.py` hasn't been run" — or, more robustly, a `conftest.py` guard that runs (or verifies) the patch automatically before collection, so the ordering requirement stops being something a reader has to remember.
+
 ---
 
 ## 7. How this happened, and what it does and doesn't say
